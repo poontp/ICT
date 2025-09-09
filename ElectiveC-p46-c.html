@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動數獨解說 (c) - 演算法模擬</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1, h2 {
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .sudoku-row {
+            display: flex;
+            width: 100%;
+            max-width: 630px;
+            margin: 15px auto;
+            border: 3px solid #333;
+        }
+        .row-cell {
+            flex: 1;
+            height: 60px;
+            border: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: bold;
+            box-sizing: border-box;
+            background-color: white;
+            transition: background-color 0.3s, border 0.3s, color 0.3s;
+            position: relative;
+        }
+        .cell-index {
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            font-size: 11px;
+            color: #666;
+            font-weight: normal;
+        }
+        .row-cell.initial-zero {
+            background-color: #fffbe0;
+            color: #856404;
+        }
+        .row-cell.highlight {
+            background-color: #cce5ff;
+            border: 2px solid #007bff;
+        }
+        .row-cell.solved {
+            background-color: #d4edda;
+            color: #155724;
+            border: 2px solid #155724;
+            font-size: 32px;
+        }
+        .result-text {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .action-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .action-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .calculator {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+        }
+        .calc-display {
+            font-size: 40px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            min-height: 50px;
+            transition: color 0.5s;
+        }
+        .calc-operation {
+            font-size: 20px;
+            min-height: 52px;
+        }
+        .code-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-left: 4px solid #fd7e14;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>互動數獨解說 (c) - 演算法模擬</h1>
+    <p>我們將模擬圖片中的演算法來找出第三橫列 (i=2) 中，儲存格 <strong>S</strong> 的遺失數字。</p>
+
+    <div class="section">
+        <h2>演算法設定</h2>
+        <p>根據圖片，演算法的初始設定如下：</p>
+        <div class="code-box">S ← 0
+remain ← 45</div>
+        <p>下方的橫列視覺化展示了這個初始狀態，特別注意 <strong>S</strong> 的值已經被設為 <strong>0</strong>。</p>
+        <div class="sudoku-row" id="algo-visual-row"></div>
+    </div>
+
+    <div class="section">
+        <h2>執行演算法</h2>
+        <p>現在，請點擊按鈕，逐步執行迴圈 `設 j 由 0 至 8`，並觀察 `remain` 值的變化。</p>
+        <div class="calculator">
+            <div class="calc-operation" id="calc-op-display">準備開始...</div>
+            <div class="calc-display" id="calc-total-display">45</div>
+        </div>
+        <button class="action-btn" id="algo-step-btn" onclick="runAlgorithmStep()">開始計算</button>
+        <div id="algo-result" class="result-text"></div>
+    </div>
+</div>
+
+<script>
+    const rowID = 2;
+    const missingJIndex = 3;
+    // According to the algorithm, S is initialized to 0.
+    const rowData = {0:5, 1:8, 2:3, 3:0, 4:6, 5:4, 6:2, 7:1, 8:9};
+    const correctAnswer = 7;
+
+    let currentJ = -1;
+    let remain = 45;
+
+    function generateRow(containerId, data, emptyJIndex) {
+        const rowContainer = document.getElementById(containerId);
+        rowContainer.innerHTML = '';
+        for (let j = 0; j < 9; j++) {
+            const cell = document.createElement('div');
+            cell.id = `${containerId}-cell-${j}`;
+            cell.className = 'row-cell';
+            cell.innerHTML = `<span class="cell-index">S[2,${j}]</span>`;
+            cell.innerHTML += data[j];
+            
+            if (j === emptyJIndex) {
+                cell.classList.add('initial-zero');
+            }
+            rowContainer.appendChild(cell);
+        }
+    }
+
+    function runAlgorithmStep() {
+        const opDisplay = document.getElementById('calc-op-display');
+        const totalDisplay = document.getElementById('calc-total-display');
+        const resultText = document.getElementById('algo-result');
+        const stepBtn = document.getElementById('algo-step-btn');
+
+        // Un-highlight previous cell
+        if (currentJ > -1) {
+            document.getElementById(`algo-visual-row-cell-${currentJ}`).classList.remove('highlight');
+        }
+
+        currentJ++; // Move to the next j index
+
+        if (currentJ <= 8) { // Loop from j=0 to j=8
+            if (currentJ === 0) {
+                stepBtn.textContent = '下一步 (j=1)';
+            } else if (currentJ < 8) {
+                stepBtn.textContent = `下一步 (j=${currentJ + 1})`;
+            } else {
+                stepBtn.textContent = '完成計算';
+            }
+
+            const numToSubtract = rowData[currentJ];
+            const newRemain = remain - numToSubtract;
+
+            document.getElementById(`algo-visual-row-cell-${currentJ}`).classList.add('highlight');
+            
+            let explanation = `執行: remain ← remain - S[2,${currentJ}]`;
+            if (currentJ === missingJIndex) {
+                explanation += "<br><strong>(注意：這裡減去的是初始設定的 0)</strong>";
+            }
+
+            opDisplay.innerHTML = `${explanation}<br>${remain} - ${numToSubtract} = ${newRemain}`;
+            totalDisplay.textContent = newRemain;
+            remain = newRemain;
+            totalDisplay.style.color = '#f1c40f';
+            setTimeout(() => { totalDisplay.style.color = '#ecf0f1'; }, 500);
+        }
+        
+        if (currentJ > 8) {
+             stepBtn.textContent = '計算完成';
+             stepBtn.disabled = true;
+             
+             opDisplay.innerHTML = `迴圈結束。<br>執行最後一步: S[2,3] ← remain`;
+             
+             // **FIXED LINE**: Escaped the backticks around 'remain'
+             resultText.innerHTML = `演算法完成！最終 \`remain\` 的值是 <strong>${remain}</strong>。<br>這就是 S[2,3] 的答案。`;
+             resultText.className = 'result-text correct';
+
+             const finalCell = document.getElementById(`algo-visual-row-cell-${missingJIndex}`);
+             finalCell.innerHTML = `<span class="cell-index">S[2,${missingJIndex}]</span>${remain}`;
+             finalCell.classList.remove('initial-zero', 'highlight');
+             finalCell.classList.add('solved');
+        }
+    }
+
+    window.onload = function() {
+        generateRow('algo-visual-row', rowData, missingJIndex);
+    };
+</script>
+
+</body>
+</html>

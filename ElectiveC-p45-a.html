@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動數獨解說</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1, h2 {
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .question-section {
+            margin-bottom: 30px;
+        }
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 180px;
+            height: 180px;
+            margin: 20px auto;
+            border: 3px solid #333;
+        }
+        .grid-cell {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            box-sizing: border-box;
+        }
+        #empty-cell {
+            background-color: #e9ecef;
+            color: #d9534f;
+            font-size: 28px;
+        }
+        #number-picker {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .number-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #007bff;
+            background-color: #fff;
+            color: #007bff;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .number-btn:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .number-btn:disabled {
+            background-color: #ccc;
+            color: #888;
+            border-color: #ccc;
+            cursor: not-allowed;
+        }
+        #sum-input {
+            width: 80px;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 0 10px;
+            text-align: center;
+        }
+        .check-btn {
+            padding: 8px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .check-btn:hover {
+            background-color: #218838;
+        }
+        .result-text {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+        .correct {
+            color: #28a745;
+        }
+        .incorrect {
+            color: #dc3545;
+        }
+
+        @media (max-width: 480px) {
+            .sudoku-grid {
+                width: 150px;
+                height: 150px;
+            }
+            .grid-cell {
+                font-size: 20px;
+            }
+            .number-btn {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>互動數獨解說</h1>
+
+    <!-- Part (a)(i) -->
+    <div class="question-section" id="part-a-i">
+        <h2>(a)(i) 九宮格數字總和</h2>
+        <p><strong>規則：</strong>在一個 3x3 的九宮格內，必須包含數字 1 至 9，不能重複，也不能缺少。</p>
+        <p>請問，這個九宮格內所有數字的總和應為多少？</p>
+        <div>
+            1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 =
+            <input type="number" id="sum-input" placeholder="總和">
+            <button class="check-btn" onclick="checkSum()">檢查答案</button>
+        </div>
+        <p id="sum-result" class="result-text"></p>
+    </div>
+
+    <!-- Part (a)(ii) -->
+    <div class="question-section" id="part-a-ii">
+        <h2>(a)(ii) 找出遺失的數字</h2>
+        <p><strong>規則：</strong>同樣地，一個 3x3 九宮格必須包含 1 到 9 的所有數字。</p>
+        <p>在下方的九宮格中，已知其中八個數字，請問空格 (S[1,2]) 內的數字應該是什麼？</p>
+        
+        <div id="sudoku-grid" class="sudoku-grid"></div>
+        
+        <p>請點擊下方正確的數字來填入空格中：</p>
+        <div id="number-picker"></div>
+        <p id="missing-number-result" class="result-text"></p>
+    </div>
+</div>
+
+<script>
+    // --- Part (a)(i) Logic ---
+    function checkSum() {
+        const input = document.getElementById('sum-input');
+        const resultText = document.getElementById('sum-result');
+        const userAnswer = parseInt(input.value, 10);
+        const correctAnswer = 45;
+
+        if (userAnswer === correctAnswer) {
+            resultText.textContent = '完全正確！數字 1 到 9 的總和就是 45。';
+            resultText.className = 'result-text correct';
+        } else {
+            resultText.textContent = '不對喔，再算算看！提示：這是一個等差數列。';
+            resultText.className = 'result-text incorrect';
+        }
+    }
+
+    // --- Part (a)(ii) Logic ---
+    function setupMissingNumberGame() {
+        const gridContainer = document.getElementById('sudoku-grid');
+        const numberPickerContainer = document.getElementById('number-picker');
+        const resultText = document.getElementById('missing-number-result');
+        
+        // The grid from the problem, null represents the empty cell S[1,2]
+        // The numbers are arranged row by row. The problem's grid is:
+        // [4, 9, 7]
+        // [1, ?, 2]
+        // [5, 8, 3]
+        // The value '0' in the image's index list is not part of the puzzle data.
+        const gridNumbers = [4, 9, 7, 1, null, 2, 5, 8, 3];
+        const correctAnswer = 6;
+
+        // Create the grid cells
+        gridContainer.innerHTML = ''; // Clear previous grid
+        gridNumbers.forEach((num, index) => {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            if (num === null) {
+                cell.textContent = '?';
+                cell.id = 'empty-cell';
+            } else {
+                cell.textContent = num;
+            }
+            gridContainer.appendChild(cell);
+        });
+
+        // Create the number picker buttons
+        numberPickerContainer.innerHTML = ''; // Clear previous buttons
+        for (let i = 1; i <= 9; i++) {
+            const button = document.createElement('button');
+            button.className = 'number-btn';
+            button.textContent = i;
+            button.onclick = () => pickNumber(i);
+            numberPickerContainer.appendChild(button);
+        }
+
+        function pickNumber(pickedNum) {
+            if (pickedNum === correctAnswer) {
+                document.getElementById('empty-cell').textContent = pickedNum;
+                resultText.textContent = '完全正確！因為九宮格內必須包含1到9的所有數字，而目前只缺少了 6。';
+                resultText.className = 'result-text correct';
+                // Disable all buttons after correct answer
+                const buttons = numberPickerContainer.getElementsByTagName('button');
+                for (let btn of buttons) {
+                    btn.disabled = true;
+                }
+            } else {
+                resultText.textContent = `不對喔，數字 ${pickedNum} 已經在格子裡了。請再試一次！`;
+                resultText.className = 'result-text incorrect';
+            }
+        }
+    }
+
+    // Initialize the game when the page loads
+    window.onload = function() {
+        setupMissingNumberGame();
+    };
+</script>
+
+</body>
+</html>
