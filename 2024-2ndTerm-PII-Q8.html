@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PII Q8 四消關卡遊戲</title>
+    <style>
+        /* 整體頁面樣式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* 主動畫容器：左右並排佈局 */
+        .main-animation-container {
+            display: flex;
+            flex-direction: row; /* 預設左右並排 */
+            justify-content: center;
+            align-items: flex-start; /* 頂部對齊 */
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+            width: 95%;
+            max-width: 1400px; /* 增加最大寬度以容納並排顯示 */
+            gap: 30px; /* 左右區塊間距 */
+        }
+
+        /* 左側動畫顯示區塊 */
+        .animation-section {
+            flex: 1; /* 佔據可用空間 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 350px; /* 最小寬度，防止網格過小 */
+        }
+
+        /* 右側偽代碼顯示區塊 */
+        .pseudocode-section-wrapper {
+            flex: 1; /* 佔據可用空間 */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* 偽代碼標題左對齊 */
+            min-width: 400px; /* 最小寬度，防止偽代碼過窄 */
+            padding-left: 10px; /* 內邊距 */
+            border-left: 1px solid #eee; /* 分隔線 */
+        }
+
+        /* 網格顯示區塊 */
+        .grid-wrapper {
+            margin-bottom: 20px;
+            border: 2px solid #555;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 60px); /* 6x6 網格，單元格寬度 */
+            grid-template-rows: repeat(6, 60px);   /* 單元格高度 */
+            background-color: #eee;
+        }
+
+        /* 網格單元格樣式 */
+        .grid-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.2em; /* 符號字體大小 */
+            font-weight: bold;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            background-color: #fdfdfd;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        /* 單元格高亮樣式 */
+        .grid-cell.highlight-match {
+            background-color: #ffeb3b; /* 黃色：潛在匹配項 */
+            border-color: #fbc02d;
+        }
+
+        .grid-cell.highlight-replace {
+            background-color: #4caf50; /* 綠色：替換為 'Y' 的項 */
+            color: white;
+            border-color: #388e3c;
+        }
+
+        .grid-cell.highlight-shift-from {
+            background-color: #2196f3; /* 藍色：移動來源 */
+            color: white;
+            border-color: #1976d2;
+        }
+
+        .grid-cell.highlight-shift-to {
+            background-color: #f44336; /* 紅色：移動目標 */
+            color: white;
+            border-color: #d32f2f;
+        }
+
+        .grid-cell.highlight-empty {
+            background-color: #9e9e9e; /* 灰色：變為空（' '）的項 */
+            border-color: #757575;
+        }
+
+        /* 控制按鈕區塊 */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* 允許按鈕換行 */
+            justify-content: center;
+        }
+
+        .controls button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .controls button:hover {
+            transform: translateY(-2px);
+        }
+
+        #startAnimation { background-color: #007bff; color: white; }
+        #startAnimation:hover { background-color: #0056b3; }
+        #prevStep { background-color: #ff9800; color: white; }
+        #prevStep:hover { background-color: #e68900; }
+        #nextStep { background-color: #28a745; color: white; }
+        #nextStep:hover { background-color: #218838; }
+        #autoPlayButton { background-color: #673ab7; color: white; } /* 自動播放按鈕樣式 */
+        #autoPlayButton:hover { background-color: #512da8; }
+        #resetAnimation { background-color: #dc3545; color: white; }
+        #resetAnimation:hover { background-color: #c82333; }
+
+        /* 隱藏按鈕 */
+        .controls button.hidden {
+            display: none;
+        }
+
+        /* 解釋文字框 */
+        .explanation-box {
+            background-color: #e0f7fa;
+            border: 1px solid #b2ebf2;
+            border-radius: 8px;
+            padding: 15px;
+            width: 90%; /* 相對於父容器的寬度 */
+            min-height: 80px;
+            text-align: center;
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #006064;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* 變數顯示框 */
+        .variable-display-box {
+            background-color: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-bottom: 20px; /* 調整為下方間距 */
+            width: 90%;
+            max-width: 400px;
+            text-align: center; /* 讓內容居中 */
+            font-size: 1em;
+            line-height: 1.4;
+            color: #e65100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex; /* 使用 flexbox 佈局 */
+            flex-direction: column; /* 標籤和變數值組垂直堆疊 */
+            align-items: center; /* 水平居中 */
+        }
+        .variable-display-box p {
+            margin: 0; /* 移除預設的段落邊距 */
+            font-weight: bold;
+        }
+        .variable-display-box span {
+            font-weight: normal;
+            color: #333;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .variable-label {
+            margin-bottom: 5px; /* 標籤與變數值之間的間距 */
+        }
+
+        .variable-values {
+            display: flex; /* 讓變數值水平排列 */
+            gap: 20px; /* 變數之間的間距 */
+            flex-wrap: wrap; /* 允許在小螢幕上換行 */
+            justify-content: center; /* 水平居中變數值 */
+        }
+
+        .variable-values p {
+            white-space: nowrap; /* 防止變數名稱和值被拆分 */
+        }
+
+
+        /* 偽代碼區塊 */
+        .pseudocode-block {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.8em; /* 減少字體大小 */
+            white-space: pre-wrap; /* 允許文本換行 */
+            width: 100%; /* 佔據父容器的全部寬度 */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            overflow-x: auto; /* 允許橫向滾動 */
+            display: none; /* 預設隱藏 */
+        }
+        .pseudocode-block.active {
+            display: block; /* 激活時顯示 */
+        }
+
+        .pseudocode-line {
+            padding-top: 0px; /* 更改為 0px */
+            padding-bottom: 0px; /* 更改為 0px */
+            border-radius: 3px;
+            line-height: 1em; /* 保持 1em，防止文字重疊 */
+            transition: background-color 0.3s ease;
+        }
+
+        /* 縮排樣式 */
+        .pseudocode-line.indent-0 { padding-left: 5px; }
+        .pseudocode-line.indent-1 { padding-left: calc(5px + 1.5em); }
+        .pseudocode-line.indent-2 { padding-left: calc(5px + 3em); }
+        .pseudocode-line.indent-3 { padding-left: calc(5px + 4.5em); }
+        .pseudocode-line.indent-4 { padding-left: calc(5px + 6em); }
+
+
+        .pseudocode-line.highlight-pseudocode {
+            background-color: #ffe0b2; /* 淺橙色高亮當前行 */
+            font-weight: bold;
+            box-shadow: 0 0 5px rgba(255, 165, 0, 0.5);
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 1024px) {
+            .main-animation-container {
+                flex-direction: column; /* 小螢幕下垂直堆疊 */
+                gap: 20px;
+                align-items: center; /* 垂直堆疊時居中 */
+            }
+            .animation-section, .pseudocode-section-wrapper {
+                width: 95%; /* 佔據大部分寬度 */
+                min-width: unset; /* 移除最小寬度限制 */
+                padding-left: 0;
+                border-left: none; /* 移除分隔線 */
+            }
+            .grid-container {
+                grid-template-columns: repeat(6, 50px); /* 中等螢幕單元格變小 */
+                grid-template-rows: repeat(6, 50px);
+            }
+            .grid-cell {
+                font-size: 2em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(6, 45px);
+                grid-template-rows: repeat(6, 45px);
+            }
+            .grid-cell {
+                font-size: 1.8em;
+            }
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .controls button {
+                width: 100%;
+                padding: 10px 20px;
+            }
+            .explanation-box {
+                font-size: 1em;
+            }
+            .pseudocode-block {
+                font-size: 0.75em; /* 進一步減少字體大小 */
+            }
+            /* 調整小螢幕下的縮排，防止溢出 */
+            .pseudocode-line.indent-1 { padding-left: calc(5px + 1em); }
+            .pseudocode-line.indent-2 { padding-left: calc(5px + 2em); }
+            .pseudocode-line.indent-3 { padding-left: calc(5px + 3em); }
+            .pseudocode-line.indent-4 { padding-left: calc(5px + 4em); }
+        }
+
+        @media (max-width: 480px) {
+            .grid-container {
+                grid-template-columns: repeat(6, 35px);
+                grid-template-rows: repeat(6, 35px);
+            }
+            .grid-cell {
+                font-size: 1.5em;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .explanation-box {
+                font-size: 0.95em;
+            }
+            .pseudocode-block {
+                font-size: 0.7em; /* 進一步減少字體大小 */
+            }
+            /* 進一步調整更小螢幕下的縮排 */
+            .pseudocode-line.indent-1 { padding-left: calc(5px + 0.8em); }
+            .pseudocode-line.indent-2 { padding-left: calc(5px + 1.6em); }
+            .pseudocode-line.indent-3 { padding-left: calc(5px + 2.4em); }
+            .pseudocode-line.indent-4 { padding-left: calc(5px + 3.2em); }
+        }
+    </style>
+</head>
+<body>
+    <h1>PII Q8 四消關卡遊戲</h1>
+
+    <div class="main-animation-container">
+        <!-- 左側：動畫顯示區塊 -->
+        <div class="animation-section">
+            <!-- 新增變數顯示框 (移到網格上方) -->
+            <div class="variable-display-box">
+                <p class="variable-label">變數值:</p>
+                <div class="variable-values">
+                    <p>n: <span id="display-n">N/A</span></p>
+                    <p>r: <span id="display-r">N/A</span></p>
+                    <p>c: <span id="display-c">N/A</span></p>
+                    <p>i: <span id="display-i">N/A</span></p>
+                </div>
+            </div>
+
+            <div class="grid-wrapper">
+                <div id="pGrid" class="grid-container">
+                    <!-- 網格單元格將由 JavaScript 渲染 -->
+                </div>
+            </div>
+            <div class="controls">
+                <button id="startAnimation">開始動畫</button>
+                <button id="prevStep" class="hidden" disabled>上一步</button>
+                <button id="nextStep" class="hidden" disabled>下一步</button>
+                <button id="autoPlayButton" class="hidden" disabled>自動播放</button>
+                <button id="resetAnimation" class="hidden" disabled>重置</button>
+            </div>
+            <div id="explanation" class="explanation-box">
+                點擊「開始動畫」來逐步演示遊戲邏輯。
+            </div>
+        </div>
+
+        <!-- 右側：偽代碼顯示區塊 -->
+        <div class="pseudocode-section-wrapper">
+            <!-- (a) 子程式 RP(P) 偽代碼 -->
+            <h2>(a) 子程式 RP(P)</h2>
+            <div id="rp-pseudocode" class="pseudocode-block">
+                <div class="pseudocode-line indent-0" data-line="1">設 r 由 <u>0 至 (n-1)</u> 執行</div>
+                <div class="pseudocode-line indent-1" data-line="2">  設 c 由 <u>0 至 (n-4)</u> 執行</div>
+                <div class="pseudocode-line indent-2" data-line="3">    如果 <u>P[r, c] == P[r, c+1] == P[r, c+2] == P[r, c+3]</u> 則</div>
+                <div class="pseudocode-line indent-3" data-line="4">      設 i 由 <u>0 至 3</u> 執行</div>
+                <div class="pseudocode-line indent-4" data-line="5">        P[r, c+i] <- <u>'Y'</u></div>
+                <div class="pseudocode-line indent-0" data-line="6">設 c 由 <u>0 至 (n-1)</u> 執行</div>
+                <div class="pseudocode-line indent-1" data-line="7">  設 r 由 <u>0 至 (n-4)</u> 執行</div>
+                <div class="pseudocode-line indent-2" data-line="8">    如果 <u>P[r, c] == P[r+1, c] == P[r+2, c] == P[r+3, c]</u> 則</div>
+                <div class="pseudocode-line indent-3" data-line="9">      設 i 由 <u>0 至 3</u> 執行</div>
+                <div class="pseudocode-line indent-4" data-line="10">        P[r+i, c] <- <u>'Y'</u></div>
+            </div>
+
+            <!-- (b) 子程式 FD(P) 偽代碼 -->
+            <h2>(b) 子程式 FD(P)</h2>
+            <div id="fd-pseudocode" class="pseudocode-block">
+                <div class="pseudocode-line indent-0" data-line="1">設 r 由 <u>0 至 (n-1)</u> 執行</div>
+                <div class="pseudocode-line indent-1" data-line="2">  設 c 由 <u>0 至 (n-1)</u> 執行</div>
+                <div class="pseudocode-line indent-2" data-line="3">    如果 <u>P[r, c] == 'Y'</u> 則</div>
+                <div class="pseudocode-line indent-3" data-line="4">      設 i 由 <u>r 下至 1</u> 執行</div>
+                <div class="pseudocode-line indent-4" data-line="5">        P[i,c] <- <u>P[i-1,c]</u></div>
+                <div class="pseudocode-line indent-3" data-line="6">      P[0,c] <- <u>‘ ’</u></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const n = 6; // 陣列大小 n x n
+        const autoPlayDelay = 800; // 自動播放延遲 (毫秒)
+
+        // 符號集
+        const symbols = ['★', '◆', '☺', '♣', '♠'];
+
+        let initialP; // 將由 generateRandomInitialP() 函數設置
+        let currentP; // 深度複製初始陣列
+        let animationSteps = []; // 儲存動畫的每個步驟
+        let currentStepIndex = 0; // 當前動畫步驟索引
+        let animationStarted = false; // 標記動畫是否已開始
+        let autoPlayInterval; // 自動播放的 setInterval ID
+        let isAutoPlaying = false; // 自動播放狀態
+
+        // 獲取 DOM 元素
+        const pGridElement = document.getElementById('pGrid');
+        const explanationElement = document.getElementById('explanation');
+        const startButton = document.getElementById('startAnimation');
+        const prevButton = document.getElementById('prevStep');
+        const nextButton = document.getElementById('nextStep');
+        const autoPlayButton = document.getElementById('autoPlayButton');
+        const resetButton = document.getElementById('resetAnimation');
+
+        const rpPseudocodeDiv = document.getElementById('rp-pseudocode');
+        const fdPseudocodeDiv = document.getElementById('fd-pseudocode');
+
+        // 變數顯示元素
+        const displayN = document.getElementById('display-n');
+        const displayR = document.getElementById('display-r');
+        const displayC = document.getElementById('display-c');
+        const displayI = document.getElementById('display-i');
+
+        /**
+         * 檢查網格中是否存在橫向匹配 (4個相同字符)。
+         * @param {Array<Array<string>>} grid - 要檢查的網格。
+         * @returns {boolean} 如果存在橫向匹配則返回 true，否則返回 false。
+         */
+        function hasHorizontalMatch(grid) {
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c <= n - 4; c++) {
+                    const char = grid[r][c];
+                    // 排除 'Y' 和 ' '，因為它們是匹配後的結果或空位
+                    if (char !== 'Y' && char !== ' ' &&
+                        char === grid[r][c+1] &&
+                        char === grid[r][c+2] &&
+                        char === grid[r][c+3]) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /**
+         * 檢查網格中是否存在縱向匹配 (4個相同字符)。
+         * @param {Array<Array<string>>} grid - 要檢查的網格。
+         * @returns {boolean} 如果存在縱向匹配則返回 true，否則返回 false。
+         */
+        function hasVerticalMatch(grid) {
+            for (let c = 0; c < n; c++) {
+                for (let r = 0; r <= n - 4; r++) {
+                    const char = grid[r][c];
+                    // 排除 'Y' 和 ' '
+                    if (char !== 'Y' && char !== ' ' &&
+                        char === grid[r+1][c] &&
+                        char === grid[r+2][c] &&
+                        char === grid[r+3][c]) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /**
+         * 生成一個隨機的 n x n 陣列 P，並確保至少有一行和一列包含連續四個相同字符。
+         * @returns {Array<Array<string>>} 新生成的 P 陣列。
+         */
+        function generateRandomInitialP() {
+            let newP;
+            let foundValidGrid = false;
+
+            // 嘗試生成網格直到同時滿足橫向和縱向匹配條件
+            let attempts = 0;
+            const maxAttempts = 100; // 防止無限迴圈
+
+            while (!foundValidGrid && attempts < maxAttempts) {
+                newP = Array(n).fill(0).map(() => Array(n).fill(''));
+
+                // 1. 填充隨機符號
+                for (let r = 0; r < n; r++) {
+                    for (let c = 0; c < n; c++) {
+                        newP[r][c] = symbols[Math.floor(Math.random() * symbols.length)];
+                    }
+                }
+
+                // 2. 強制生成一個橫向匹配 (4-in-a-row)
+                let r_h = Math.floor(Math.random() * n); // 隨機選擇一行
+                let c_start_h = Math.floor(Math.random() * (n - 3)); // 隨機選擇起始列 (確保有足夠空間放置4個)
+                let char_h = symbols[Math.floor(Math.random() * symbols.length)]; // 隨機選擇一個符號
+                for (let i = 0; i < 4; i++) {
+                    newP[r_h][c_start_h + i] = char_h;
+                }
+
+                // 3. 強制生成一個縱向匹配 (4-in-a-column)
+                let c_v = Math.floor(Math.random() * n); // 隨機選擇一列
+                let r_start_v = Math.floor(Math.random() * (n - 3)); // 隨機選擇起始行 (確保有足夠空間放置4個)
+                let char_v = symbols[Math.floor(Math.random() * symbols.length)]; // 隨機選擇一個符號
+                for (let i = 0; i < 4; i++) {
+                    newP[r_start_v + i][c_v] = char_v;
+                }
+
+                // 4. 檢查是否兩種匹配都仍然存在（因為強制插入可能互相破壞）
+                if (hasHorizontalMatch(newP) && hasVerticalMatch(newP)) {
+                    foundValidGrid = true;
+                }
+                attempts++;
+            }
+
+            if (!foundValidGrid) {
+                console.warn("未能生成同時包含橫向和縱向匹配的網格，請嘗試重新生成。");
+                // Fallback to a fixed grid or a simpler random grid if attempts fail
+                // For this example, we'll just return the last attempted grid.
+            }
+            return newP;
+        }
+
+        /**
+         * 渲染 P 陣列到 HTML 網格中。
+         * @param {Array<Array<string>>} pArray - 要顯示的 P 陣列狀態。
+         * @param {Array<Object>} highlightCells - 要高亮的單元格及其高亮類型。
+         */
+        function displayGrid(pArray, highlightCells = []) {
+            pGridElement.innerHTML = ''; // 清空現有網格
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < n; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    // 如果是空白字元，則顯示為空字串，以便視覺上是空的
+                    cell.textContent = pArray[r][c] === ' ' ? '' : pArray[r][c];
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    // 應用高亮類別
+                    const highlight = highlightCells.find(h => h.row === r && h.col === c);
+                    if (highlight) {
+                        cell.classList.add(highlight.type);
+                    }
+                    pGridElement.appendChild(cell);
+                }
+            }
+        }
+
+        /**
+         * 將一個動畫步驟添加到序列中。
+         * @param {Array<Array<string>>} pState - 該步驟的陣列狀態。
+         * @param {string} explanation - 該步驟的文字解釋。
+         * @param {Array<Object>} highlightCells - 該步驟要高亮的單元格。
+         * @param {string} pseudocodePart - 'rp' 或 'fd'，指示哪個偽代碼區塊。
+         * @param {number} pseudocodeLine - 要高亮的偽代碼行號。
+         * @param {number|null} rVal - r 變數的值。
+         * @param {number|null} cVal - c 變數的值。
+         * @param {number|null} iVal - i 變數的值。
+         */
+        function addStep(pState, explanation, highlightCells = [], pseudocodePart = null, pseudocodeLine = null, rVal = null, cVal = null, iVal = null) {
+            animationSteps.push({
+                pState: JSON.parse(JSON.stringify(pState)), // 深度複製陣列狀態
+                explanation: explanation,
+                highlightCells: highlightCells,
+                pseudocodePart: pseudocodePart,
+                pseudocodeLine: pseudocodeLine,
+                r: rVal,
+                c: cVal,
+                i: iVal
+            });
+        }
+
+        // --- 子程式實現 (用於生成動畫步驟) ---
+
+        /**
+         * 生成子程式 RP(P) 的動畫步驟。
+         * 負責查找並替換匹配的圖案（四個相同）。
+         * @param {Array<Array<string>>} pArray - 當前的 P 陣列狀態。
+         * @returns {Array<Array<string>>} 執行 RP 後的 P 陣列狀態。
+         */
+        function generateRPSteps(pArray) {
+            let tempP = JSON.parse(JSON.stringify(pArray));
+
+            addStep(tempP, "<b>動畫開始。</b> 這是陣列 P 的初始狀態。", [], null, null, null, null, null);
+            addStep(tempP, "<b>(a) 子程式 RP(P)</b>: 查找並替換匹配的圖案（同一欄或同一列中有四個相同的圖案）。", [], 'rp', null, null, null, null); // 初始顯示RP偽代碼
+
+            // 橫向檢查 (完成子程式 RP 的第一部分)
+            addStep(tempP, "開始檢查橫向匹配。", [], 'rp', 1, null, null, null);
+            for (let r = 0; r < n; r++) {
+                addStep(tempP, `外層迴圈: r = ${r}。`, [], 'rp', 1, r, null, null); // 再次高亮外層迴圈
+                addStep(tempP, `進入內層迴圈 (c)。`, [], 'rp', 2, r, null, null);
+                for (let c = 0; c <= n - 4; c++) {
+                    let group = [];
+                    let highlight = [];
+                    for(let i_val = 0; i_val < 4; i_val++) {
+                        group.push(tempP[r][c+i_val]);
+                        highlight.push({row: r, col: c + i_val, type: 'highlight-match'});
+                    }
+
+                    addStep(tempP, `當前檢查位置: (r=${r}, c=${c})。檢查 P[${r},${c}] 到 P[${r},${c+3}] 是否橫向匹配。<br>圖案: ${group.join(', ')}。`, highlight, 'rp', 3, r, c, null);
+
+                    const isMatch = group.every(val => val !== 'Y' && val === group[0]);
+
+                    if (isMatch) {
+                        addStep(tempP, `<b>匹配成功！</b> P[${r},${c}] 到 P[${r},${c+3}] 的四個圖案 '${group[0]}' 相同。`, highlight, 'rp', 3, r, c, null);
+
+                        addStep(tempP, `執行迴圈: i 由 0 至 3，將匹配項替換為 'Y'。`, highlight, 'rp', 4, r, c, null);
+                        for (let i_val = 0; i_val < 4; i_val++) {
+                            let replaceHighlight = highlight.map(h => ({...h, type: 'highlight-replace'}));
+                            replaceHighlight[i_val].type = 'highlight-replace'; // 高亮正在替換的特定單元格
+                            addStep(tempP, `將 P[${r},${c+i_val}] 替換為 'Y'。 (r=${r}, c=${c+i_val}, i=${i_val})`, replaceHighlight, 'rp', 5, r, c, i_val);
+                            tempP[r][c+i_val] = 'Y';
+                        }
+                        addStep(tempP, `已將 P[${r},${c}] 到 P[${r},${c+3}] 替換為 'Y'。`, highlight.map(h => ({...h, type: 'highlight-replace'})), 'rp', 5, r, c, null);
+                    } else {
+                        addStep(tempP, `P[${r},${c}] 到 P[${r},${c+3}] 沒有橫向匹配。 (r=${r}, c=${c})`, highlight, 'rp', 3, r, c, null);
+                    }
+                }
+            }
+
+            // 縱向檢查 (完成子程式 RP 的第二部分)
+            addStep(tempP, "完成橫向檢查。開始檢查縱向匹配。", [], 'rp', 6, null, null, null);
+            for (let c = 0; c < n; c++) {
+                addStep(tempP, `外層迴圈: c = ${c}。`, [], 'rp', 6, null, c, null); // 再次高亮外層迴圈
+                addStep(tempP, `進入內層迴圈 (r)。`, [], 'rp', 7, null, c, null);
+                for (let r = 0; r <= n - 4; r++) {
+                    let group = [];
+                    let highlight = [];
+                    for(let i_val = 0; i_val < 4; i_val++) {
+                        group.push(tempP[r+i_val][c]);
+                        highlight.push({row: r + i_val, col: c, type: 'highlight-match'});
+                    }
+
+                    addStep(tempP, `當前檢查位置: (r=${r}, c=${c})。檢查 P[${r},${c}] 到 P[${r+3},${c}] 是否縱向匹配。<br>圖案: ${group.join(', ')}。`, highlight, 'rp', 8, r, c, null);
+
+                    const isMatch = group.every(val => val !== 'Y' && val === group[0]);
+
+                    if (isMatch) {
+                        addStep(tempP, `<b>匹配成功！</b> P[${r},${c}] 到 P[${r+3},${c}] 的四個圖案 '${group[0]}' 相同。`, highlight, 'rp', 8, r, c, null);
+
+                        addStep(tempP, `執行迴圈: i 由 0 至 3，將匹配項替換為 'Y'。`, highlight, 'rp', 9, r, c, null);
+                        for (let i_val = 0; i_val < 4; i_val++) {
+                            let replaceHighlight = highlight.map(h => ({...h, type: 'highlight-replace'}));
+                            replaceHighlight[i_val].type = 'highlight-replace';
+                            addStep(tempP, `將 P[${r+i_val},${c}] 替換為 'Y'。 (r=${r+i_val}, c=${c}, i=${i_val})`, replaceHighlight, 'rp', 10, r, c, i_val);
+                            tempP[r+i_val][c] = 'Y';
+                        }
+                        addStep(tempP, `已將 P[${r},${c}] 到 P[${r+3},${c}] 替換為 'Y'。`, highlight.map(h => ({...h, type: 'highlight-replace'})), 'rp', 10, r, c, null);
+                    } else {
+                        addStep(tempP, `P[${r},${c}] 到 P[${r+3},${c}] 沒有縱向匹配。 (r=${r}, c=${c})`, highlight, 'rp', 8, r, c, null);
+                    }
+                }
+            }
+            addStep(tempP, "<b>子程式 RP(P) 執行完畢。</b> 所有匹配的圖案都已替換為 'Y'。", [], null, null, null, null, null);
+            return tempP;
+        }
+
+        /**
+         * 生成子程式 FD(P) 的動畫步驟。
+         * 將 RP 處理後的結果作為輸入。
+         * @param {Array<Array<string>>} pArray - 當前的 P 陣列狀態 (經過 RP 處理後)。
+         * @returns {Array<Array<string>>} 執行 FD 後的 P 陣列狀態。
+         */
+        function generateFDSteps(pArray) {
+            let tempP = JSON.parse(JSON.stringify(pArray));
+
+            addStep(tempP, "<b>(b) 子程式 FD(P)</b>: 模擬重力效果，使圖案落下填補空缺。", [], 'fd', null, null, null, null);
+
+            let hasShiftOccurred = false;
+
+            addStep(tempP, "開始模擬重力效果。", [], 'fd', 1, null, null, null);
+            for (let r = 0; r < n; r++) {
+                addStep(tempP, `外層迴圈: r = ${r}。`, [], 'fd', 1, r, null, null);
+                addStep(tempP, `進入內層迴圈 (c)。`, [], 'fd', 2, r, null, null);
+                for (let c = 0; c < n; c++) {
+                    addStep(tempP, `當前檢查位置: (r=${r}, c=${c})。檢查 P[${r},${c}] 是否為 'Y'。`, [{row: r, col: c, type: 'highlight-match'}], 'fd', 3, r, c, null);
+
+                    if (tempP[r][c] === 'Y') {
+                        hasShiftOccurred = true;
+                        addStep(tempP, `<b>發現空缺 'Y' 於 P[${r},${c}]。</b> 將其上方圖案下移。`, [{row: r, col: c, type: 'highlight-empty'}], 'fd', 3, r, c, null);
+
+                        addStep(tempP, `執行迴圈: i 由 ${r} 下至 1，將上方圖案下移。`, [{row: r, col: c, type: 'highlight-empty'}], 'fd', 4, r, c, null);
+                        for (let i_val = r; i_val >= 1; i_val--) {
+                            let fromRow = i_val - 1;
+                            let toRow = i_val;
+                            let currentShiftHighlight = [
+                                {row: fromRow, col: c, type: 'highlight-shift-from'},
+                                {row: toRow, col: c, type: 'highlight-shift-to'}
+                            ];
+                            addStep(tempP, `將 P[${fromRow},${c}] ('${tempP[fromRow][c]}') 移至 P[${toRow},${c}]。 (r=${r}, c=${c}, i=${i_val})`, currentShiftHighlight, 'fd', 5, r, c, i_val);
+                            tempP[i_val][c] = tempP[i_val-1][c];
+                        }
+                        addStep(tempP, `將最頂端 P[0,${c}] 設置為空 (' ')。 (c=${c})`, [{row: 0, col: c, type: 'highlight-empty'}], 'fd', 6, r, c, null);
+                        tempP[0][c] = ' '; // Set the top cell to empty space
+                    } else {
+                        addStep(tempP, `P[${r},${c}] 不是 'Y'。 (r=${r}, c=${c})`, [{row: r, col: c, type: 'highlight-match'}], 'fd', 3, r, c, null);
+                    }
+                }
+            }
+
+            if (!hasShiftOccurred) {
+                addStep(tempP, "沒有空缺需要填補。", [], null, null, null, null, null);
+            }
+            addStep(tempP, "<b>子程式 FD(P) 執行完畢。</b> 所有圖案已根據重力效果落下。", [], null, null, null, null, null);
+            return tempP;
+        }
+
+        // --- 動畫控制邏輯 ---
+
+        /**
+         * 生成所有動畫步驟。
+         */
+        function generateAllSteps() {
+            animationSteps = []; // 重置步驟序列
+
+            // --- Part (a): Generate RP steps ---
+            let pAfterRP = JSON.parse(JSON.stringify(initialP));
+            pAfterRP = generateRPSteps(pAfterRP);
+
+            // --- Part (b): Generate FD steps using the result from RP ---
+            let pAfterFD = JSON.parse(JSON.stringify(pAfterRP));
+            pAfterFD = generateFDSteps(pAfterFD);
+
+            // Add final animation end step
+            addStep(pAfterFD, "<b>動畫結束。</b> 這是經過 RP 和 FD 處理後的最終陣列狀態。", [], null, null, null, null, null);
+        }
+
+        /**
+         * 停止自動播放。
+         */
+        function stopAutoPlay() {
+            clearInterval(autoPlayInterval);
+            isAutoPlaying = false;
+            autoPlayButton.textContent = '自動播放';
+            // 重新啟用手動控制按鈕
+            if (animationStarted) {
+                prevButton.disabled = (currentStepIndex === 0);
+                nextButton.disabled = (currentStepIndex === animationSteps.length - 1);
+            }
+        }
+
+        /**
+         * 啟動自動播放。
+         */
+        function startAutoPlay() {
+            if (currentStepIndex === animationSteps.length - 1) {
+                currentStepIndex = 0; // 如果已經在最後一步，則從頭開始播放
+            }
+            isAutoPlaying = true;
+            autoPlayButton.textContent = '暫停';
+            // 禁用手動控制按鈕
+            prevButton.disabled = true;
+            nextButton.disabled = true;
+            autoPlayInterval = setInterval(() => {
+                if (currentStepIndex < animationSteps.length - 1) {
+                    showStep(currentStepIndex + 1);
+                } else {
+                    stopAutoPlay(); // 播放到最後一步時停止
+                }
+            }, autoPlayDelay);
+        }
+
+        /**
+         * 切換自動播放狀態。
+         */
+        function toggleAutoPlay() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        }
+
+        /**
+         * 顯示指定索引的動畫步驟。
+         * @param {number} index - 要顯示的步驟索引。
+         */
+        function showStep(index) {
+            if (index >= 0 && index < animationSteps.length) {
+                const step = animationSteps[index];
+                displayGrid(step.pState, step.highlightCells);
+                explanationElement.innerHTML = step.explanation;
+                currentStepIndex = index;
+
+                // 更新變數顯示
+                displayR.textContent = step.r !== null ? step.r : 'N/A';
+                displayC.textContent = step.c !== null ? step.c : 'N/A';
+                displayI.textContent = step.i !== null ? step.i : 'N/A';
+
+                // 移除所有現有的偽代碼高亮
+                document.querySelectorAll('.pseudocode-line.highlight-pseudocode').forEach(line => {
+                    line.classList.remove('highlight-pseudocode');
+                });
+
+                // 控制偽代碼區塊的顯示/隱藏
+                rpPseudocodeDiv.classList.remove('active');
+                fdPseudocodeDiv.classList.remove('active');
+
+                if (step.pseudocodePart === 'rp') {
+                    rpPseudocodeDiv.classList.add('active');
+                } else if (step.pseudocodePart === 'fd') {
+                    fdPseudocodeDiv.classList.add('active');
+                }
+
+                // 應用新的偽代碼高亮
+                if (step.pseudocodePart && step.pseudocodeLine !== null) {
+                    let pseudocodeBlock;
+                    if (step.pseudocodePart === 'rp') {
+                        pseudocodeBlock = rpPseudocodeDiv;
+                    } else if (step.pseudocodePart === 'fd') {
+                        pseudocodeBlock = fdPseudocodeDiv;
+                    }
+
+                    if (pseudocodeBlock) {
+                        const lineElement = pseudocodeBlock.querySelector(`.pseudocode-line[data-line="${step.pseudocodeLine}"]`);
+                        if (lineElement) {
+                            lineElement.classList.add('highlight-pseudocode');
+                            // 滾動到該行，使其在視圖中可見
+                            lineElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                }
+
+                // 更新按鈕狀態 (僅當非自動播放時)
+                if (!isAutoPlaying) {
+                    nextButton.disabled = (currentStepIndex === animationSteps.length - 1);
+                    prevButton.disabled = (currentStepIndex === 0);
+                }
+                resetButton.disabled = false;
+                startButton.disabled = true;
+                autoPlayButton.disabled = false; // 確保自動播放按鈕可用
+            }
+        }
+
+        /**
+         * 開始動畫。
+         */
+        function startAnimation() {
+            if (!animationStarted) {
+                generateAllSteps(); // 生成所有步驟
+                animationStarted = true;
+                showStep(0); // 顯示第一個步驟
+
+                // 顯示並啟用控制按鈕
+                prevButton.classList.remove('hidden');
+                nextButton.classList.remove('hidden');
+                autoPlayButton.classList.remove('hidden');
+                resetButton.classList.remove('hidden');
+
+                nextButton.disabled = (animationSteps.length <= 1);
+                prevButton.disabled = true; // 開始時上一步按鈕禁用
+                resetButton.disabled = false;
+                startButton.disabled = true;
+                autoPlayButton.disabled = false;
+            }
+        }
+
+        /**
+         * 顯示下一個動畫步驟。
+         */
+        function nextStep() {
+            stopAutoPlay(); // 點擊手動下一步時停止自動播放
+            if (currentStepIndex < animationSteps.length - 1) {
+                showStep(currentStepIndex + 1);
+            }
+        }
+
+        /**
+         * 顯示上一個動畫步驟。
+         */
+        function previousStep() {
+            stopAutoPlay(); // 點擊手動上一步時停止自動播放
+            if (currentStepIndex > 0) {
+                showStep(currentStepIndex - 1);
+            }
+        }
+
+        /**
+         * 重置動畫到初始狀態。
+         */
+        function resetAnimation() {
+            stopAutoPlay(); // 重置時停止自動播放
+            animationStarted = false;
+            currentStepIndex = 0;
+            initialP = generateRandomInitialP(); // 生成新的隨機初始 P
+            currentP = JSON.parse(JSON.stringify(initialP)); // 重置陣列
+            displayGrid(currentP); // 顯示初始網格
+            explanationElement.innerHTML = "點擊「開始動畫」來逐步演示遊戲邏輯。"; // 重置解釋文字
+
+            // 重置變數顯示
+            displayN.textContent = n;
+            displayR.textContent = 'N/A';
+            displayC.textContent = 'N/A';
+            displayI.textContent = 'N/A';
+
+            // 移除所有偽代碼高亮
+            document.querySelectorAll('.pseudocode-line.highlight-pseudocode').forEach(line => {
+                line.classList.remove('highlight-pseudocode');
+            });
+
+            // 隱藏所有偽代碼區塊
+            rpPseudocodeDiv.classList.remove('active');
+            fdPseudocodeDiv.classList.remove('active');
+
+            // 重置按鈕狀態
+            startButton.disabled = false;
+            // 隱藏並禁用控制按鈕
+            prevButton.classList.add('hidden');
+            nextButton.classList.add('hidden');
+            autoPlayButton.classList.add('hidden');
+            resetButton.classList.add('hidden');
+            nextButton.disabled = true;
+            prevButton.disabled = true;
+            autoPlayButton.disabled = true;
+            resetButton.disabled = true;
+        }
+
+        // 添加事件監聽器
+        startButton.addEventListener('click', startAnimation);
+        prevButton.addEventListener('click', previousStep);
+        nextButton.addEventListener('click', nextStep);
+        autoPlayButton.addEventListener('click', toggleAutoPlay);
+        resetButton.addEventListener('click', resetAnimation);
+
+        // 頁面加載時顯示初始狀態
+        resetAnimation();
+    </script>
+</body>
+</html>
