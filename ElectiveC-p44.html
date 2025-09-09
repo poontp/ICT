@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式掃雷謎題解答 (含步驟解說)</title>
+    <style>
+        /* 整體頁面與字體樣式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 主容器 */
+        .main-container {
+            max-width: 900px;
+            width: 100%;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #1c1e21;
+        }
+
+        p.intro {
+            text-align: center;
+            font-size: 1.1em;
+            color: #606770;
+        }
+
+        /* 遊戲區，包含兩個網格 */
+        .game-area {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            flex-wrap: wrap; /* 在小螢幕上換行 */
+            margin-top: 20px;
+        }
+
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 網格表格樣式 */
+        table {
+            border-collapse: collapse;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            width: 35px;
+            height: 35px;
+            border: 1px solid #ccc;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 1.2em;
+            font-weight: bold;
+            user-select: none; /* 防止選取文字 */
+        }
+        
+        /* 響應式調整網格大小 */
+        @media (max-width: 600px) {
+            th, td {
+                width: 30px;
+                height: 30px;
+                font-size: 1em;
+            }
+        }
+
+        /* 表頭樣式 (*** 修改處 ***) */
+        th {
+            background-color: #dce6f2; /* 改為淺藍色以突顯索引 */
+            color: #333;
+        }
+
+        /* 問題網格 (M) 的樣式 */
+        .grid-m .bomb {
+            background-color: #333;
+            color: white;
+        }
+
+        .grid-m .safe {
+            background-color: #e9ebee;
+            color: #606770;
+        }
+        
+        /* 解答網格 (B) 的樣式 */
+        .grid-b .b-cell {
+            background-color: #fff;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .grid-b .b-cell:hover {
+            background-color: #f5f5f5;
+        }
+
+        .grid-b .b-cell.revealed {
+            background-color: #dff0d8; /* 顯示答案後的淡綠色 */
+            cursor: default;
+            color: #3c763d;
+        }
+
+        .grid-b .b-cell.bomb {
+            background-color: #333;
+            color: white;
+            cursor: default;
+        }
+
+        /* 高亮顯示樣式 */
+        .highlight-center {
+            outline: 3px solid #e74c3c; /* 紅色外框標示中心 */
+            outline-offset: -3px;
+        }
+
+        .highlight-neighbor {
+            background-color: #f1c40f !important; /* 黃色高亮顯示鄰居 */
+        }
+
+        /* 控制按鈕區域 */
+        .controls {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        button {
+            background-color: #4CAF50; /* 綠色 */
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #reset-btn {
+            background-color: #f44336; /* 紅色 */
+        }
+
+        #reset-btn:hover {
+            background-color: #da190b;
+        }
+        
+        /* 解說區域樣式 */
+        #explanation-area {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            min-height: 100px;
+            line-height: 1.6;
+        }
+
+        #explanation-text {
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        #explanation-text code {
+            background-color: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        #explanation-text b {
+            color: #d9534f;
+        }
+        
+        #explanation-text ul {
+            padding-left: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <h1>互動式掃雷謎題解答</h1>
+        <p class="intro">點擊右邊「解答」網格中的格子來顯示答案，下方將同步顯示詳細的解題步驟。</p>
+
+        <div class="game-area">
+            <div class="grid-container">
+                <h2>地圖 M (問題)</h2>
+                <table id="grid-m" class="grid-m"></table>
+            </div>
+            <div class="grid-container">
+                <h2>地圖 B (解答)</h2>
+                <table id="grid-b" class="grid-b"></table>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="reveal-btn">顯示所有答案</button>
+            <button id="reset-btn">重設</button>
+        </div>
+
+        <div id="explanation-area">
+            <h2>解題步驟說明</h2>
+            <div id="explanation-text">
+                點擊右側「解答」網格中的一個格子，這裡將會顯示該格的詳細計算過程。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 1. 定義資料與常數
+            const gridMData = [
+                ['F', 'F', 'T', 'F', 'T', 'F', 'F', 'F', 'F'],
+                ['F', 'F', 'T', 'F', 'F', 'T', 'F', 'F', 'F'],
+                ['F', 'T', 'F', 'F', 'F', 'F', 'F', 'F', 'F'],
+                ['F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F'],
+                ['F', 'F', 'T', 'F', 'F', 'F', 'F', 'F', 'F'],
+                ['F', 'F', 'F', 'F', 'F', 'T', 'F', 'F', 'F'],
+                ['F', 'F', 'F', 'F', 'T', 'F', 'F', 'F', 'F'],
+                ['F', 'T', 'F', 'F', 'F', 'F', 'F', 'T', 'F'],
+                ['F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F']
+            ];
+            const ROWS = 9;
+            const COLS = 9;
+            const solutionGridB = [];
+
+            const gridM = document.getElementById('grid-m');
+            const gridB = document.getElementById('grid-b');
+            const revealBtn = document.getElementById('reveal-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const explanationText = document.getElementById('explanation-text');
+            const initialExplanation = '點擊右側「解答」網格中的一個格子，這裡將會顯示該格的詳細計算過程。';
+
+            // 2. 核心邏輯：計算解答
+            function calculateSolution() {
+                for (let i = 0; i < ROWS; i++) {
+                    solutionGridB[i] = [];
+                    for (let j = 0; j < COLS; j++) {
+                        if (gridMData[i][j] === 'T') {
+                            solutionGridB[i][j] = 'T';
+                            continue;
+                        }
+                        let bombCount = 0;
+                        for (let ni = i - 1; ni <= i + 1; ni++) {
+                            for (let nj = j - 1; nj <= j + 1; nj++) {
+                                if (ni === i && nj === j) continue;
+                                if (ni >= 0 && ni < ROWS && nj >= 0 && nj < COLS) {
+                                    if (gridMData[ni][nj] === 'T') {
+                                        bombCount++;
+                                    }
+                                }
+                            }
+                        }
+                        solutionGridB[i][j] = bombCount;
+                    }
+                }
+            }
+
+            // 3. 畫面生成：創建網格
+            function createGrids() {
+                let headerRow = '<tr><th>i\\j</th>';
+                for (let j = 1; j <= COLS; j++) headerRow += `<th>${j}</th>`;
+                headerRow += '</tr>';
+                
+                let gridM_HTML = headerRow;
+                let gridB_HTML = headerRow;
+
+                for (let i = 0; i < ROWS; i++) {
+                    gridM_HTML += `<tr><th>${i + 1}</th>`;
+                    gridB_HTML += `<tr><th>${i + 1}</th>`;
+                    for (let j = 0; j < COLS; j++) {
+                        const isBombM = gridMData[i][j] === 'T';
+                        gridM_HTML += `<td id="m-${i}-${j}" class="${isBombM ? 'bomb' : 'safe'}">${gridMData[i][j]}</td>`;
+                        gridB_HTML += `<td id="b-${i}-${j}" class="b-cell" data-row="${i}" data-col="${j}"></td>`;
+                    }
+                    gridM_HTML += '</tr>';
+                    gridB_HTML += '</tr>';
+                }
+                gridM.innerHTML = gridM_HTML;
+                gridB.innerHTML = gridB_HTML;
+            }
+
+            // 4. 互動功能
+            function clearHighlights() {
+                document.querySelectorAll('.highlight-center, .highlight-neighbor').forEach(cell => {
+                    cell.classList.remove('highlight-center', 'highlight-neighbor');
+                });
+            }
+
+            function highlightNeighbors(row, col) {
+                clearHighlights();
+                for (let i = row - 1; i <= row + 1; i++) {
+                    for (let j = col - 1; j <= col + 1; j++) {
+                        if (i >= 0 && i < ROWS && j >= 0 && j < COLS) {
+                            const cellM = document.getElementById(`m-${i}-${j}`);
+                            if (i === row && j === col) {
+                                cellM.classList.add('highlight-center');
+                            } else {
+                                cellM.classList.add('highlight-neighbor');
+                            }
+                        }
+                    }
+                }
+            }
+
+            function generateAndDisplayExplanation(row, col) {
+                const solution = solutionGridB[row][col];
+                let html = '';
+                const b_coord = `B[${row + 1}, ${col + 1}]`;
+                const m_coord = `M[${row + 1}, ${col + 1}]`;
+
+                if (solution === 'T') {
+                    html = `正在分析 <code>${b_coord}</code>。<br><br>
+                            因為原始地圖中的 <code>${m_coord}</code> 是一個炸彈 (T)，根據<b>規則一</b>，解答地圖 <code>${b_coord}</code> 的值也直接為 <b>'T'</b>。`;
+                } else {
+                    html = `正在計算 <code>${b_coord}</code> 的值。<br><br>
+                            首先，我們看到 <code>${m_coord}</code> 的值是 'F'，代表這是一個安全格。根據<b>規則二</b>，我們需要計算其周圍八個格子的炸彈總數。<br><br>
+                            這些周圍的格子（在左側地圖中以黃色標示）中，我們來檢查哪些是炸彈：<ul>`;
+                    
+                    let bombsFound = [];
+                    for (let ni = row - 1; ni <= row + 1; ni++) {
+                        for (let nj = col - 1; nj <= col + 1; nj++) {
+                            if (ni === row && nj === col) continue;
+                            if (ni >= 0 && ni < ROWS && nj >= 0 && nj < COLS) {
+                                if (gridMData[ni][nj] === 'T') {
+                                    bombsFound.push(`M[${ni + 1}, ${nj + 1}]`);
+                                }
+                            }
+                        }
+                    }
+
+                    if (bombsFound.length > 0) {
+                        bombsFound.forEach(bombCoord => {
+                            html += `<li>發現炸彈位於 <code>${bombCoord}</code>。</li>`;
+                        });
+                        html += `</ul>總共找到了 <b>${solution}</b> 個炸彈。`;
+                    } else {
+                        html += `</ul>經過檢查，周圍沒有任何炸彈。`;
+                    }
+                    html += `<br><br>因此，<code>${b_coord}</code> 的值是 <b>${solution}</b>。`;
+                }
+                explanationText.innerHTML = html;
+            }
+
+            function handleCellClick(e) {
+                const cell = e.target;
+                if (!cell.classList.contains('b-cell') || cell.classList.contains('revealed')) {
+                    return;
+                }
+
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                const solution = solutionGridB[row][col];
+
+                cell.textContent = solution;
+                cell.classList.add('revealed');
+                if (solution === 'T') {
+                    cell.classList.add('bomb');
+                }
+                
+                highlightNeighbors(row, col);
+                generateAndDisplayExplanation(row, col);
+            }
+
+            function revealAll() {
+                clearHighlights();
+                for (let i = 0; i < ROWS; i++) {
+                    for (let j = 0; j < COLS; j++) {
+                        const cellB = document.getElementById(`b-${i}-${j}`);
+                        if (!cellB.classList.contains('revealed')) {
+                            const solution = solutionGridB[i][j];
+                            cellB.textContent = solution;
+                            cellB.classList.add('revealed');
+                            if (solution === 'T') {
+                                cellB.classList.add('bomb');
+                            }
+                        }
+                    }
+                }
+                explanationText.innerHTML = '已顯示所有答案。請點擊「重設」後，再點擊單一格子以查看詳細步驟。';
+            }
+
+            function resetGame() {
+                clearHighlights();
+                for (let i = 0; i < ROWS; i++) {
+                    for (let j = 0; j < COLS; j++) {
+                        const cellB = document.getElementById(`b-${i}-${j}`);
+                        cellB.textContent = '';
+                        cellB.classList.remove('revealed', 'bomb');
+                    }
+                }
+                explanationText.innerHTML = initialExplanation;
+            }
+
+            // 5. 初始化與事件綁定
+            function init() {
+                calculateSolution();
+                createGrids();
+                explanationText.innerHTML = initialExplanation;
+
+                gridB.addEventListener('click', handleCellClick);
+                revealBtn.addEventListener('click', revealAll);
+                resetBtn.addEventListener('click', resetGame);
+            }
+
+            init();
+        });
+    </script>
+
+</body>
+</html>
