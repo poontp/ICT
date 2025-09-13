@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 程式碼互動解說</title>
+    <style>
+        :root {
+            --primary-bg: #f0f4f8;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --code-bg: #2d2d2d;
+            --code-text: #f8f8f2;
+            --highlight-bg: #44475a;
+            --accent-color: #007bff;
+            --secondary-accent-color: #28a745;
+            --border-color: #e0e0e0;
+            --animation-speed: 600ms;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1em;
+            overflow-x: hidden;
+        }
+        .game-container {
+            max-width: 1200px;
+            margin: auto;
+            background-color: var(--secondary-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 1.5em;
+            margin: 0;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 1rem;
+            gap: 1rem;
+        }
+        .panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .panel h2 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            color: var(--accent-color);
+        }
+        
+        /* --- CSS 修改處 --- */
+        .controls {
+            padding: 0;
+            margin-bottom: 1rem; /* 按鈕與下方列表的間距 */
+            text-align: right;
+        }
+        .controls button:last-child {
+            margin-right: 0;
+        }
+        #explanation { 
+            background-color: #e9f5ff; 
+            border-left: 4px solid var(--accent-color); 
+            padding: 0.75rem;
+            border-radius: 4px; 
+            min-height: 60px;
+            margin-bottom: 1rem; /* 解說與下方按鈕的間距 */
+        }
+        #data-visualization {
+            margin-top: 0; /* 移除頂部間距，由上方元素控制 */
+        }
+        /* --- CSS 修改結束 --- */
+
+        #data-visualization h3 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            color: var(--accent-color);
+        }
+
+        .code-block {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            white-space: pre;
+            line-height: 1.1;
+        }
+        .code-block .line { 
+            display: block; 
+            transition: background-color 0.3s ease; 
+            padding: 0 0.5em;
+            margin: 0 -0.5em; 
+            border-radius: 3px; 
+        }
+        .code-block .line.highlight { background-color: var(--highlight-bg); }
+        
+        .variables { 
+            background: #f9f9f9; 
+            padding: 0.5rem;
+            border-radius: 6px; 
+            border: 1px solid var(--border-color);
+            margin-bottom: 0.75rem;
+        }
+        .variables span { font-weight: bold; color: #d9534f; display: inline-block; min-width: 30px; text-align: center; }
+        
+        .variable-row {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .variables h3 { 
+            margin-top: 0; 
+            margin-bottom: 0.25rem;
+        }
+        .variable-row p, .variables > p {
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        #vis-content {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 6px;
+            min-height: 250px;
+            position: relative;
+        }
+        .list-container {
+            border: 2px dashed #007bff;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 200px;
+            position: relative;
+        }
+        .list-container::before {
+            content: 'marks_3a';
+            position: absolute;
+            top: -0.8em;
+            left: 1em;
+            background: #fafafa;
+            padding: 0 0.5em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .list-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #e9f5ff;
+            border: 1px solid #bde0fe;
+            border-radius: 4px;
+            padding: 5px;
+            min-height: 40px;
+            transition: background-color 0.3s;
+            flex-wrap: wrap;
+        }
+        .list-row.highlight-row {
+            background-color: #cce5ff;
+            border-color: #99caff;
+        }
+        .row-label {
+            font-weight: bold;
+            padding: 0 10px;
+            font-size: 0.9em;
+            color: #333;
+            min-width: 60px;
+        }
+        .list-cell {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            width: 40px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .list-cell.new-cell { animation: new-cell-anim var(--animation-speed) ease-out; }
+        @keyframes new-cell-anim { from { transform: scale(0.5); opacity: 0; background-color: #ffc; } to { transform: scale(1); opacity: 1; background-color: white; } }
+        .empty-list-row { justify-content: center; color: #999; font-style: italic; background: #f0f0f0; border-style: dashed; }
+        .slide-in-row { animation: slide-in var(--animation-speed) forwards; opacity: 0; }
+        @keyframes slide-in { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .mark-chip {
+            position: fixed; background: #ffc107; color: black; padding: 5px 10px; border-radius: 15px;
+            font-weight: bold; z-index: 100; transition: all var(--animation-speed) ease-in-out;
+            opacity: 0; pointer-events: none;
+        }
+
+        button { border: none; padding: 0.8rem 1.8rem; font-size: 1rem; border-radius: 5px; cursor: pointer; transition: all 0.3s; margin: 0 0.5rem; }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; transform: none; }
+        #next-btn { background-color: var(--accent-color); color: white; }
+        #next-btn:hover:not(:disabled) { background-color: #0056b3; }
+        #autoplay-btn { background-color: var(--secondary-accent-color); color: white; }
+        #autoplay-btn:hover:not(:disabled) { background-color: #218838; }
+        #autoplay-btn.paused { background-color: #ffc107; color: black; }
+        #autoplay-btn.paused:hover:not(:disabled) { background-color: #e0a800; }
+        #reset-btn { background-color: #6c757d; color: white; }
+        #reset-btn:hover:not(:disabled) { background-color: #5a6268; }
+    </style>
+</head>
+<body>
+    <div class="mark-chip" id="mark-chip"></div>
+    <div class="game-container">
+        <header><h1>Python 隨機分數生成器解說</h1></header>
+        
+        <div class="main-content">
+            <div class="panel code-panel">
+                <h2>Python 程式碼</h2>
+                
+                <div class="variables">
+                    <h3>變數值</h3>
+                    <div class="variable-row">
+                        <p>i (科目索引): <span id="var-i">-</span></p>
+                        <p>j (學生索引): <span id="var-j">-</span></p>
+                    </div>
+                    <p>random_mark (隨機分數): <span id="var-mark">-</span></p>
+                </div>
+                
+                <div class="code-block">
+                    <span class="line" id="line-0">import random</span>
+                    <span class="line" id="line-1">marks_3a = []</span>
+                    <span class="line" id="line-2">for i in range(0,4):</span>
+                    <span class="line" id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;marks_3a = marks_3a+[[]]</span>
+                    <span class="line" id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;for j in range(0,8):</span>
+                    <span class="line" id="line-5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;random_mark = random.randint(0, 100)</span>
+                    <span class="line" id="line-6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;marks_3a[i]=marks_3a[i]+[random_mark]</span>
+                </div>
+            </div>
+            <div class="panel info-panel">
+                <h2>程式狀態</h2>
+                
+                <!-- HTML 修改處: 按鈕區塊移動到解說區下方 -->
+                <div id="explanation">點擊「下一步」開始執行程式碼。</div>
+                <div class="controls">
+                    <button id="next-btn">下一步</button>
+                    <button id="autoplay-btn">自動播放</button>
+                    <button id="reset-btn">重設</button>
+                </div>
+                <div id="data-visualization">
+                    <h3>marks_3a 列表</h3>
+                    <div id="vis-content"></div>
+                </div>
+                <!-- HTML 修改結束 -->
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            step: -1, i: -1, j: -1, randomMark: null, marks: [], line: -1,
+            subjects: ["Chin", "Eng", "Maths", "ICT"], totalStudents: 8
+        };
+        let isAnimating = false;
+        let isAutoPlaying = false;
+        let autoPlayTimer = null;
+        const AUTO_PLAY_DELAY = 1500;
+
+        const lineElements = Array.from({length: 7}, (_, i) => document.getElementById(`line-${i}`));
+        const explanationEl = document.getElementById('explanation');
+        const varI = document.getElementById('var-i');
+        const varJ = document.getElementById('var-j');
+        const varMark = document.getElementById('var-mark');
+        const visContent = document.getElementById('vis-content');
+        const markChip = document.getElementById('mark-chip');
+        const nextBtn = document.getElementById('next-btn');
+        const autoPlayBtn = document.getElementById('autoplay-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        function highlightLine(newLine) {
+            if (state.line !== -1) lineElements[state.line].classList.remove('highlight');
+            if (newLine !== -1) lineElements[newLine].classList.add('highlight');
+            state.line = newLine;
+        }
+
+        function renderVisualization() {
+            let html = '<div class="list-container">';
+            if (state.marks.length === 0 && state.step < 2) {
+                html += '<div class="list-row empty-list-row">[ ] (空列表)</div>';
+            } else {
+                state.marks.forEach((row, rowIndex) => {
+                    const highlightClass = (rowIndex === state.i) ? 'highlight-row' : '';
+                    html += `<div class="list-row ${highlightClass}" id="row-${rowIndex}">`;
+                    html += `<span class="row-label">${state.subjects[rowIndex]}:</span>`;
+                    row.forEach((cell, cellIndex) => {
+                        const newCellClass = (rowIndex === state.i && cellIndex === state.j && state.step === 6) ? 'new-cell' : '';
+                        html += `<div class="list-cell ${newCellClass}">${cell}</div>`;
+                    });
+                    html += '</div>';
+                });
+            }
+            html += '</div>';
+            visContent.innerHTML = html;
+        }
+
+        async function animateAddRow() {
+            isAnimating = true;
+            nextBtn.disabled = true;
+            const container = visContent.querySelector('.list-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'list-row empty-list-row slide-in-row';
+            newRow.innerHTML = `[ ] (新科目 ${state.subjects[state.i]})`;
+            container.appendChild(newRow);
+            await sleep(600);
+            state.marks.push([]);
+            renderVisualization();
+            isAnimating = false;
+            if (!isAutoPlaying) nextBtn.disabled = false;
+        }
+
+        async function animateAddMark() {
+            isAnimating = true;
+            nextBtn.disabled = true;
+            const markVarEl = document.getElementById('var-mark');
+            const startRect = markVarEl.getBoundingClientRect();
+            markChip.textContent = state.randomMark;
+            markChip.style.left = `${startRect.left}px`;
+            markChip.style.top = `${startRect.top}px`;
+            markChip.style.opacity = '1';
+            await sleep(100);
+            const rowEl = document.getElementById(`row-${state.i}`);
+            const lastCell = rowEl.querySelector('.list-cell:last-child');
+            let endRect;
+            if (lastCell) {
+                endRect = lastCell.getBoundingClientRect();
+                markChip.style.left = `${endRect.right + 5}px`;
+                markChip.style.top = `${endRect.top}px`;
+            } else {
+                endRect = rowEl.querySelector('.row-label').getBoundingClientRect();
+                markChip.style.left = `${endRect.right + 5}px`;
+                markChip.style.top = `${endRect.top}px`;
+            }
+            await sleep(600);
+            markChip.style.opacity = '0';
+            state.marks[state.i].push(state.randomMark);
+            renderVisualization();
+            isAnimating = false;
+            if (!isAutoPlaying) nextBtn.disabled = false;
+        }
+
+        function stopAutoPlay() {
+            if (autoPlayTimer) clearTimeout(autoPlayTimer);
+            isAutoPlaying = false;
+            autoPlayBtn.textContent = '自動播放';
+            autoPlayBtn.classList.remove('paused');
+            if (state.step < 7) {
+                nextBtn.disabled = false;
+            }
+        }
+
+        function reset() {
+            stopAutoPlay();
+            state.step = -1; state.i = -1; state.j = -1; state.randomMark = null; state.marks = [];
+            highlightLine(-1);
+            explanationEl.textContent = '點擊「下一步」開始執行程式碼。';
+            varI.textContent = '-'; varJ.textContent = '-'; varMark.textContent = '-';
+            visContent.innerHTML = '';
+            nextBtn.disabled = false;
+            autoPlayBtn.disabled = false;
+            renderVisualization();
+        }
+
+        async function nextStep() {
+            if (isAnimating || state.step >= 7) return;
+            state.step++;
+
+            switch (state.step) {
+                case 0:
+                    highlightLine(0);
+                    explanationEl.innerHTML = "<b>第 1 步:</b> <code>import random</code><br>匯入 Python 的 `random` 函式庫，用以產生隨機數字。";
+                    break;
+                case 1:
+                    highlightLine(1);
+                    explanationEl.innerHTML = "<b>第 2 步:</b> <code>marks_3a = []</code><br>初始化一個名為 `marks_3a` 的空列表。它現在是一個空的容器。";
+                    renderVisualization();
+                    break;
+                case 2:
+                    state.i++;
+                    highlightLine(2);
+                    varI.textContent = state.i;
+                    explanationEl.innerHTML = `<b>外層迴圈:</b> <code>for i in range(0,4)</code><br>開始遍歷 4 個科目。目前 <code>i = ${state.i}</code> (${state.subjects[state.i]})。`;
+                    break;
+                case 3:
+                    highlightLine(3);
+                    explanationEl.innerHTML = `<b>新增科目列表:</b> <code>marks_3a = marks_3a+[[]]</code><br>請看一個代表新科目 (${state.subjects[state.i]}) 的空列表如何被加入到主列表中。`;
+                    await animateAddRow();
+                    break;
+                case 4:
+                    state.j++;
+                    highlightLine(4);
+                    varJ.textContent = state.j;
+                    explanationEl.innerHTML = `<b>內層迴圈:</b> <code>for j in range(0,8)</code><br>為科目 ${state.subjects[state.i]} 開始遍歷 8 位學生。目前 <code>j = ${state.j}</code>。`;
+                    renderVisualization();
+                    break;
+                case 5:
+                    highlightLine(5);
+                    state.randomMark = Math.floor(Math.random() * 101);
+                    varMark.textContent = state.randomMark;
+                    explanationEl.innerHTML = `<b>產生隨機分數:</b> <code>random.randint(0, 100)</code><br>為學生 ${state.j + 1} 產生一個隨機分數: ${state.randomMark}。`;
+                    break;
+                case 6:
+                    highlightLine(6);
+                    explanationEl.innerHTML = `<b>儲存分數:</b> <code>marks_3a[i]=marks_3a[i]+[random_mark]</code><br>現在，觀察分數 ${state.randomMark} 如何移動到它在列表中的位置。`;
+                    await animateAddMark();
+                    varMark.textContent = '-';
+                    break;
+            }
+
+            if (state.step === 6) {
+                if (state.j < state.totalStudents - 1) {
+                    state.step = 3;
+                } else {
+                    if (state.i < state.subjects.length - 1) {
+                        state.step = 1;
+                        state.j = -1;
+                        varJ.textContent = '-';
+                    } else {
+                        state.step = 7;
+                    }
+                }
+            }
+            
+            if (state.step === 7) {
+                highlightLine(-1);
+                explanationEl.innerHTML = "<b>執行完畢！</b><br>所有科目的所有學生分數都已成功產生並儲存在 `marks_3a` 這個二維列表中。";
+                nextBtn.disabled = true;
+                autoPlayBtn.disabled = true;
+                stopAutoPlay();
+            }
+        }
+        
+        async function autoPlayLoop() {
+            if (!isAutoPlaying || state.step >= 7) {
+                stopAutoPlay();
+                return;
+            }
+            await nextStep();
+            autoPlayTimer = setTimeout(autoPlayLoop, AUTO_PLAY_DELAY);
+        }
+
+        function toggleAutoPlay() {
+            isAutoPlaying = !isAutoPlaying;
+            if (isAutoPlaying) {
+                autoPlayBtn.textContent = '暫停';
+                autoPlayBtn.classList.add('paused');
+                nextBtn.disabled = true;
+                autoPlayLoop();
+            } else {
+                stopAutoPlay();
+            }
+        }
+
+        nextBtn.addEventListener('click', nextStep);
+        autoPlayBtn.addEventListener('click', toggleAutoPlay);
+        resetBtn.addEventListener('click', reset);
+        reset();
+    </script>
+</body>
+</html>
