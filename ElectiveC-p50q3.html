@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>演算法選擇題</title>
+<style>
+    body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        background-color: #fdfaf2;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+    .container {
+        max-width: 800px;
+        width: 100%;
+        background-color: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border: 1px solid #eee;
+    }
+    h1, h2 {
+        color: #c0392b;
+        border-bottom: 2px solid #f0e6d2;
+        padding-bottom: 10px;
+    }
+    p {
+        margin-bottom: 15px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 0.9em;
+    }
+    th, td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    td.subject-header {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    .algorithm-box {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1.1em;
+    }
+    .algorithm-line {
+        margin-bottom: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    /* 新增的縮排樣式 */
+    .indented {
+        padding-left: 2.5em; /* 使用 em 單位，讓縮排隨字體大小縮放 */
+    }
+    select {
+        padding: 6px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1em;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin: 0 5px;
+        background-color: #fff;
+    }
+    .result-span {
+        margin-left: 10px;
+        font-size: 0.9em;
+        flex-basis: 100%;
+        margin-top: 5px;
+    }
+    .correct-icon, .incorrect-icon {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+    .correct-icon { color: #27ae60; }
+    .incorrect-icon { color: #c0392b; }
+    .explanation {
+        color: #555;
+        background-color: #f0f0f0;
+        padding: 3px 8px;
+        border-radius: 4px;
+        margin-left: 5px;
+        display: inline-block;
+    }
+    #final-result {
+        text-align: center;
+        font-size: 1.3em;
+        margin-top: 30px;
+        padding: 15px;
+        border-radius: 5px;
+    }
+    .final-success-message {
+        background-color: #e8f8ef;
+        border: 1px solid #2ecc71;
+        color: #27ae60;
+        font-weight: bold;
+    }
+    @media (max-width: 600px) {
+        body { padding: 10px; }
+        .container { padding: 15px; }
+        .algorithm-box { font-size: 0.9em; }
+        .algorithm-line { flex-direction: column; align-items: flex-start; }
+        .result-span { margin-left: 0; }
+        .indented { padding-left: 1.5em; } /* 在手機上稍微減少縮排 */
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>演算法選擇題挑戰</h1>
+    <p>陳老師以二維陣列 S1A_score 儲存不同科目的分數。每一列儲存了某個科目的所有學生成績，而每一欄則儲存了某學生的所有科目成績。陣列項目 S1A_score[i, j] 儲存對應的分數，如下所示：</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2">學科 (i)</th>
+                <th colspan="7">學號 (j)</th>
+            </tr>
+            <tr>
+                <th colspan="2"></th>
+                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td rowspan="4" class="subject-header">學科</td><td>中文科 (1)</td><td>82</td><td>65</td><td>77</td><td>81</td><td>49</td><td>71</td><td>69</td></tr>
+            <tr><td>英文科 (2)</td><td>78</td><td>75</td><td>76</td><td>71</td><td>90</td><td>53</td><td>72</td></tr>
+            <tr><td>數學科 (3)</td><td>64</td><td>77</td><td>73</td><td>67</td><td>63</td><td>81</td><td>61</td></tr>
+            <tr><td>音樂科 (4)</td><td>79</td><td>80</td><td>66</td><td>65</td><td>88</td><td>74</td><td>65</td></tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2>(a) 找出 3 號學生所有學科的平均分數</h2>
+    <div class="algorithm-box">
+        <div class="algorithm-line"><code>average3 ← 0</code></div>
+        <div class="algorithm-line">
+            <code>設 k 由</code>
+            <select id="a1" onchange="checkAnswer('a1')">
+                <option value="">?</option><option value="1">1</option><option value="3">3</option><option value="4">4</option>
+            </select>
+            <code>至</code>
+            <select id="a2" onchange="checkAnswer('a2')">
+                <option value="">?</option><option value="3">3</option><option value="4">4</option><option value="7">7</option>
+            </select>
+            <span id="result-a1-a2" class="result-span"></span>
+        </div>
+        <div class="algorithm-line indented">
+            <code>average3 ←</code>
+            <select id="a3" onchange="checkAnswer('a3')">
+                <option value="">請選擇...</option>
+                <option value="average3 + S1A_score[k,3]">average3 + S1A_score[k,3]</option>
+                <option value="average3 + S1A_score[3,k]">average3 + S1A_score[3,k]</option>
+                <option value="S1A_score[k,3]">S1A_score[k,3]</option>
+            </select>
+            <span id="result-a3" class="result-span"></span>
+        </div>
+        <div class="algorithm-line">
+            <code>average3 ←</code>
+            <select id="a4" onchange="checkAnswer('a4')">
+                <option value="">請選擇...</option><option value="average3 / 3">average3 / 3</option><option value="average3 / 4">average3 / 4</option><option value="average3 / 7">average3 / 7</option>
+            </select>
+            <span id="result-a4" class="result-span"></span>
+        </div>
+        <div class="algorithm-line"><code>輸出 average3</code></div>
+    </div>
+
+    <hr>
+
+    <h2>(b) 找出該班別的音樂科平均分數</h2>
+    <div class="algorithm-box">
+        <div class="algorithm-line"><code>average_music ← 0</code></div>
+        <div class="algorithm-line">
+            <code>設 k 由</code>
+            <select id="b1" onchange="checkAnswer('b1')">
+                <option value="">?</option><option value="1">1</option><option value="4">4</option><option value="7">7</option>
+            </select>
+            <code>至</code>
+            <select id="b2" onchange="checkAnswer('b2')">
+                <option value="">?</option><option value="1">1</option><option value="4">4</option><option value="7">7</option>
+            </select>
+            <span id="result-b1-b2" class="result-span"></span>
+        </div>
+        <div class="algorithm-line indented">
+            <code>average_music ←</code>
+            <select id="b3" onchange="checkAnswer('b3')">
+                <option value="">請選擇...</option>
+                <option value="average_music + S1A_score[k,4]">average_music + S1A_score[k,4]</option>
+                <option value="average_music + S1A_score[4,k]">average_music + S1A_score[4,k]</option>
+                <option value="S1A_score[4,k]">S1A_score[4,k]</option>
+            </select>
+            <span id="result-b3" class="result-span"></span>
+        </div>
+        <div class="algorithm-line">
+            <code>average_music ←</code>
+            <select id="b4" onchange="checkAnswer('b4')">
+                <option value="">請選擇...</option><option value="average_music / 4">average_music / 4</option><option value="average_music / 7">average_music / 7</option>
+            </select>
+            <span id="result-b4" class="result-span"></span>
+        </div>
+        <div class="algorithm-line"><code>輸出 average_music</code></div>
+    </div>
+
+    <div id="final-result"></div>
+</div>
+
+<script>
+    const solutions = {
+        a1: { answer: '1', explanation: '為了遍歷3號學生的所有科目，我們需要迭代陣列的「列」。科目的列索引 i 是從 1（中文）到 4（音樂），所以迴圈應從 1 開始。' },
+        a2: { answer: '4', explanation: '迴圈需要包含所有四個科目，因此結束值應為最後一科（音樂）的列索引 4。' },
+        a3: { answer: 'average3 + S1A_score[k,3]', explanation: '在迴圈中，我們將每一科的分數累加到總分變數中。`k` 代表當前的科目索引（變動的列），而 `3` 是固定的學生索引（固定的欄）。' },
+        a4: { answer: 'average3 / 4', explanation: '計算完總分後，必須除以科目的總數（共 4 科）才能得到正確的平均分數。' },
+        b1: { answer: '1', explanation: '為了計算音樂科的班級平均，我們需要遍歷所有學生。學生的欄索引 j 是從 1 到 7，所以迴圈應從 1 開始。' },
+        b2: { answer: '7', explanation: '迴圈需要包含所有七位學生，因此結束值應為最後一位學生的欄索引 7。' },
+        b3: { answer: 'average_music + S1A_score[4,k]', explanation: '在迴圈中，我們將每位學生的音樂分數累加到總分變數中。`4` 是固定的音樂科索引（固定的列），而 `k` 代表當前的學生索引（變動的欄）。' },
+        b4: { answer: 'average_music / 7', explanation: '計算完音樂科的總分後，必須除以學生的總數（共 7 人）才能得到該科的班級平均分數。' }
+    };
+
+    const commutativeAnswers = {
+        a3: ['average3+S1A_score[k,3]', 'S1A_score[k,3]+average3'],
+        b3: ['average_music+S1A_score[4,k]', 'S1A_score[4,k]+average_music']
+    };
+
+    function normalize(str) {
+        return str.replace(/\s+/g, '');
+    }
+
+    function checkAnswer(id) {
+        const selectElement = document.getElementById(id);
+        const selectedValue = normalize(selectElement.value);
+        
+        if (id === 'a1' || id === 'a2') {
+            const val1 = document.getElementById('a1').value;
+            const val2 = document.getElementById('a2').value;
+            const resultElement = document.getElementById('result-a1-a2');
+            if (val1 && val2) {
+                if (val1 === solutions.a1.answer && val2 === solutions.a2.answer) {
+                    resultElement.innerHTML = `<span class="correct-icon">✅ 正確！</span><span class="explanation">${solutions.a1.explanation} ${solutions.a2.explanation}</span>`;
+                } else {
+                    resultElement.innerHTML = `<span class="incorrect-icon">❌ 錯誤。</span><span class="explanation">請檢查迴圈範圍。我們需要遍歷所有科目（列 1 到 4）來計算一位學生的平均分。</span>`;
+                }
+            }
+        } else if (id === 'b1' || id === 'b2') {
+            const val1 = document.getElementById('b1').value;
+            const val2 = document.getElementById('b2').value;
+            const resultElement = document.getElementById('result-b1-b2');
+            if (val1 && val2) {
+                if (val1 === solutions.b1.answer && val2 === solutions.b2.answer) {
+                    resultElement.innerHTML = `<span class="correct-icon">✅ 正確！</span><span class="explanation">${solutions.b1.explanation} ${solutions.b2.explanation}</span>`;
+                } else {
+                    resultElement.innerHTML = `<span class="incorrect-icon">❌ 錯誤。</span><span class="explanation">請檢查迴圈範圍。我們需要遍歷所有學生（欄 1 到 7）來計算一科的平均分。</span>`;
+                }
+            }
+        } else {
+            const resultElement = document.getElementById('result-' + id);
+            const solution = solutions[id];
+            
+            if (selectedValue === "") {
+                resultElement.innerHTML = "";
+                checkCompletion();
+                return;
+            }
+
+            let isCorrect = false;
+            if (commutativeAnswers[id]) {
+                isCorrect = commutativeAnswers[id].map(normalize).includes(selectedValue);
+            } else {
+                isCorrect = (selectedValue === solution.answer);
+            }
+
+            if (isCorrect) {
+                resultElement.innerHTML = `<span class="correct-icon">✅ 正確！</span><span class="explanation">${solution.explanation}</span>`;
+            } else {
+                resultElement.innerHTML = `<span class="incorrect-icon">❌ 錯誤。</span><span class="explanation">${solution.explanation}</span>`;
+            }
+        }
+        checkCompletion();
+    }
+
+    function checkCompletion() {
+        const ids = ['a1-a2', 'a3', 'a4', 'b1-b2', 'b3', 'b4'];
+        let allCorrect = true;
+        for (const id of ids) {
+            const resultElement = document.getElementById('result-' + id);
+            if (!resultElement || !resultElement.innerHTML.includes('✅')) {
+                allCorrect = false;
+                break;
+            }
+        }
+        const finalResult = document.getElementById('final-result');
+        if (allCorrect) {
+            finalResult.innerHTML = `<p class="final-success-message">🎉 恭喜！您已成功完成所有挑戰！ 🎉</p>`;
+        } else {
+            finalResult.innerHTML = '';
+        }
+    }
+</script>
+
+</body>
+</html>
