@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尋找最小公倍數 (LCM) 互動指南</title>
+    <style>
+        :root {
+            --primary-color: #005a9c;
+            --secondary-color: #f0f8ff;
+            --accent-color: #ffc107;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 15px;
+        }
+        main {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 5px solid var(--accent-color);
+        }
+        h1, h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        h1 {
+            color: #fff;
+            font-size: 2em;
+            margin-bottom: 0;
+        }
+        section {
+            padding: 25px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        section:last-child {
+            border-bottom: none;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        button, .button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            display: inline-block;
+            text-align: center;
+            vertical-align: middle;
+        }
+        button:hover, .button:hover {
+            background-color: #004170;
+        }
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+        #calculation-steps {
+            margin-top: 20px;
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 100px;
+            max-height: 350px;
+            overflow-y: auto;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.95em;
+            line-height: 1.7;
+        }
+        .step.fail { color: #721c24; }
+        .step.success { color: #155724; font-weight: bold; }
+        .step-details {
+            list-style-type: none;
+            padding: 10px;
+            margin: 5px 0 10px 0;
+            background-color: #e9f7ec;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+        }
+        #final-result {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+        }
+        #final-result.success { background-color: var(--success-color); color: white; }
+        #final-result.error { background-color: var(--error-color); color: white; }
+
+        .button.secondary { background-color: #6c757d; }
+        .button.secondary:hover { background-color: #5a6268; }
+        .button.autoplay { background-color: #17a2b8; }
+        .button.autoplay:hover { background-color: #138496; }
+
+        #interactive-code-container {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1em;
+        }
+        .code-line { white-space: pre; line-height: 2.2; }
+        .code-select {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #ffffff;
+            color: #1f2937;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 0.95em;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            vertical-align: middle;
+        }
+        .code-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(0, 90, 156, 0.3);
+        }
+        .code-select.correct { border: 2px solid var(--success-color); }
+        .code-select.incorrect { border: 2px solid var(--error-color); }
+        .explanation-box {
+            display: none; padding: 10px; margin-top: 8px; margin-left: 20px; border-radius: 5px;
+            font-family: sans-serif; font-size: 0.9em; line-height: 1.5;
+        }
+        .explanation-correct { background-color: #e9f7ec; color: #155724; border-left: 4px solid var(--success-color); }
+        .explanation-incorrect { background-color: #f8d7da; color: #721c24; border-left: 4px solid var(--error-color); }
+        .example-block {
+            background-color: var(--secondary-color); border-left: 5px solid var(--accent-color);
+            padding: 15px; margin-top: 15px; border-radius: 5px;
+        }
+        .example-block ul { padding-left: 20px; }
+        .example-block strong { color: var(--primary-color); }
+    </style>
+</head>
+<body>
+
+    <main>
+        <header>
+            <h1>尋找最小公倍數 (LCM) 互動指南</h1>
+        </header>
+
+        <section>
+            <h2>1. 什麼是最小公倍數 (LCM)？</h2>
+            <p>最小公倍數（Least Common Multiple, LCM）指的是能夠<strong>同時</strong>被兩個或多個整數整除的<strong>最小正整數</strong>。換句話說，它是在兩組數的「倍數」清單中，第一個出現的相同數字。</p>
+
+            <div class="example-block">
+                <h4>範例 1：基本概念</h4>
+                <p>讓我們看看數字 <strong>4</strong> 和 <strong>6</strong>：</p>
+                <ul>
+                    <li>4 的倍數有：4, 8, <strong style="color:red;">12</strong>, 16, 20, <strong style="color:red;">24</strong>, ...</li>
+                    <li>6 的倍數有：6, <strong style="color:red;">12</strong>, 18, <strong style="color:red;">24</strong>, 30, ...</li>
+                </ul>
+                <p>它們共同的倍數（公倍數）有 12, 24 等等。其中最小的一個就是 <strong>12</strong>，所以 4 和 6 的 LCM 就是 12。</p>
+            </div>
+
+            <div class="example-block">
+                <h4>範例 2：生活應用（公車排班）</h4>
+                <p>想像一下，有兩班公車從同一個車站出發：</p>
+                <ul>
+                    <li><strong>A 路線</strong>：每 <strong>8</strong> 分鐘一班車。</li>
+                    <li><strong>B 路線</strong>：每 <strong>10</strong> 分鐘一班車。</li>
+                </ul>
+                <p>如果兩班車在早上 8:00 整同時發車，下一次它們會在什麼時候再次同時發車呢？這就需要計算 8 和 10 的 LCM。</p>
+                <ul>
+                    <li>8 的倍數：8, 16, 24, 32, <strong style="color:red;">40</strong>, 48, ...</li>
+                    <li>10 的倍數：10, 20, 30, <strong style="color:red;">40</strong>, 50, ...</li>
+                </ul>
+                <p>它們的 LCM 是 <strong>40</strong>。所以，兩班公車將在 40 分鐘後，也就是早上 8:40 再次同時發車。</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>2. 找出 LCM 的算法</h2>
+            <p>電腦解決這個問題的方法很直接：從兩數中較大者開始，逐一向上檢查每個數字，直到找到第一個能同時被兩數整除的數為止。</p>
+        </section>
+
+        <section>
+            <h2>3. LCM 分步互動計算機</h2>
+            <p>輸入數字後，您可以點擊「下一步」手動操作，或點擊「自動播放」觀看整個演算過程。</p>
+            <div class="input-group">
+                <label for="num1">第一個數字</label>
+                <input type="number" id="num1" value="4" min="1">
+            </div>
+            <div class="input-group">
+                <label for="num2">第二個數字</label>
+                <input type="number" id="num2" value="6" min="1">
+            </div>
+            <div id="calculator-controls">
+                <button id="start-btn" onclick="startCalculation()">開始計算</button>
+                <button id="next-step-btn" onclick="nextStep()" style="display:none;">下一步 &rarr;</button>
+                <button id="autoplay-btn" onclick="toggleAutoplay()" style="display:none;" class="button autoplay">自動播放 ⏯️</button>
+                <button id="reset-btn" onclick="resetCalculator()" style="display:none;" class="button secondary">重置</button>
+            </div>
+            <div id="final-result"></div>
+            <div id="calculation-steps" style="display:none;"></div>
+        </section>
+
+        <section>
+            <h2>4. 互動式程式碼練習</h2>
+            <p>請從下拉選單中選擇正確的程式碼。系統會立即核對您的答案並提供解說。</p>
+            <div id="interactive-code-container">
+                <div class="code-line">num1 = int(input("..."))</div>
+                <div class="code-line">num2 = int(input("..."))</div>
+                <div class="code-line">if <select id="blank1" class="code-select" onchange="checkAndExplain(this)">
+                        <option value="" disabled selected>-- 選擇條件 --</option>
+                        <option value="num1 > num2">num1 > num2</option>
+                        <option value="num1 == num2">num1 == num2</option>
+                        <option value="lcm == num1">lcm == num1</option>
+                    </select>:</div>
+                <div class="explanation-box" id="explanation-blank1"></div>
+                <div class="code-line">    lcm = num1</div>
+                <div class="code-line">else:</div>
+                <div class="code-line">    lcm = num2</div>
+                <div class="code-line">found = False</div>
+                <div class="code-line">while <select id="blank2" class="code-select" onchange="checkAndExplain(this)">
+                        <option value="" disabled selected>-- 選擇條件 --</option>
+                        <option value="found == True">found == True</option>
+                        <option value="not found">not found</option>
+                        <option value="found != False">found != False</option>
+                    </select>:</div>
+                <div class="explanation-box" id="explanation-blank2"></div>
+                <div class="code-line">    if <select id="blank3" class="code-select" onchange="checkAndExplain(this)">
+                        <option value="" disabled selected>-- 選擇條件 --</option>
+                        <option value="lcm % num1 == 0 or lcm % num2 == 0">lcm % num1 == 0 or lcm % num2 == 0</option>
+                        <option value="lcm / num1 == 0 and lcm / num2 == 0">lcm / num1 == 0 and lcm / num2 == 0</option>
+                        <option value="lcm % num1 == 0 and lcm % num2 == 0">lcm % num1 == 0 and lcm % num2 == 0</option>
+                    </select>:</div>
+                <div class="explanation-box" id="explanation-blank3"></div>
+                <div class="code-line">        found = True</div>
+                <div class="code-line">    else:</div>
+                <div class="code-line">        <select id="blank4" class="code-select" onchange="checkAndExplain(this)">
+                        <option value="" disabled selected>-- 選擇動作 --</option>
+                        <option value="lcm += 1">lcm += 1</option>
+                        <option value="lcm -= 1">lcm -= 1</option>
+                        <option value="break">break</option>
+                    </select></div>
+                <div class="explanation-box" id="explanation-blank4"></div>
+                <div class="code-line">print("The LCM is", lcm)</div>
+            </div>
+            <div class="action-buttons" style="margin-top: 20px;">
+                <button onclick="resetQuiz()" class="button secondary">重置練習</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- State for Section 3: Interactive Calculator ---
+        let calcState = {
+            num1: 0, num2: 0, currentLcm: 0,
+            found: false, isCalculating: false, iterationCount: 0,
+            autoplayTimer: null
+        };
+
+        function startCalculation() {
+            const num1 = parseInt(document.getElementById('num1').value);
+            const num2 = parseInt(document.getElementById('num2').value);
+            const resultContainer = document.getElementById('final-result');
+            const stepsContainer = document.getElementById('calculation-steps');
+
+            if (isNaN(num1) || isNaN(num2) || num1 <= 0 || num2 <= 0) {
+                resultContainer.textContent = '請輸入兩個大於 0 的正整數。';
+                resultContainer.className = 'error';
+                return;
+            }
+
+            resetCalculator(); // Ensure clean state before starting
+
+            calcState = {
+                ...calcState,
+                num1, num2,
+                currentLcm: Math.max(num1, num2),
+                isCalculating: true
+            };
+
+            stepsContainer.style.display = 'block';
+            stepsContainer.innerHTML = `<div>準備計算 ${num1} 和 ${num2} 的 LCM...</div><div>從兩數中較大的 <strong>${calcState.currentLcm}</strong> 開始。</div><hr>`;
+            resultContainer.textContent = '計算進行中...';
+            
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('next-step-btn').style.display = 'inline-block';
+            document.getElementById('autoplay-btn').style.display = 'inline-block';
+            document.getElementById('reset-btn').style.display = 'inline-block';
+            document.getElementById('num1').disabled = true;
+            document.getElementById('num2').disabled = true;
+        }
+
+        function nextStep() {
+            if (calcState.found || !calcState.isCalculating) return;
+
+            const { num1, num2 } = calcState;
+            let { currentLcm } = calcState;
+            const stepsContainer = document.getElementById('calculation-steps');
+            const resultContainer = document.getElementById('final-result');
+            let stepsHtml = '';
+
+            if (calcState.iterationCount > 1000) {
+                stepsHtml = `<div class="step fail">計算已達上限，請嘗試較小的數字。</div>`;
+                resultContainer.textContent = '計算量過大，請重置。';
+                resultContainer.className = 'error';
+                stopAutoplay();
+                document.getElementById('next-step-btn').disabled = true;
+                calcState.isCalculating = false;
+                stepsContainer.innerHTML += stepsHtml;
+                return;
+            }
+
+            if (currentLcm % num1 === 0 && currentLcm % num2 === 0) {
+                calcState.found = true;
+                calcState.isCalculating = false;
+                stepsHtml = `<div class="step success">🎉 找到了！ <strong>${currentLcm}</strong> 是我們要找的數字！</div>`;
+                stepsHtml += `<ul class="step-details">
+                                <li>${currentLcm} ÷ ${num1} = ${currentLcm / num1} (可整除 ✅)</li>
+                                <li>${currentLcm} ÷ ${num2} = ${currentLcm / num2} (可整除 ✅)</li>
+                              </ul>`;
+                resultContainer.textContent = `${num1} 和 ${num2} 的最小公倍數是 ${currentLcm}`;
+                resultContainer.className = 'success';
+                stopAutoplay();
+                document.getElementById('next-step-btn').style.display = 'none';
+                document.getElementById('autoplay-btn').style.display = 'none';
+            } else {
+                const requirementText = `目標是同時被 <strong>${num1} 和 ${num2}</strong> 整除。`;
+                const check1 = currentLcm % num1 === 0;
+                const check2 = currentLcm % num2 === 0;
+                let reason = '';
+
+                if (!check1 && !check2) {
+                    reason = `但這個數既不能被 ${num1} (餘數 ${currentLcm % num1})，也不能被 ${num2} (餘數 ${currentLcm % num2}) 整除。`;
+                } else if (!check1) {
+                    reason = `雖然它能被 ${num2} 整除，但不能被 ${num1} 整除 (餘數 ${currentLcm % num1})。`;
+                } else {
+                    reason = `雖然它能被 ${num1} 整除，但不能被 ${num2} 整除 (餘數 ${currentLcm % num2})。`;
+                }
+                
+                stepsHtml = `<div class="step fail">❌ 正在嘗試: <strong>${currentLcm}</strong>. 不符合。<br><div style="padding-left: 20px;">${requirementText}<br>${reason}</div></div>`;
+                calcState.currentLcm++;
+                calcState.iterationCount++;
+            }
+            
+            stepsContainer.innerHTML += stepsHtml;
+            stepsContainer.scrollTop = stepsContainer.scrollHeight;
+        }
+
+        function toggleAutoplay() {
+            if (calcState.autoplayTimer) {
+                stopAutoplay();
+            } else {
+                startAutoplay();
+            }
+        }
+
+        function startAutoplay() {
+            const autoplayBtn = document.getElementById('autoplay-btn');
+            autoplayBtn.textContent = '暫停 ⏸️';
+            document.getElementById('next-step-btn').disabled = true;
+
+            nextStep(); 
+            if (calcState.isCalculating) {
+                calcState.autoplayTimer = setInterval(nextStep, 1200);
+            }
+        }
+
+        function stopAutoplay() {
+            if (calcState.autoplayTimer) {
+                clearInterval(calcState.autoplayTimer);
+                calcState.autoplayTimer = null;
+                const autoplayBtn = document.getElementById('autoplay-btn');
+                if(autoplayBtn) autoplayBtn.textContent = '自動播放 ⏯️';
+                
+                const nextBtn = document.getElementById('next-step-btn');
+                if(nextBtn) nextBtn.disabled = false;
+            }
+        }
+
+        function resetCalculator() {
+            stopAutoplay();
+            calcState = {
+                num1: 0, num2: 0, currentLcm: 0,
+                found: false, isCalculating: false, iterationCount: 0,
+                autoplayTimer: null
+            };
+            
+            document.getElementById('calculation-steps').style.display = 'none';
+            document.getElementById('calculation-steps').innerHTML = '';
+            
+            const resultContainer = document.getElementById('final-result');
+            resultContainer.textContent = '輸入數字後，點擊「開始計算」。';
+            resultContainer.className = '';
+
+            document.getElementById('start-btn').style.display = 'inline-block';
+            document.getElementById('next-step-btn').style.display = 'none';
+            document.getElementById('autoplay-btn').style.display = 'none';
+            document.getElementById('reset-btn').style.display = 'none';
+            document.getElementById('next-step-btn').disabled = false;
+
+            document.getElementById('num1').disabled = false;
+            document.getElementById('num2').disabled = false;
+        }
+        
+        // --- Script for Section 4: Interactive Code Challenge ---
+        const explanations = {
+            blank1: { correct: "✅ **正確！** 我們需要從兩個數字中較大的那一個開始尋找，因為 LCM 不可能比它們小。", incorrect: { "num1 == num2": "❌ **不完整。** 這只處理了兩數相等的情況。", "lcm == num1": "❌ **邏輯錯誤。** 在這個位置，`lcm` 這個變數還沒有被賦值。" } },
+            blank2: { correct: "✅ **正確！** `while not found` 的意思是「當 found 是 False 時，就繼續循環」，確保我們在找到答案前會一直檢查。", incorrect: { "found == True": "❌ **邏輯相反。** 這會導致循環從一開始就不會執行。", "found != False": "❌ **邏輯相反。** 這和 `found == True` 的效果一樣。" } },
+            blank3: { correct: "✅ **正確！** 我們需要找到一個能「同時」被 `num1` 和 `num2` 整除的數。`and` 關鍵字確保兩個條件都必須成立。", incorrect: { "lcm % num1 == 0 or lcm % num2 == 0": "❌ **邏輯錯誤。** `or` 表示只要滿足其中一個條件即可，這會找到第一個倍數，而不是「公」倍數。", "lcm / num1 == 0 and lcm / num2 == 0": "❌ **運算子錯誤。** `/` 是除法，不是取餘數。" } },
+            blank4: { correct: "✅ **正確！** 如果當前的 `lcm` 不是答案，我們就需要檢查下一個數字。`lcm += 1` 就是將 `lcm` 的值加 1。", incorrect: { "lcm -= 1": "❌ **方向錯誤。** 這會讓數字越來越小，永遠找不到答案。", "break": "❌ **邏輯錯誤。** `break` 會直接跳出循環，導致程式提前結束。" } }
+        };
+        const correctAnswers = { blank1: "num1 > num2", blank2: "not found", blank3: "lcm % num1 == 0 and lcm % num2 == 0", blank4: "lcm += 1" };
+
+        function checkAndExplain(selectElement) {
+            const selectId = selectElement.id;
+            const userAnswer = selectElement.value;
+            const explanationBox = document.getElementById('explanation-' + selectId);
+            explanationBox.style.display = 'block';
+            if (userAnswer === correctAnswers[selectId]) {
+                selectElement.className = 'code-select correct';
+                explanationBox.className = 'explanation-box explanation-correct';
+                explanationBox.innerHTML = explanations[selectId].correct;
+            } else {
+                selectElement.className = 'code-select incorrect';
+                explanationBox.className = 'explanation-box explanation-incorrect';
+                explanationBox.innerHTML = explanations[selectId].incorrect[userAnswer] || "❌ **請再想想看！**";
+            }
+        }
+        function resetQuiz() {
+            document.querySelectorAll('.code-select').forEach(s => { s.selectedIndex = 0; s.className = 'code-select'; });
+            document.querySelectorAll('.explanation-box').forEach(b => { b.style.display = 'none'; b.innerHTML = ''; });
+        }
+        
+        window.onload = () => {
+             resetCalculator();
+             resetQuiz();
+        };
+    </script>
+</body>
+</html>
