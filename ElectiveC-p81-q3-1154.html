@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>繪製直角三角形：測驗與動畫</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f0f4f8;
+            --text-color: #333;
+            --code-bg: #f4f4f8;
+            --code-text: #3a3a3a;
+            --highlight-bg: #ffc;
+            --highlight-text: #333;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --border-radius: 8px;
+            --font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+        }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 850px;
+            background-color: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .controls-wrapper { margin-top: 20px; }
+        .quiz-controls { text-align: center; }
+        .animation-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px 20px;
+            align-items: center;
+        }
+        .control-group { min-width: 200px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+        .value-display { font-weight: bold; color: var(--primary-color); }
+        .buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        button {
+            padding: 10px 15px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, opacity 0.3s;
+            flex-grow: 1;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; opacity: 0.7; }
+        .main-content {
+            margin-top: 25px;
+            border-top: 1px solid #ddd;
+            padding-top: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .code-container, .output-container { flex: 1; min-width: 300px; }
+        h2 { margin-top: 0; color: #555; font-size: 1.2em; }
+        .code-block {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre;
+            font-size: 16px;
+            line-height: 1.8;
+            border: 1px solid #ddd;
+        }
+        .code-line { display: block; padding: 2px 10px; border-radius: 3px; transition: background-color 0.2s; }
+        .indent-1 { padding-left: 3em; }
+        .indent-2 { padding-left: 5em; }
+        .code-line.highlight { background-color: var(--highlight-bg); color: var(--highlight-text); }
+        .code-block input[type="text"] {
+            background-color: #fff;
+            color: var(--text-color);
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            width: 30px;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            /* text-transform: uppercase; <--- THIS LINE IS REMOVED */
+        }
+        .code-block input.incorrect { border-color: var(--incorrect-color); }
+        .code-block input.correct { border-color: var(--correct-color); color: var(--correct-color); font-weight: bold; }
+        .output-box {
+            border: 1px solid #ccc;
+            height: 220px;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2em;
+            overflow-y: auto;
+            background-color: #fdfdfd;
+            white-space: pre;
+            line-height: 1.4;
+            letter-spacing: 2px;
+        }
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-left: 5px solid;
+            border-radius: 5px;
+            font-weight: bold;
+            min-height: 50px;
+        }
+        .status-info { background-color: #e6f2ff; border-left-color: #007bff; }
+        .status-correct { background-color: #e8f5e9; border-left-color: var(--correct-color); }
+        .status-incorrect { background-color: #ffebee; border-left-color: var(--incorrect-color); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>繪製直角三角形：測驗與動畫</h1>
+
+    <div class="controls-wrapper">
+        <!-- Phase 1: Quiz -->
+        <div id="quiz-phase" class="quiz-controls">
+            <button id="check-answer-btn">核對答案</button>
+        </div>
+        <!-- Phase 2: Animation -->
+        <div id="animation-phase" class="hidden">
+            <div class="animation-controls">
+                <div class="control-group">
+                    <label for="h-slider">高度 H: <span id="h-value" class="value-display">5</span></label>
+                    <input type="range" id="h-slider" min="1" max="10" value="5">
+                </div>
+                <div class="control-group">
+                    <label for="speed-slider">動畫速度: <span id="speed-value" class="value-display">中等</span></label>
+                    <input type="range" id="speed-slider" min="50" max="1000" value="500" step="50">
+                </div>
+            </div>
+            <div class="buttons" style="margin-top: 20px;">
+                <button id="start-animation-btn">開始 / 重啟</button>
+                <button id="next-step-btn" disabled>下一步</button>
+                <button id="play-pause-btn" disabled>自動播放</button>
+                <button id="reset-all-btn">返回作答</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="status-box" class="status-box status-info">
+        請根據題目要求，在偽代碼中填入正確的變數或數值。
+    </div>
+
+    <div class="main-content">
+        <div class="code-container">
+            <h2>偽代碼</h2>
+            <div class="code-block">
+<span class="code-line" id="line-0">輸入 H</span>
+<span class="code-line" id="line-1">設 i 由 1 至 <input type="text" id="input-outer" maxlength="1"></span>
+<span class="code-line indent-1" id="line-2">設 j 由 1 至 <input type="text" id="input-inner" maxlength="1"></span>
+<span class="code-line indent-2" id="line-3">輸出 "* "</span>
+<span class="code-line indent-1" id="line-4">輸出 換行符</span>
+<span class="code-line" id="line-5">結束</span>
+            </div>
+        </div>
+        <div class="output-container">
+            <h2 id="output-title">輸出</h2>
+            <div class="output-box" id="output-box"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- DOM Elements ---
+    const quizPhase = document.getElementById('quiz-phase'), animationPhase = document.getElementById('animation-phase');
+    const checkAnswerBtn = document.getElementById('check-answer-btn'), startAnimationBtn = document.getElementById('start-animation-btn');
+    const nextStepBtn = document.getElementById('next-step-btn'), playPauseBtn = document.getElementById('play-pause-btn');
+    const resetAllBtn = document.getElementById('reset-all-btn');
+    const statusBox = document.getElementById('status-box'), outputBox = document.getElementById('output-box');
+    const codeLines = document.querySelectorAll('.code-line');
+    const inputOuter = document.getElementById('input-outer'), inputInner = document.getElementById('input-inner');
+    const hSlider = document.getElementById('h-slider'), speedSlider = document.getElementById('speed-slider');
+    const hValue = document.getElementById('h-value'), speedValue = document.getElementById('speed-value');
+    const outputTitle = document.getElementById('output-title');
+
+    // --- State Variables ---
+    let H, speed, i, j, animationState;
+    let isAutoPlaying = false;
+    let animationTimeout;
+
+    // --- Event Listeners ---
+    checkAnswerBtn.addEventListener('click', checkAnswer);
+    resetAllBtn.addEventListener('click', resetToQuiz);
+    startAnimationBtn.addEventListener('click', startAnimation);
+    nextStepBtn.addEventListener('click', executeStep);
+    playPauseBtn.addEventListener('click', toggleAutoplay);
+    [hSlider, speedSlider].forEach(slider => slider.addEventListener('input', updateSliderValues));
+
+    // --- Core Functions ---
+    function setStatus(message, type = 'info') {
+        statusBox.textContent = message;
+        statusBox.className = 'status-box';
+        statusBox.classList.add(type === 'correct' ? 'status-correct' : type === 'incorrect' ? 'status-incorrect' : 'status-info');
+    }
+
+    function setExecutionStatus(message, type = 'info') {
+        const i_val = (typeof i === 'number') ? i : '-';
+        const j_val = (typeof j === 'number' && animationState !== 'EVALUATE_OUTER') ? j : '-';
+        const prefix = `[i=${i_val}, j=${j_val}] `;
+        setStatus(prefix + message, type);
+    }
+
+    function highlightLine(lineNumber) {
+        codeLines.forEach(line => line.classList.remove('highlight'));
+        if (lineNumber >= 0) document.getElementById(`line-${lineNumber}`).classList.add('highlight');
+    }
+
+    function checkAnswer() {
+        const isCorrectOuter = inputOuter.value.trim().toUpperCase() === 'H';
+        const isCorrectInner = inputInner.value.trim().toLowerCase() === 'i';
+
+        inputOuter.classList.toggle('incorrect', !isCorrectOuter);
+        inputOuter.classList.toggle('correct', isCorrectOuter);
+        inputInner.classList.toggle('incorrect', !isCorrectInner);
+        inputInner.classList.toggle('correct', isCorrectInner);
+
+        if (isCorrectOuter && isCorrectInner) {
+            setStatus('答案正確！外層循環由1到H，內層循環由1到i。現在可以設定高度並開始動畫了！', 'correct');
+            [inputOuter, inputInner].forEach(el => el.disabled = true);
+            quizPhase.classList.add('hidden');
+            animationPhase.classList.remove('hidden');
+            updateSliderValues();
+        } else {
+            setStatus('答案不完全正確。提示：外層循環控制總行數，內層循環控制每行要印出的星號數量。', 'incorrect');
+        }
+    }
+
+    function resetToQuiz() {
+        stopAutoplay();
+        quizPhase.classList.remove('hidden');
+        animationPhase.classList.add('hidden');
+        
+        [inputOuter, inputInner].forEach(el => {
+            el.value = '';
+            el.disabled = false;
+            el.className = '';
+        });
+        
+        outputBox.innerHTML = '';
+        highlightLine(-1);
+        setStatus('請根據題目要求，在偽代碼中填入正確的變數或數值。', 'info');
+        [nextStepBtn, playPauseBtn].forEach(btn => btn.disabled = true);
+    }
+    
+    function updateSliderValues() {
+        H = parseInt(hSlider.value);
+        speed = 1050 - parseInt(speedSlider.value);
+        hValue.textContent = H;
+        outputTitle.textContent = `輸出 (H=${H})`;
+        
+        const speedTextMap = { 1000: '最慢', 750: '慢', 500: '中等', 250: '快', 50: '最快' };
+        speedValue.textContent = Object.entries(speedTextMap).reduce((prev, [val, text]) => 
+            Math.abs(speedSlider.value - val) < Math.abs(speedSlider.value - (Object.keys(speedTextMap).find(k => speedTextMap[k] === prev) || 1000)) ? text : prev, '中等');
+    }
+
+    function startAnimation() {
+        stopAutoplay();
+        updateSliderValues();
+        i = 1; j = 1;
+        animationState = 'START_PROGRAM';
+        outputBox.innerHTML = '';
+        [nextStepBtn, playPauseBtn].forEach(btn => btn.disabled = false);
+        hSlider.disabled = true;
+        executeStep();
+    }
+
+    function executeStep() {
+        if (animationState === 'END_PROGRAM') return;
+
+        switch (animationState) {
+            case 'START_PROGRAM':
+                highlightLine(0);
+                setExecutionStatus(`程式開始。讀取 H=${H}。`);
+                animationState = 'EVALUATE_OUTER';
+                break;
+            case 'EVALUATE_OUTER':
+                highlightLine(1);
+                if (i <= H) {
+                    setExecutionStatus(`外層循環：檢查 i (${i}) <= H (${H})。條件成立。`);
+                    animationState = 'EVALUATE_INNER';
+                    j = 1;
+                } else {
+                    setExecutionStatus(`外層循環：檢查 i (${i}) <= H (${H})。條件不成立。`);
+                    animationState = 'END_PROGRAM';
+                }
+                break;
+            case 'EVALUATE_INNER':
+                highlightLine(2);
+                if (j <= i) {
+                    setExecutionStatus(`內層循環：檢查 j (${j}) <= i (${i})。條件成立。`);
+                    animationState = 'EXECUTE_PRINT';
+                } else {
+                    setExecutionStatus(`內層循環：檢查 j (${j}) <= i (${i})。條件不成立。`);
+                    animationState = 'EXECUTE_NEWLINE';
+                }
+                break;
+            case 'EXECUTE_PRINT':
+                highlightLine(3);
+                setExecutionStatus(`執行：輸出一個 "* "。`);
+                outputBox.innerHTML += '* ';
+                j++;
+                animationState = 'EVALUATE_INNER';
+                break;
+            case 'EXECUTE_NEWLINE':
+                highlightLine(4);
+                setExecutionStatus(`執行：輸出換行符。`);
+                outputBox.innerHTML += '\n';
+                i++;
+                animationState = 'EVALUATE_OUTER';
+                break;
+        }
+        
+        if (animationState === 'END_PROGRAM') {
+            highlightLine(5);
+            setExecutionStatus('程式執行完畢！', 'correct');
+            stopAutoplay();
+            [nextStepBtn, playPauseBtn].forEach(btn => btn.disabled = true);
+            hSlider.disabled = false;
+        }
+    }
+
+    function toggleAutoplay() {
+        if (isAutoPlaying) {
+            stopAutoplay();
+        } else {
+            isAutoPlaying = true;
+            playPauseBtn.textContent = '暫停';
+            nextStepBtn.disabled = true;
+            hSlider.disabled = true;
+            autoPlayStep();
+        }
+    }
+
+    function stopAutoplay() {
+        isAutoPlaying = false;
+        clearTimeout(animationTimeout);
+        playPauseBtn.textContent = '自動播放';
+        if (animationState !== 'END_PROGRAM') {
+            nextStepBtn.disabled = false;
+        }
+    }
+
+    function autoPlayStep() {
+        if (!isAutoPlaying) return;
+        executeStep();
+        if (animationState !== 'END_PROGRAM') {
+            animationTimeout = setTimeout(autoPlayStep, speed);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', resetToQuiz);
+</script>
+
+</body>
+</html>
