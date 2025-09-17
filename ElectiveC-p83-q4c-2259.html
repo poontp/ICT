@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動測驗與動畫：(c) 隨機盤面版</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            color: #4a4a4a;
+            border-bottom: 2px solid #6c5ce7;
+            padding-bottom: 10px;
+        }
+        .content-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .left-panel, .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .grid-container { display: flex; justify-content: center; }
+        .bingo-grid { border-collapse: collapse; margin-bottom: 20px; }
+        .bingo-grid th, .bingo-grid td {
+            border: 1px solid #ccc;
+            width: 45px;
+            height: 45px;
+            text-align: center;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .bingo-grid th { background-color: #f2f2f2; }
+        .cell-true { background-color: #a7e9af; }
+        .cell-false { background-color: #f7baba; }
+        .cell-current {
+            outline: 3px solid #6c5ce7;
+            outline-offset: -3px;
+            box-shadow: 0 0 10px #6c5ce7;
+        }
+        .cell-win { background-color: #fdcb6e !important; }
+        
+        .status-box {
+            background: #eef1f5;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        .code-line { display: block; min-height: 28px; padding-right: 10px; }
+        .animation-code .code-line { transition: background-color 0.3s; border-radius: 3px; }
+        .code-highlight { background-color: #fff4c2; }
+        .indent-0 { padding-left: 10px; }
+        .indent-1 { padding-left: 2.5em; }
+        .indent-2 { padding-left: 5em; }
+
+        .code-block select {
+            font-family: inherit;
+            font-size: inherit;
+            background: #eef1f5;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 2px 4px;
+        }
+        .code-block select.error { border: 2px solid #d63031; }
+        .code-block .short-select { width: 60px; }
+        .code-block .med-select { width: 80px; }
+        .code-block .long-select { width: 260px; }
+
+        .button-group { margin-top: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        button {
+            background-color: #6c5ce7; color: white; border: none;
+            padding: 12px 20px; font-size: 16px; border-radius: 5px;
+            cursor: pointer; transition: background-color 0.3s;
+        }
+        button:hover { background-color: #5849d1; }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+        button.secondary { background-color: #636e72; }
+        button.secondary:hover { background-color: #2d3436; }
+        button.play-pause { background-color: #27ae60; }
+        button.play-pause:hover { background-color: #2ecc71; }
+        button.new-board { background-color: #0984e3; }
+        button.new-board:hover { background-color: #0074c7; }
+
+        #feedback {
+            margin-top: 15px; padding: 10px; border-radius: 5px;
+            font-weight: normal; display: none;
+        }
+        #feedback.success { background-color: #d4edda; color: #155724; display: block; font-weight: bold; }
+        #feedback.error { background-color: #f8d7da; color: #721c24; display: block; }
+        #feedback ul { margin-top: 10px; margin-bottom: 0; padding-left: 20px; }
+        #feedback li { margin-bottom: 5px; }
+
+        .hidden { display: none !important; }
+        
+        #step-description {
+            margin-top: 20px; padding: 15px; background-color: #e9ecef;
+            border-radius: 5px; border-left: 5px solid #6c5ce7;
+            font-weight: bold; min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Section 1: User Input -->
+    <div id="input-section">
+        <h2>步驟 1：完成 Python 程式碼</h2>
+        <p>請完成以下 Python 程式碼，以檢查兩條**對角線**是否已連線。這段邏輯必須對**任何**盤面都有效。</p>
+        <div id="answer-form" class="code-block">
+            <div class="code-line indent-0"># 檢查主對角線 (i == j)</div>
+            <div class="code-line indent-0">diag1_win = True</div>
+            <div class="code-line indent-0">for i in range(
+                <select id="ans-loop1-start" class="short-select">
+                    <option value="">?</option><option value="0">0</option><option value="1">1</option><option value="5">5</option>
+                </select>, 
+                <select id="ans-loop1-end" class="short-select">
+                    <option value="">?</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                </select>):</div>
+            <div class="code-line indent-1">if result[i][
+                <select id="ans-idx1" class="med-select">
+                    <option value="">?</option><option value="i">i</option><option value="j">j</option><option value="0">0</option><option value="4-i">4-i</option>
+                </select>] == False:</div>
+            <div class="code-line indent-2">diag1_win = False</div>
+            <div class="code-line indent-2">break</div>
+            <div class="code-line indent-0"><br></div>
+            <div class="code-line indent-0"># 檢查反對角線 (i + j == 4)</div>
+            <div class="code-line indent-0">diag2_win = True</div>
+            <div class="code-line indent-0">for i in range(
+                <select id="ans-loop2-start" class="short-select">
+                    <option value="">?</option><option value="0">0</option><option value="1">1</option><option value="4">4</option>
+                </select>, 
+                <select id="ans-loop2-end" class="short-select">
+                    <option value="">?</option><option value="4">4</option><option value="5">5</option><option value="i">i</option>
+                </select>):</div>
+            <div class="code-line indent-1">if result[i][
+                <select id="ans-idx2" class="med-select">
+                    <option value="">?</option><option value="i">i</option><option value="4-i">4-i</option><option value="i-4">i-4</option><option value="j">j</option>
+                </select>] == False:</div>
+            <div class="code-line indent-2">diag2_win = False</div>
+            <div class="code-line indent-2">break</div>
+            <div class="code-line indent-0"><br></div>
+            <div class="code-line indent-0"># 結合結果</div>
+            <div class="code-line indent-0">win = 
+                <select id="ans-logic" class="long-select">
+                    <option value="">--選擇邏輯--</option>
+                    <option value="or">diag1_win or diag2_win</option>
+                    <option value="and">diag1_win and diag2_win</option>
+                    <option value="neq">diag1_win != diag2_win</option>
+                </select>
+            </div>
+        </div>
+        <div id="feedback"></div>
+        <div class="button-group">
+            <button type="button" onclick="checkAnswers()">檢查答案</button>
+        </div>
+    </div>
+
+    <!-- Section 2: Animation (hidden by default) -->
+    <div id="animation-section" class="hidden">
+        <h2>步驟 2：觀看互動動畫</h2>
+        <p>您的答案正確！下方是一個隨機產生的盤面，請使用按鈕觀察程式碼的執行流程。</p>
+        <div class="button-group">
+            <button id="autoPlayButton" class="play-pause" onclick="toggleAutoPlay()">自動播放</button>
+            <button id="prevButton" onclick="manualPrevStep()">« 上一步</button>
+            <button id="nextButton" onclick="manualNextStep()">下一步 »</button>
+            <button class="secondary" onclick="replayAnimation()">重播動畫</button>
+            <button class="new-board" onclick="animateNewBoard()">產生新盤面並播放</button>
+        </div>
+        <div id="step-description">請點擊按鈕開始。</div>
+        <div class="content-wrapper">
+            <div class="left-panel">
+                <h3>賓果卡狀態 (result)</h3>
+                <div id="grid-container" class="grid-container"></div>
+                <h3>變數狀態</h3>
+                <div id="status-box" class="status-box"></div>
+            </div>
+            <div class="right-panel">
+                <h3>Python 程式碼</h3>
+                <div class="code-block animation-code">
+                    <span class="code-line indent-0" id="line-0"># 檢查主對角線 (i == j)</span>
+                    <span class="code-line indent-0" id="line-1">diag1_win = True</span>
+                    <span class="code-line indent-0" id="line-2">for i in range(0, 5):</span>
+                    <span class="code-line indent-1" id="line-3">if result[i][i] == False:</span>
+                    <span class="code-line indent-2" id="line-4">diag1_win = False</span>
+                    <span class="code-line indent-2" id="line-5">break</span>
+                    <span class="code-line indent-0" id="line-6"><br></span>
+                    <span class="code-line indent-0" id="line-7"># 檢查反對角線 (i + j == 4)</span>
+                    <span class="code-line indent-0" id="line-8">diag2_win = True</span>
+                    <span class="code-line indent-0" id="line-9">for i in range(0, 5):</span>
+                    <span class="code-line indent-1" id="line-10">if result[i][4 - i] == False:</span>
+                    <span class="code-line indent-2" id="line-11">diag2_win = False</span>
+                    <span class="code-line indent-2" id="line-12">break</span>
+                    <span class="code-line indent-0" id="line-13"><br></span>
+                    <span class="code-line indent-0" id="line-14"># 結合結果</span>
+                    <span class="code-line indent-0" id="line-15">win = diag1_win or diag2_win</span>
+                    <span class="code-line indent-0" id="line-16"># 輸出 win</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const AUTO_PLAY_DELAY = 1400;
+
+    // --- DOM Elements ---
+    const inputSection = document.getElementById('input-section');
+    const animationSection = document.getElementById('animation-section');
+    const feedbackDiv = document.getElementById('feedback');
+    const gridContainer = document.getElementById('grid-container');
+    const statusBox = document.getElementById('status-box');
+    const stepDescription = document.getElementById('step-description');
+    const autoPlayButton = document.getElementById('autoPlayButton');
+    
+    const answerFields = {
+        loop1_start: document.getElementById('ans-loop1-start'),
+        loop1_end: document.getElementById('ans-loop1-end'),
+        idx1: document.getElementById('ans-idx1'),
+        loop2_start: document.getElementById('ans-loop2-start'),
+        loop2_end: document.getElementById('ans-loop2-end'),
+        idx2: document.getElementById('ans-idx2'),
+        logic: document.getElementById('ans-logic')
+    };
+
+    // --- Quiz Logic ---
+    const correctAnswers = {
+        loop1_start: "0", loop1_end: "5", idx1: "i",
+        loop2_start: "0", loop2_end: "5", idx2: "4-i",
+        logic: "or"
+    };
+    
+    const hints = {
+        loop1_start: "提示：在 Python 中，陣列索引從 0 開始。",
+        loop1_end: "提示：`range(start, end)` 不包含 `end`。要遍歷 0 到 4，`end` 應為 5。",
+        idx1: "提示：主對角線上，橫座標 (i) 和縱座標 (j) 總是相等。",
+        loop2_start: "提示：反對角線也需要從第一個橫列 (索引 0) 開始檢查。",
+        loop2_end: "提示：這個迴圈同樣需要檢查到最後一個橫列 (索引 4)。",
+        idx2: "提示：在 5x5 的反對角線上，橫座標 `i` 和縱座標 `j` 的總和永遠是 4 (i + j = 4)。",
+        logic: "提示：只要兩條對角線中『有任何一條』連線就算贏，這對應到 `or` 邏輯。"
+    };
+
+    function checkAnswers() {
+        let allCorrect = true;
+        let errorHints = [];
+        feedbackDiv.className = '';
+        Object.values(answerFields).forEach(input => input.classList.remove('error'));
+
+        for (const id in answerFields) {
+            if (answerFields[id].value !== correctAnswers[id]) {
+                allCorrect = false;
+                answerFields[id].classList.add('error');
+                if (hints[id]) errorHints.push(hints[id]);
+            }
+        }
+
+        if (allCorrect) {
+            feedbackDiv.className = 'success';
+            feedbackDiv.textContent = '完全正確！正在載入隨機盤面與互動動畫...';
+            setTimeout(() => {
+                inputSection.classList.add('hidden');
+                animationSection.classList.remove('hidden');
+                animateNewBoard(); // Start with a new random board
+            }, 1000);
+        } else {
+            feedbackDiv.className = 'error';
+            let hintHTML = '<strong>答案不完全正確，請參考以下提示：</strong><ul>';
+            let hasEmpty = Object.values(answerFields).some(field => field.value === "");
+            if (hasEmpty) {
+                 hintHTML += `<li>請完成所有填空。</li>`;
+            }
+            errorHints.forEach(hint => { hintHTML += `<li>${hint}</li>`; });
+            hintHTML += '</ul>';
+            feedbackDiv.innerHTML = hintHTML;
+        }
+    }
+
+    // --- Animation Logic ---
+    let animationSteps = [];
+    let currentStepIndex = 0;
+    let autoPlayTimer = null;
+    let isAutoPlaying = false;
+
+    // *** NEW: Function to generate a random 5x5 board ***
+    function generateRandomBoard() {
+        const board = [];
+        for (let i = 0; i < 5; i++) {
+            const row = [];
+            for (let j = 0; j < 5; j++) {
+                row.push(Math.random() < 0.5); // 50% chance for True
+            }
+            board.push(row);
+        }
+        return board;
+    }
+    
+    function formatBoolean(value) {
+        if (value === true) return 'True';
+        if (value === false) return 'False';
+        return String(value);
+    }
+
+    function createGrid(board) {
+        let table = '<table class="bingo-grid"><thead><tr><th>i\\j</th>';
+        for (let j = 0; j < 5; j++) { table += `<th>${j}</th>`; }
+        table += '</tr></thead><tbody>';
+        for (let i = 0; i < 5; i++) {
+            table += `<tr><th>${i}</th>`;
+            for (let j = 0; j < 5; j++) {
+                const isTrue = board[i][j];
+                table += `<td id="cell-${i}-${j}" class="${isTrue ? 'cell-true' : 'cell-false'}">${isTrue ? 'T' : 'F'}</td>`;
+            }
+            table += '</tr>';
+        }
+        table += '</tbody></table>';
+        gridContainer.innerHTML = table;
+    }
+
+    function generateAnimationSteps(board) {
+        animationSteps = [];
+        const addStep = (line, status, cell, winDiagonals, description) => {
+            animationSteps.push({ line, status: JSON.parse(JSON.stringify(status)), cell, winDiagonals: winDiagonals ? [...winDiagonals] : [], description });
+        };
+
+        let state = { win: '?', diag1_win: '?', diag2_win: '?', i: '?' };
+        let winDiagonals = [];
+        addStep(null, state, null, winDiagonals, "動畫開始前的初始狀態。");
+
+        // --- Check main diagonal ---
+        state.diag1_win = true;
+        addStep('line-1', state, null, winDiagonals, `樂觀假設：將 'diag1_win' 設為 ${formatBoolean(true)}。`);
+        
+        let diag1_win_actual = true;
+        addStep('line-2', state, null, winDiagonals, "開始迴圈 range(0, 5)，檢查主對角線。");
+        let diag1_loop_broken = false;
+        for (let i = 0; i < 5; i++) {
+            state.i = i;
+            addStep('line-3', state, {i, j:i}, winDiagonals, `(i=${i}) 檢查儲存格 [${i}][${i}] 的值是否為 ${formatBoolean(false)}。`);
+            if (board[i][i] === false) {
+                diag1_win_actual = false;
+                state.diag1_win = false;
+                addStep('line-4', state, {i, j:i}, winDiagonals, `是！值為 ${formatBoolean(false)}。將 'diag1_win' 設為 ${formatBoolean(false)}。`);
+                addStep('line-5', state, {i, j:i}, winDiagonals, "使用 'break' 提前結束此迴圈。");
+                diag1_loop_broken = true;
+                break;
+            } else {
+                 addStep('line-3', state, {i, j:i}, winDiagonals, `否。值為 ${formatBoolean(true)}，繼續檢查下一個。`);
+            }
+        }
+        state.i = '結束';
+        addStep('line-2', state, null, winDiagonals, `主對角線檢查迴圈${diag1_loop_broken ? '因 break 而' : '正常'}結束。`);
+
+        // --- Check anti-diagonal ---
+        state.diag2_win = true;
+        addStep('line-8', state, null, winDiagonals, `樂觀假設：將 'diag2_win' 設為 ${formatBoolean(true)}。`);
+
+        let diag2_win_actual = true;
+        addStep('line-9', state, null, winDiagonals, "開始迴圈 range(0, 5)，檢查反對角線。");
+        let diag2_loop_broken = false;
+        for (let i = 0; i < 5; i++) {
+            state.i = i;
+            let j = 4 - i;
+            addStep('line-10', state, {i, j}, winDiagonals, `(i=${i}) 檢查儲存格 [${i}][${j}] 的值是否為 ${formatBoolean(false)}。`);
+            if (board[i][j] === false) {
+                diag2_win_actual = false;
+                state.diag2_win = false;
+                addStep('line-11', state, {i, j}, winDiagonals, `是！值為 ${formatBoolean(false)}。將 'diag2_win' 設為 ${formatBoolean(false)}。`);
+                addStep('line-12', state, {i, j}, winDiagonals, "使用 'break' 提前結束此迴圈。");
+                diag2_loop_broken = true;
+                break;
+            } else {
+                 addStep('line-10', state, {i, j}, winDiagonals, `否。值為 ${formatBoolean(true)}，繼續檢查下一個。`);
+            }
+        }
+        state.i = '結束';
+        addStep('line-9', state, null, winDiagonals, `反對角線檢查迴圈${diag2_loop_broken ? '因 break 而' : '正常'}結束。`);
+        
+        // --- Combine results ---
+        let final_win = diag1_win_actual || diag2_win_actual;
+        state.win = final_win;
+        if (diag1_win_actual) winDiagonals.push(1);
+        if (diag2_win_actual) winDiagonals.push(2);
+
+        addStep('line-15', state, null, winDiagonals, `結合結果: win = ${formatBoolean(diag1_win_actual)} or ${formatBoolean(diag2_win_actual)} -> 結果為 ${formatBoolean(final_win)}。`);
+        addStep('line-16', state, null, winDiagonals, `輸出最終結果 win = ${formatBoolean(final_win)}。`);
+        addStep(null, state, null, winDiagonals, "動畫結束。");
+    }
+
+    function renderStep(index) {
+        if (index < 0 || index >= animationSteps.length) return;
+        currentStepIndex = index;
+        const step = animationSteps[index];
+
+        document.querySelectorAll('.animation-code .code-line').forEach(l => l.classList.remove('code-highlight'));
+        document.querySelectorAll('.bingo-grid td').forEach(c => c.classList.remove('cell-current', 'cell-win'));
+
+        if (step.line) document.getElementById(step.line).classList.add('code-highlight');
+        
+        statusBox.innerHTML = `win = ${formatBoolean(step.status.win)}<br>diag1_win = ${formatBoolean(step.status.diag1_win)}<br>diag2_win = ${formatBoolean(step.status.diag2_win)}<br>i = ${formatBoolean(step.status.i)}`;
+        
+        stepDescription.textContent = step.description;
+        
+        if (step.cell) document.getElementById(`cell-${step.cell.i}-${step.cell.j}`).classList.add('cell-current');
+        
+        if (step.winDiagonals.includes(1)) {
+            for (let k = 0; k < 5; k++) document.getElementById(`cell-${k}-${k}`).classList.add('cell-win');
+        }
+        if (step.winDiagonals.includes(2)) {
+            for (let k = 0; k < 5; k++) document.getElementById(`cell-${k}-${4-k}`).classList.add('cell-win');
+        }
+
+        document.getElementById('prevButton').disabled = (index === 0 || isAutoPlaying);
+        document.getElementById('nextButton').disabled = (index === animationSteps.length - 1 || isAutoPlaying);
+    }
+    
+    // --- Animation Control Functions ---
+    function initializeAnimation(board) {
+        pauseAutoPlay();
+        createGrid(board);
+        generateAnimationSteps(board);
+        renderStep(0);
+    }
+    
+    function animateNewBoard() {
+        const newBoard = generateRandomBoard();
+        initializeAnimation(newBoard);
+    }
+    
+    function replayAnimation() {
+        pauseAutoPlay();
+        renderStep(0);
+    }
+
+    function manualNextStep() { pauseAutoPlay(); renderStep(currentStepIndex + 1); }
+    function manualPrevStep() { pauseAutoPlay(); renderStep(currentStepIndex - 1); }
+
+    function toggleAutoPlay() {
+        if (isAutoPlaying) {
+            pauseAutoPlay();
+        } else {
+            startAutoPlay();
+        }
+    }
+
+    function startAutoPlay() {
+        isAutoPlaying = true;
+        autoPlayButton.textContent = '暫停';
+        autoPlayButton.style.backgroundColor = '#e74c3c';
+        
+        const playLoop = () => {
+            if (currentStepIndex >= animationSteps.length - 1) {
+                pauseAutoPlay();
+                return;
+            }
+            renderStep(currentStepIndex + 1);
+            autoPlayTimer = setTimeout(playLoop, AUTO_PLAY_DELAY);
+        };
+        
+        if (currentStepIndex >= animationSteps.length - 1) {
+            renderStep(0); // If at the end, replay from start
+        }
+        playLoop();
+    }
+
+    function pauseAutoPlay() {
+        clearTimeout(autoPlayTimer);
+        isAutoPlaying = false;
+        autoPlayButton.textContent = '自動播放';
+        autoPlayButton.style.backgroundColor = '#27ae60';
+        // Re-render to enable manual buttons
+        if (animationSteps.length > 0) {
+            renderStep(currentStepIndex);
+        }
+    }
+
+</script>
+
+</body>
+</html>
