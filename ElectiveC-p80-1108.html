@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乘數表演算法：動畫、填空與解說</title>
+    <style>
+        :root {
+            --border-color: #ccc;
+            --header-bg: #f2f2f2;
+            --highlight-row-col: #d4edda;
+            --highlight-cell: #f8d7da;
+            --highlight-code: #fff3cd;
+            --correct-bg: #d4edda;
+            --incorrect-bg: #f8d7da;
+            --text-color: #333;
+            --bg-color: #f9f9f9;
+            --container-bg: #fff;
+            --code-bg: #f6f8fa;
+            --code-text: #24292e;
+            --code-line-num: #9da5b4;
+            --font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            --code-font-family: 'Courier New', Courier, monospace;
+        }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--container-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 0.5rem;
+        }
+        h1 { margin-top: 0; }
+        .part-container {
+            margin-bottom: 2rem;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .controls button {
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            font-family: inherit;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        .controls button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status-bar {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #e74c3c;
+            height: 25px;
+        }
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+        #multiplicationTable {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 500px;
+            table-layout: fixed;
+        }
+        #multiplicationTable th, #multiplicationTable td {
+            border: 1px solid var(--border-color);
+            height: 35px;
+            text-align: center;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+        #multiplicationTable th { background-color: var(--header-bg); font-weight: bold; }
+        .corner { background-color: #e9ecef !important; }
+        .highlight-row { background-color: var(--highlight-row-col) !important; }
+        .highlight-col { background-color: var(--highlight-row-col) !important; }
+        .highlight-cell { background-color: var(--highlight-cell) !important; font-weight: bold; }
+
+        /* Part 2 Styles */
+        .explanation-layout { display: flex; gap: 1.5rem; }
+        .pseudocode-container { flex: 1; min-width: 280px; }
+        .explanation-box {
+            flex: 1;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.1rem;
+            transition: background-color 0.3s;
+        }
+        #pseudo-code-block {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 1rem 1rem 1rem 3.5em; /* Gutter for line numbers */
+            border-radius: 8px;
+            font-family: var(--code-font-family), 'Microsoft JhengHei';
+            font-size: 1rem;
+            white-space: pre;
+            counter-reset: line;
+            position: relative;
+        }
+        #pseudo-code-block span {
+            display: block;
+            position: relative;
+            line-height: 1.5;
+            transition: background-color 0.2s;
+        }
+        #pseudo-code-block span::before {
+            counter-increment: line;
+            content: counter(line);
+            position: absolute;
+            left: -3.5em; /* Position in the gutter */
+            width: 2.5em; /* Width of the line number area */
+            text-align: right;
+            color: var(--code-line-num);
+            user-select: none;
+        }
+        .highlight-code { background-color: var(--highlight-code) !important; }
+        
+        .indent-1 { padding-left: 2em; }
+        .indent-2 { padding-left: 4em; }
+
+        .blank-input {
+            width: 40px;
+            font-family: var(--code-font-family);
+            font-size: 1rem;
+            text-align: center;
+            border: 1px solid #ccc;
+            background: #fff;
+            color: var(--code-text);
+        }
+        .long-blank-input { width: 80px; }
+
+        @media (max-width: 768px) {
+            .explanation-layout { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <h1>乘數表演算法：動畫、填空與解說</h1>
+
+    <!-- Part 1: Multiplication Table Animation -->
+    <div id="part1-container" class="part-container">
+        <h2>第一部分：互動式乘數表動畫</h2>
+        <div class="controls">
+            <button id="startButton1">開始動畫</button>
+            <button id="resetButton1">重置</button>
+            <div class="slider-container">
+                <label for="speedSlider1">速度:</label>
+                <input type="range" id="speedSlider1" min="50" max="1000" value="300" step="50">
+            </div>
+        </div>
+        <div id="statusBar1" class="status-bar">準備開始...</div>
+        <div class="table-container">
+            <table id="multiplicationTable"></table>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- Part 2: Pseudocode Fill-in-the-blank -->
+    <div id="part2-container" class="part-container">
+        <h2>第二部分：偽代碼填空與解說</h2>
+        <div class="controls">
+            <button id="startButton2">開始解說</button>
+            <button id="nextButton2" style="display:none;">下一步</button>
+            <button id="checkButton2" style="display:none;">檢查答案</button>
+            <button id="resetButton2">重置</button>
+        </div>
+        <div class="explanation-layout">
+            <div class="pseudocode-container">
+                <div id="pseudo-code-block"></div>
+            </div>
+            <div id="explanation-box" class="explanation-box">
+                <p id="explanation-text">點擊「開始解說」以逐步了解演算法。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- SHARED HELPERS ---
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // --- PART 1: TABLE ANIMATION ---
+    const table1 = document.getElementById('multiplicationTable');
+    const startButton1 = document.getElementById('startButton1');
+    const resetButton1 = document.getElementById('resetButton1');
+    const speedSlider1 = document.getElementById('speedSlider1');
+    const statusBar1 = document.getElementById('statusBar1');
+    const size = 10;
+    let animationSpeed1 = 300;
+    let isAnimating1 = false;
+
+    function createTable() {
+        table1.innerHTML = '';
+        const thead = table1.createTHead();
+        const tbody = table1.createTBody();
+        const headerRow = thead.insertRow();
+        const cornerCell = document.createElement('th');
+        cornerCell.innerHTML = 'i/j';
+        cornerCell.classList.add('corner');
+        headerRow.appendChild(cornerCell);
+        for (let j = 1; j <= size; j++) {
+            const th = document.createElement('th');
+            th.textContent = j;
+            th.id = `col-header-${j}`;
+            headerRow.appendChild(th);
+        }
+        for (let i = 1; i <= size; i++) {
+            const row = tbody.insertRow();
+            const rowHeader = document.createElement('th');
+            rowHeader.textContent = i;
+            rowHeader.id = `row-header-${i}`;
+            row.appendChild(rowHeader);
+            for (let j = 1; j <= size; j++) {
+                const cell = row.insertCell();
+                cell.id = `cell-${i}-${j}`;
+            }
+        }
+    }
+
+    async function startAnimationPart1() {
+        if (isAnimating1) return;
+        isAnimating1 = true;
+        startButton1.disabled = true;
+        resetButton1.disabled = true;
+
+        for (let i = 1; i <= size; i++) {
+            if (!isAnimating1) return;
+            const rowHeader = document.getElementById(`row-header-${i}`);
+            rowHeader.classList.add('highlight-row');
+
+            for (let j = 1; j <= size; j++) {
+                if (!isAnimating1) return;
+                const colHeader = document.getElementById(`col-header-${j}`);
+                const cell = document.getElementById(`cell-${i}-${j}`);
+                
+                colHeader.classList.add('highlight-col');
+                cell.classList.add('highlight-cell');
+                statusBar1.textContent = `計算: M[${i}, ${j}] = ${i} × ${j}`;
+                
+                await sleep(animationSpeed1);
+                if (!isAnimating1) return;
+
+                cell.textContent = i * j;
+                await sleep(animationSpeed1 / 2);
+                if (!isAnimating1) return;
+
+                colHeader.classList.remove('highlight-col');
+                cell.classList.remove('highlight-cell');
+            }
+            rowHeader.classList.remove('highlight-row');
+        }
+        
+        statusBar1.textContent = '乘數表已完成！';
+        isAnimating1 = false;
+        resetButton1.disabled = false;
+    }
+
+    function resetPart1() {
+        isAnimating1 = false;
+        createTable();
+        statusBar1.textContent = '表格已重置。請點擊「開始動畫」。';
+        startButton1.disabled = false;
+        resetButton1.disabled = false;
+    }
+
+    // --- PART 2: PSEUDOCODE EXPLANATION ---
+    const startButton2 = document.getElementById('startButton2');
+    const nextButton2 = document.getElementById('nextButton2');
+    const checkButton2 = document.getElementById('checkButton2');
+    const resetButton2 = document.getElementById('resetButton2');
+    const codeBlock = document.getElementById('pseudo-code-block');
+    const explanationText = document.getElementById('explanation-text');
+    const explanationBox = document.getElementById('explanation-box');
+
+    // **REVISED**: Compact templates with re-numbered IDs
+    const blankCodeTemplate = `<span id="pseudo-line-1">程序 填充乘數表</span>
+<span id="pseudo-line-2">宣告 M 為 10x10 陣列</span>
+<span id="pseudo-line-3">設 i 由 ... 至 ...</span>
+<span id="pseudo-line-4" class="indent-1">設 j 由 ... 至 ...</span>
+<span id="pseudo-line-5" class="indent-2">M[i, j] ← ...</span>
+<span id="pseudo-line-6">程序結束</span>`;
+
+    const answerCodeTemplate = `<span id="pseudo-line-1">程序 填充乘數表</span>
+<span id="pseudo-line-2">宣告 M 為 10x10 陣列</span>
+<span id="pseudo-line-3">設 i 由 1 至 10</span>
+<span id="pseudo-line-4" class="indent-1">設 j 由 1 至 10</span>
+<span id="pseudo-line-5" class="indent-2">M[i, j] ← i * j</span>
+<span id="pseudo-line-6">程序結束</span>`;
+    
+    // **REVISED**: Steps array with updated line IDs
+    const steps = [
+        { type: 'info', lineId: 'pseudo-line-1', explanation: '這是程序的起點，我們為這個演算法命名為「填充乘數表」。' },
+        { type: 'info', lineId: 'pseudo-line-2', explanation: '我們需要一個容器來儲存結果。這裡我們宣告一個名為 M 的 10x10 二維陣列。' },
+        { 
+            type: 'question', 
+            lineId: 'pseudo-line-3', 
+            questionHTML: '設 i 由 <input type="text" id="blank-1" class="blank-input" autocomplete="off"> 至 <input type="text" id="blank-2" class="blank-input" autocomplete="off">',
+            correctAnswer: ['1', '10'],
+            instruction: '外部迴圈 `i` (代表列) 應該從哪個數字開始，到哪個數字結束？',
+            explanation: '答對了！外部迴圈 `i` 將從 1 跑到 10，依序處理每一列。'
+        },
+        { 
+            type: 'question', 
+            lineId: 'pseudo-line-4', 
+            questionHTML: '設 j 由 <input type="text" id="blank-1" class="blank-input" autocomplete="off"> 至 <input type="text" id="blank-2" class="blank-input" autocomplete="off">',
+            correctAnswer: ['1', '10'],
+            instruction: '對於每一列，內部迴圈 `j` (代表欄) 的範圍應該是多少？',
+            explanation: '完全正確！內部迴圈 `j` 也會從 1 跑到 10，以處理該列中的每一個儲存格。'
+        },
+        { 
+            type: 'question', 
+            lineId: 'pseudo-line-5', 
+            questionHTML: 'M[i, j] ← <input type="text" id="blank-1" class="blank-input long-blank-input" autocomplete="off" placeholder="?">',
+            correctAnswer: ['i*j'],
+            instruction: '現在，M[i, j] 的值應該被設定為什麼？請填入算式。',
+            explanation: '太棒了！這是演算法的核心。我們將當前的「列號 i」與「欄號 j」相乘，並將結果存入陣列。'
+        },
+        { type: 'info', lineId: 'pseudo-line-6', explanation: '所有程式碼都已完成！演算法執行結束。' }
+    ];
+    let currentStep = -1;
+
+    function highlightCodeLine(lineId) {
+        const codeLines = codeBlock.querySelectorAll('span');
+        codeLines.forEach(line => line.classList.remove('highlight-code'));
+        if (lineId) {
+            document.getElementById(lineId).classList.add('highlight-code');
+        }
+    }
+    
+    function processNextStep() {
+        currentStep++;
+        explanationBox.style.backgroundColor = '';
+        if (currentStep >= steps.length) {
+            highlightCodeLine(null);
+            explanationText.textContent = '恭喜您完成了所有步驟！點擊「重置」以重新開始。';
+            nextButton2.style.display = 'none';
+            return;
+        }
+
+        const step = steps[currentStep];
+        highlightCodeLine(step.lineId);
+        
+        const targetSpan = document.getElementById(step.lineId);
+        if (!targetSpan) return;
+
+        if (step.type === 'info') {
+            explanationText.textContent = step.explanation;
+            nextButton2.style.display = 'inline-block';
+            checkButton2.style.display = 'none';
+        } else if (step.type === 'question') {
+            const existingClasses = targetSpan.className;
+            targetSpan.innerHTML = step.questionHTML;
+            targetSpan.className = existingClasses;
+            
+            explanationText.textContent = step.instruction;
+            nextButton2.style.display = 'none';
+            checkButton2.style.display = 'inline-block';
+            setTimeout(() => document.getElementById('blank-1').focus(), 100);
+        }
+    }
+
+    function checkAnswer() {
+        const step = steps[currentStep];
+        let isCorrect = true;
+
+        for (let i = 0; i < step.correctAnswer.length; i++) {
+            const inputId = `blank-${i + 1}`;
+            const userInput = document.getElementById(inputId).value.replace(/\s/g, '');
+            if (userInput.toLowerCase() !== step.correctAnswer[i].toLowerCase()) {
+                isCorrect = false;
+                break;
+            }
+        }
+        
+        if (isCorrect) {
+            explanationBox.style.backgroundColor = 'var(--correct-bg)';
+            explanationText.textContent = '答對了！';
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = answerCodeTemplate;
+            const correctLine = tempDiv.querySelector(`#${step.lineId}`);
+            
+            const targetSpan = document.getElementById(step.lineId);
+            if (correctLine && targetSpan) {
+                targetSpan.innerHTML = correctLine.innerHTML;
+                targetSpan.className = correctLine.className;
+            }
+            
+            checkButton2.style.display = 'none';
+            
+            setTimeout(() => {
+                explanationBox.style.backgroundColor = '';
+                explanationText.textContent = step.explanation;
+                nextButton2.style.display = 'inline-block';
+            }, 2000);
+
+        } else {
+            explanationBox.style.backgroundColor = 'var(--incorrect-bg)';
+            explanationText.textContent = '答案不對喔，請再試一次！';
+            
+            const firstInput = document.getElementById('blank-1');
+            if (firstInput) {
+                firstInput.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    explanationBox.style.backgroundColor = '';
+                    firstInput.style.animation = '';
+                }, 1000);
+            }
+        }
+    }
+    
+    function startExplanation() {
+        currentStep = -1;
+        codeBlock.innerHTML = blankCodeTemplate;
+        startButton2.style.display = 'none';
+        processNextStep();
+    }
+
+    function resetPart2() {
+        currentStep = -1;
+        codeBlock.innerHTML = blankCodeTemplate;
+        explanationText.textContent = '點擊「開始解說」以逐步了解演算法。';
+        explanationBox.style.backgroundColor = '';
+        startButton2.style.display = 'inline-block';
+        nextButton2.style.display = 'none';
+        checkButton2.style.display = 'none';
+    }
+
+    // --- INITIALIZATION ---
+    window.onload = () => {
+        // Part 1 Init
+        createTable();
+        animationSpeed1 = 1050 - speedSlider1.value;
+        speedSlider1.addEventListener('input', (e) => { animationSpeed1 = 1050 - e.target.value; });
+        startButton1.addEventListener('click', startAnimationPart1);
+        resetButton1.addEventListener('click', resetPart1);
+
+        // Part 2 Init
+        resetPart2();
+        startButton2.addEventListener('click', startExplanation);
+        nextButton2.addEventListener('click', processNextStep);
+        checkButton2.addEventListener('click', checkAnswer);
+        resetButton2.addEventListener('click', resetPart2);
+    };
+    
+    // Add shake animation style
+    const style = document.createElement('style');
+    style.innerHTML = `@keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }`;
+    document.head.appendChild(style);
+</script>
+
+</body>
+</html>
