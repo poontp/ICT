@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三角形分類程式挑戰</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        
+        h2 {
+            color: var(--dark-color);
+            border-bottom-color: var(--secondary-color);
+            margin-top: 2rem;
+        }
+
+        .problem-description ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .problem-description li {
+            background-color: #e9ecef;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .code-block {
+            background-color: #f1f1f1;
+            border-left: 5px solid var(--secondary-color);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            font-family: monospace;
+            font-size: 1.1em;
+            line-height: 2;
+        }
+
+        .code-line {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            min-height: 42px;
+        }
+
+        .code-line.indent-1 { padding-left: 2em; }
+        .code-line.indent-2 { padding-left: 4em; }
+
+        .code-block .keyword {
+            color: #0056b3;
+            font-weight: bold;
+            margin: 0 0.25em;
+        }
+
+        .code-block .operator {
+            color: #d73a49;
+            font-weight: bold;
+        }
+
+        .code-block .comment {
+            color: #6a737d;
+            font-style: italic;
+        }
+
+        .code-block .string {
+            color: #d73a49;
+        }
+
+        .code-select {
+            flex-grow: 1;
+            min-width: 250px;
+            padding: 8px;
+            margin: 0 0.5em;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            background-color: white;
+            transition: border-color 0.3s;
+            cursor: pointer;
+        }
+
+        .code-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .code-select.correct {
+            border-color: var(--success-color);
+            background-color: #e9f7ef;
+        }
+
+        .code-select.incorrect {
+            border-color: var(--danger-color);
+            background-color: #fbeae5;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 0 0.5rem;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        #checkBtn {
+            background-color: var(--success-color);
+        }
+        #checkBtn:hover {
+            background-color: #218838;
+        }
+
+        .test-area .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .test-area label {
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .test-area input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100px;
+        }
+
+        #testResult, #feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #testResult {
+            background-color: #e2e3e5;
+        }
+        
+        #feedback {
+            display: none; /* Hidden by default */
+        }
+        
+        .feedback-correct {
+            background-color: #d4edda;
+            color: #155724;
+            display: block !important;
+        }
+        
+        .feedback-incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: block !important;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            .code-select {
+                width: 100%;
+                margin: 5px 0;
+            }
+            .code-line.indent-1 { padding-left: 1em; }
+            .code-line.indent-2 { padding-left: 2em; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>三角形分類程式挑戰</h1>
+        <div class="problem-description">
+            <p>永健編寫了一個程式，只要用戶輸入三角形的3條邊長，程式就會說明該三角形屬於以下哪個類別。請您協助完成程式中的邏輯判斷部分。</p>
+            <ul>
+                <li>(1) <b>等邊三角形</b> (所有邊相等)</li>
+                <li>(2) <b>等腰三角形</b> (只有2條邊相等)</li>
+                <li>(3) <b>不等邊三角形</b> (所有邊不相等)</li>
+                <li>(4) <b>不可能形成三角形</b> (當任意2條邊長之總和大於第3條邊長時，才能形成三角形。)</li>
+            </ul>
+        </div>
+        
+        <h2>程式邏輯測試區</h2>
+        <div class="test-area">
+            <div class="input-group">
+                <label for="sideA">輸入 a (邊長1):</label>
+                <input type="number" id="sideA" value="5">
+            </div>
+            <div class="input-group">
+                <label for="sideB">輸入 b (邊長2):</label>
+                <input type="number" id="sideB" value="5">
+            </div>
+            <div class="input-group">
+                <label for="sideC">輸入 c (邊長3):</label>
+                <input type="number" id="sideC" value="5">
+            </div>
+            <div class="button-container">
+                <button id="runTestBtn">執行測試</button>
+            </div>
+            <div id="testResult">測試結果將顯示於此</div>
+        </div>
+
+        <h2>偽代碼填充區</h2>
+        <p>試從下拉選單中，選擇正確的條件判斷式。</p>
+        <div class="code-block">
+            <div class="code-line"><span class="keyword">輸入</span> a <span class="comment"># 第1條邊長</span></div>
+            <div class="code-line"><span class="keyword">輸入</span> b <span class="comment"># 第2條邊長</span></div>
+            <div class="code-line"><span class="keyword">輸入</span> c <span class="comment"># 第3條邊長</span></div>
+            <div class="code-line"><br></div>
+            <div class="code-line"><span class="comment"># 檢查所有輸入是否為有效正數</span></div>
+            <div class="code-line"><span class="keyword">如果</span>
+                <select id="blank1" class="code-select">
+                    <option value="" disabled selected>請選擇一個條件...</option>
+                    <option value="(a<=0) or (b<=0) or (c<=0)">(a &lt;= 0) <span class="operator">or</span> (b &lt;= 0) <span class="operator">or</span> (c &lt;= 0)</option>
+                    <option value="(a>0) and (b>0) and (c>0)">(a > 0) <span class="operator">and</span> (b > 0) <span class="operator">and</span> (c > 0)</option>
+                    <option value="(a+b>c)">(a + b > c)</option>
+                </select>
+            <span class="keyword">則</span></div>
+            <div class="code-line indent-1"><span class="keyword">輸出</span> <span class="string">"不可能形成三角形"</span></div>
+            <div class="code-line"><br></div>
+            <div class="code-line"><span class="comment"># 檢查3條邊長能否形成三角形</span></div>
+            <div class="code-line"><span class="keyword">否則如果</span>
+                <select id="blank2" class="code-select">
+                    <option value="" disabled selected>請選擇一個條件...</option>
+                    <option value="(a+b>c) and (a+c>b) and (b+c>a)">(a+b > c) <span class="operator">and</span> (a+c > b) <span class="operator">and</span> (b+c > a)</option>
+                    <option value="(a+b<=c) or (a+c<=b) or (b+c<=a)">(a+b &lt;= c) <span class="operator">or</span> (a+c &lt;= b) <span class="operator">or</span> (b+c &lt;= a)</option>
+                    <option value="(a=b) or (b=c) or (a=c)">(a = b) <span class="operator">or</span> (b = c) <span class="operator">or</span> (a = c)</option>
+                </select>
+            <span class="keyword">則</span></div>
+            <div class="code-line indent-1"><span class="keyword">輸出</span> <span class="string">"不可能形成三角形"</span></div>
+            <div class="code-line"><br></div>
+            <div class="code-line"><span class="comment"># 檢查各種三角形的類別</span></div>
+            <div class="code-line"><span class="keyword">否則</span></div>
+            <div class="code-line indent-1"><span class="keyword">如果</span>
+                <select id="blank3" class="code-select">
+                    <option value="" disabled selected>請選擇一個條件...</option>
+                    <option value="(a=b) and (b=c)">(a = b) <span class="operator">and</span> (b = c)</option>
+                    <option value="(a=b) or (b=c)">(a = b) <span class="operator">or</span> (b = c)</option>
+                    <option value="(a!=b) and (a!=c)">(a != b) <span class="operator">and</span> (a != c)</option>
+                </select>
+            <span class="keyword">則</span></div>
+            <div class="code-line indent-2"><span class="keyword">輸出</span> <span class="string">"這是一個等邊三角形"</span></div>
+            <div class="code-line indent-1"><span class="keyword">否則如果</span>
+                <select id="blank4" class="code-select">
+                    <option value="" disabled selected>請選擇一個條件...</option>
+                    <option value="(a=b) and (b=c)">(a = b) <span class="operator">and</span> (b = c)</option>
+                    <option value="(a!=b) and (a!=c) and (b!=c)">(a != b) <span class="operator">and</span> (a != c) <span class="operator">and</span> (b != c)</option>
+                    <option value="(a=b) or (a=c) or (b=c)">(a = b) <span class="operator">or</span> (a = c) <span class="operator">or</span> (b = c)</option>
+                </select>
+            <span class="keyword">則</span></div>
+            <div class="code-line indent-2"><span class="keyword">輸出</span> <span class="string">"這是一個等腰三角形"</span></div>
+            <div class="code-line indent-1"><span class="keyword">否則</span></div>
+            <div class="code-line indent-2"><span class="keyword">輸出</span> <span class="string">"這是一個不等邊三角形"</span></div>
+        </div>
+        <div class="button-container">
+            <button id="checkBtn">檢查答案</button>
+        </div>
+        <div id="feedback"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const runTestBtn = document.getElementById('runTestBtn');
+            const checkBtn = document.getElementById('checkBtn');
+            const testResult = document.getElementById('testResult');
+            const feedback = document.getElementById('feedback');
+
+            const sideA_input = document.getElementById('sideA');
+            const sideB_input = document.getElementById('sideB');
+            const sideC_input = document.getElementById('sideC');
+            
+            const blank1 = document.getElementById('blank1');
+            const blank2 = document.getElementById('blank2');
+            const blank3 = document.getElementById('blank3');
+            const blank4 = document.getElementById('blank4');
+
+            // 執行邏輯測試功能
+            runTestBtn.addEventListener('click', function() {
+                const a = parseFloat(sideA_input.value);
+                const b = parseFloat(sideB_input.value);
+                const c = parseFloat(sideC_input.value);
+
+                let resultText = '';
+
+                if (isNaN(a) || isNaN(b) || isNaN(c)) {
+                    resultText = '請輸入有效的數字。';
+                } else if (a <= 0 || b <= 0 || c <= 0) {
+                    resultText = '不可能形成三角形 (邊長必須是正數)';
+                } else if (a + b <= c || a + c <= b || b + c <= a) {
+                    resultText = '不可能形成三角形 (兩邊之和必須大於第三邊)';
+                } else if (a === b && b === c) {
+                    resultText = '這是一個等邊三角形';
+                } else if (a === b || a === c || b === c) {
+                    resultText = '這是一個等腰三角形';
+                } else {
+                    resultText = '這是一個不等邊三角形';
+                }
+                testResult.textContent = resultText;
+            });
+
+            // 檢查填充答案功能
+            checkBtn.addEventListener('click', function() {
+                let allCorrect = true;
+
+                const correctAnswers = {
+                    blank1: '(a<=0) or (b<=0) or (c<=0)',
+                    blank2: '(a+b<=c) or (a+c<=b) or (b+c<=a)',
+                    blank3: '(a=b) and (b=c)',
+                    blank4: '(a=b) or (a=c) or (b=c)'
+                };
+
+                // 檢查函數
+                function checkAnswer(selectElement, correctAnswer) {
+                    const userAnswer = selectElement.value;
+                    if (userAnswer === correctAnswer) {
+                        selectElement.classList.remove('incorrect');
+                        selectElement.classList.add('correct');
+                        return true;
+                    } else {
+                        selectElement.classList.remove('correct');
+                        selectElement.classList.add('incorrect');
+                        return false;
+                    }
+                }
+
+                if (!checkAnswer(blank1, correctAnswers.blank1)) allCorrect = false;
+                if (!checkAnswer(blank2, correctAnswers.blank2)) allCorrect = false;
+                if (!checkAnswer(blank3, correctAnswers.blank3)) allCorrect = false;
+                if (!checkAnswer(blank4, correctAnswers.blank4)) allCorrect = false;
+                
+                feedback.style.display = 'block';
+                if (allCorrect) {
+                    feedback.textContent = '恭喜！所有答案都正確！您已經成功完成了這個程式。';
+                    feedback.className = 'feedback-correct';
+                } else {
+                    feedback.textContent = '部分答案不正確，請檢查標示為紅色的選項框。';
+                    feedback.className = 'feedback-incorrect';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
