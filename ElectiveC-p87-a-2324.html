@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>程式 (a) 執行動畫</title>
+    <style>
+        :root {
+            --background-color: #f0f4f8;
+            --panel-color: #ffffff;
+            --header-color: #2c3e50;
+            --text-color: #34495e;
+            --grid-line-color: #bdc3c7;
+            --cell-default-bg: #ecf0f1;
+            --cell-one-bg: #27ae60;
+            --cell-one-color: #ffffff;
+            --code-highlight-bg: #f1c40f;
+            --cell-scan-highlight: rgba(52, 152, 219, 0.7);
+            --cell-write-highlight: rgba(231, 76, 60, 0.8);
+            --button-bg: #3498db;
+            --button-hover-bg: #2980b9;
+            --button-text-color: #ffffff;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Helvetica Neue', 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #animation-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--panel-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--header-color);
+            color: var(--button-text-color);
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        main {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        #left-panel {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        #right-panel {
+            flex: 1.5;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .panel-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+        }
+
+        .panel-box h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--grid-line-color);
+            padding-bottom: 0.5rem;
+        }
+
+        #code-display {
+            margin: 0;
+            padding: 0;
+            background: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            white-space: pre;
+        }
+
+        #code-display .line {
+            display: block;
+            padding: 0.1em 0.5em;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        #code-display .line.highlight {
+            background-color: var(--code-highlight-bg);
+            font-weight: bold;
+        }
+        
+        #vars-display table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #vars-display td {
+            padding: 0.5em;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        #vars-display th {
+            font-weight: normal;
+            color: #7f8c8d;
+        }
+
+        #explanation {
+            min-height: 3em;
+            font-style: italic;
+            color: #2980b9;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            grid-template-rows: repeat(11, 1fr);
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            border: 2px solid var(--header-color);
+            background-color: var(--cell-default-bg);
+        }
+
+        .grid-cell, .grid-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(0.6rem, 2vw, 1rem);
+            position: relative;
+        }
+
+        .grid-header {
+            font-weight: bold;
+            background-color: #ced4da;
+        }
+        
+        .grid-corner {
+            position: relative;
+        }
+
+        .grid-corner::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top right, transparent calc(50% - 0.5px), var(--header-color), transparent calc(50% + 0.5px));
+        }
+
+        .axis-label {
+            position: absolute;
+            font-weight: bold;
+            color: var(--header-color);
+            font-size: clamp(0.8rem, 2.5vw, 1.2rem);
+        }
+
+        .y-axis {
+            bottom: 2px;
+            left: 8px;
+        }
+
+        .x-axis {
+            top: 2px;
+            right: 8px;
+        }
+
+        .grid-cell {
+            border: 1px solid var(--grid-line-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .grid-cell.value-1 {
+            background-color: var(--cell-one-bg);
+            color: var(--cell-one-color);
+            font-weight: bold;
+        }
+
+        .highlight-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 2px;
+            transform: scale(0);
+            transition: transform 0.2s ease-out, background-color 0.2s;
+        }
+        .highlight-overlay.scan {
+            background-color: var(--cell-scan-highlight);
+            transform: scale(1.1);
+        }
+        .highlight-overlay.write {
+            background-color: var(--cell-write-highlight);
+            transform: scale(1.2);
+        }
+
+        #controls {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background-color: #e9ecef;
+        }
+
+        #controls button {
+            background-color: var(--button-bg);
+            color: var(--button-text-color);
+            border: none;
+            padding: 0.6em 1.2em;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        #controls button:hover, #controls button:disabled {
+            background-color: var(--button-hover-bg);
+        }
+        
+        #controls button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        #controls label {
+            margin-left: 1rem;
+        }
+        
+        #speed-slider {
+            cursor: pointer;
+        }
+
+        @media (max-width: 800px) {
+            main {
+                flex-direction: column;
+            }
+            #right-panel {
+                order: -1; /* Move grid to top on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="animation-container">
+        <header>互動動畫：(a) 假設整個農場起初沒有任何種子</header>
+        <main>
+            <div id="left-panel">
+                <div class="panel-box">
+                    <h3>偽代碼</h3>
+                    <pre id="code-display"><span class="line" id="line-0">y ← 0</span><span class="line" id="line-1">當 y < 10 執行</span><span class="line" id="line-2">    x ← 0</span><span class="line" id="line-3">    當 x < 10 執行</span><span class="line" id="line-4">        設 i 由 y 至 y+1</span><span class="line" id="line-5">            設 j 由 x 至 x+1</span><span class="line" id="line-6">                F[i,j] ← 1</span><span class="line" id="line-7">        x ← x + 4</span><span class="line" id="line-8">    y ← y + 4</span></pre>
+                </div>
+                <div class="panel-box">
+                    <h3>變數值</h3>
+                    <div id="vars-display">
+                        <table>
+                            <tr>
+                                <th>y</th>
+                                <th>x</th>
+                                <th>i</th>
+                                <th>j</th>
+                            </tr>
+                            <tr>
+                                <td id="var-y">?</td>
+                                <td id="var-x">?</td>
+                                <td id="var-i">?</td>
+                                <td id="var-j">?</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="panel-box">
+                    <h3>執行說明</h3>
+                    <p id="explanation">點擊「播放」或「單步」開始動畫。</p>
+                </div>
+            </div>
+            <div id="right-panel">
+                <div id="grid-container"></div>
+                <div id="controls">
+                    <button id="reset-btn">重設</button>
+                    <button id="play-pause-btn">播放</button>
+                    <button id="step-btn">單步</button>
+                    <label for="speed-slider">速度:</label>
+                    <input type="range" min="50" max="1000" value="700" id="speed-slider">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const gridContainer = document.getElementById('grid-container');
+            const codeLines = document.querySelectorAll('#code-display .line');
+            const varY = document.getElementById('var-y');
+            const varX = document.getElementById('var-x');
+            const varI = document.getElementById('var-i');
+            const varJ = document.getElementById('var-j');
+            const explanationEl = document.getElementById('explanation');
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const stepBtn = document.getElementById('step-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const speedSlider = document.getElementById('speed-slider');
+
+            // State
+            const GRID_SIZE = 10;
+            let steps = [];
+            let currentStep = 0;
+            let animationInterval = null;
+            let animationSpeed = 1050 - speedSlider.value;
+
+            // --- Step Generation (Logical Structure) ---
+            function generateSteps() {
+                steps = [];
+                let grid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+
+                const addStep = (line, desc, vars, highlights = []) => {
+                    steps.push({
+                        line,
+                        description: desc,
+                        vars: { ...vars },
+                        grid: JSON.parse(JSON.stringify(grid)), // Deep copy
+                        highlights
+                    });
+                };
+                
+                addStep(null, '程式開始。農場 F 初始化為全 0。', { y: '?', x: '?', i: '?', j: '?' });
+
+                // Line 0: y ← 0
+                let y = 0;
+                addStep(0, 'y ← 0', { y, x: '?', i: '?', j: '?' });
+
+                // Line 1: 當 y < 10 執行
+                while (y < 10) {
+                    addStep(1, `當 y < 10 執行 (${y} < 10 為真)`, { y, x: '?', i: '?', j: '?' });
+
+                    // Line 2: x ← 0
+                    let x = 0;
+                    addStep(2, '    x ← 0', { y, x, i: '?', j: '?' });
+
+                    // Line 3: 當 x < 10 執行
+                    while (x < 10) {
+                        addStep(3, `    當 x < 10 執行 (${x} < 10 為真)`, { y, x, i: '?', j: '?' });
+
+                        // Lines 4, 5, 6: The inner loops
+                        for (let i = y; i <= y + 1; i++) {
+                            if (i >= GRID_SIZE) continue;
+                            addStep(4, `        設 i 由 y 至 y+1 (i=${i})`, { y, x, i, j: '?' });
+
+                            for (let j = x; j <= x + 1; j++) {
+                                if (j >= GRID_SIZE) continue;
+                                addStep(5, `            設 j 由 x 至 x+1 (j=${j})`, { y, x, i, j }, [{ r: i, c: j, type: 'scan' }]);
+                                
+                                // Line 6: F[i,j] ← 1
+                                grid[i][j] = 1;
+                                addStep(6, `                F[${i},${j}] ← 1`, { y, x, i, j }, [{ r: i, c: j, type: 'write' }]);
+                            }
+                        }
+                        
+                        // Line 7: x ← x + 4 (Logically part of the x-loop)
+                        let oldX = x;
+                        x += 4;
+                        addStep(7, `        x ← x + 4 (${oldX} + 4 = ${x})`, { y, x, i: '...', j: '...' });
+                    }
+                    addStep(3, `    當 x < 10 執行 (${x} < 10 為假)`, { y, x, i: '...', j: '...' });
+
+                    // Line 8: y ← y + 4 (Logically part of the y-loop)
+                    let oldY = y;
+                    y += 4;
+                    addStep(8, `    y ← y + 4 (${oldY} + 4 = ${y})`, { y, x, i: '...', j: '...' });
+                }
+                addStep(1, `當 y < 10 執行 (${y} < 10 為假)`, { y, x: '...', i: '...', j: '...' });
+                addStep(null, '程式結束。', { y, x: '...', i: '...', j: '...' });
+            }
+
+            // --- Rendering ---
+            function createGrid() {
+                gridContainer.innerHTML = '';
+                
+                // Top-left corner with axis labels
+                const cornerCell = document.createElement('div');
+                cornerCell.className = 'grid-header grid-corner';
+                
+                const labelY = document.createElement('span');
+                labelY.className = 'axis-label y-axis';
+                labelY.textContent = 'y';
+                
+                const labelX = document.createElement('span');
+                labelX.className = 'axis-label x-axis';
+                labelX.textContent = 'x';
+                
+                cornerCell.appendChild(labelY);
+                cornerCell.appendChild(labelX);
+                gridContainer.appendChild(cornerCell);
+
+                // Column headers (x-axis)
+                for (let i = 0; i < GRID_SIZE; i++) {
+                    const header = document.createElement('div');
+                    header.className = 'grid-header';
+                    header.textContent = i;
+                    gridContainer.appendChild(header);
+                }
+                // Rows
+                for (let i = 0; i < GRID_SIZE; i++) {
+                    // Row header (y-axis)
+                    const header = document.createElement('div');
+                    header.className = 'grid-header';
+                    header.textContent = i;
+                    gridContainer.appendChild(header);
+                    // Cells
+                    for (let j = 0; j < GRID_SIZE; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        cell.id = `cell-${i}-${j}`;
+                        cell.dataset.value = 0;
+                        cell.textContent = '0';
+                        
+                        const overlay = document.createElement('div');
+                        overlay.className = 'highlight-overlay';
+                        cell.appendChild(overlay);
+
+                        gridContainer.appendChild(cell);
+                    }
+                }
+            }
+
+            function renderStep(stepIndex) {
+                const step = steps[stepIndex];
+                if (!step) return;
+
+                // Highlight code
+                codeLines.forEach(line => line.classList.remove('highlight'));
+                if (step.line !== null) {
+                    codeLines[step.line].classList.add('highlight');
+                }
+
+                // Update variables
+                varY.textContent = step.vars.y;
+                varX.textContent = step.vars.x;
+                varI.textContent = step.vars.i;
+                varJ.textContent = step.vars.j;
+
+                // Update explanation
+                explanationEl.textContent = step.description;
+
+                // Update grid
+                const overlays = document.querySelectorAll('.highlight-overlay');
+                overlays.forEach(o => {
+                    o.classList.remove('scan', 'write');
+                });
+
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        const cell = document.getElementById(`cell-${r}-${c}`);
+                        const newValue = step.grid[r][c];
+                        if (cell.dataset.value != newValue) {
+                            cell.dataset.value = newValue;
+                            cell.textContent = newValue;
+                            cell.classList.toggle('value-1', newValue === 1);
+                        }
+                    }
+                }
+                
+                // Add new highlights
+                if (step.highlights) {
+                    step.highlights.forEach(h => {
+                       const cell = document.getElementById(`cell-${h.r}-${h.c}`);
+                       if(cell) {
+                           const overlay = cell.querySelector('.highlight-overlay');
+                           if(overlay) overlay.classList.add(h.type);
+                       }
+                    });
+                }
+                
+                // Update button states
+                stepBtn.disabled = currentStep >= steps.length - 1;
+                if(currentStep >= steps.length - 1) {
+                    pauseAnimation();
+                }
+            }
+
+            // --- Animation Control ---
+            function playAnimation() {
+                playPauseBtn.textContent = '暫停';
+                animationInterval = setInterval(stepForward, animationSpeed);
+                stepBtn.disabled = true;
+                resetBtn.disabled = true;
+            }
+
+            function pauseAnimation() {
+                playPauseBtn.textContent = '播放';
+                clearInterval(animationInterval);
+                animationInterval = null;
+                stepBtn.disabled = currentStep >= steps.length - 1;
+                resetBtn.disabled = false;
+            }
+
+            function stepForward() {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    renderStep(currentStep);
+                } else {
+                    pauseAnimation();
+                }
+            }
+
+            function resetAnimation() {
+                pauseAnimation();
+                currentStep = 0;
+                generateSteps(); // Regenerate to reset grid state
+                renderStep(0);
+            }
+
+            // --- Event Listeners ---
+            playPauseBtn.addEventListener('click', () => {
+                if (animationInterval) {
+                    pauseAnimation();
+                } else {
+                    if (currentStep >= steps.length - 1) {
+                       resetAnimation();
+                    }
+                    playAnimation();
+                }
+            });
+
+            stepBtn.addEventListener('click', () => {
+                if (!animationInterval) {
+                    stepForward();
+                }
+            });
+
+            resetBtn.addEventListener('click', resetAnimation);
+
+            speedSlider.addEventListener('input', (e) => {
+                animationSpeed = 1050 - e.target.value;
+                if (animationInterval) {
+                    pauseAnimation();
+                    playAnimation();
+                }
+            });
+
+            // --- Initialization ---
+            createGrid();
+            resetAnimation();
+        });
+    </script>
+
+</body>
+</html>
