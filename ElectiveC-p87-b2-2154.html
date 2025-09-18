@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>偽代碼同步執行模擬器 (可调速版)</title>
+    <style>
+        :root {
+            --background-color: #f0f4f8;
+            --panel-color: #ffffff;
+            --header-color: #2c3e50;
+            --text-color: #34495e;
+            --grid-line-color: #bdc3c7;
+            --cell-one-bg: #27ae60;
+            --code-highlight-bg: #f1c40f;
+            --button-bg: #3498db;
+            --button-hover-bg: #2980b9;
+            --button-text-color: #ffffff;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Helvetica Neue', 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--panel-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--header-color);
+            color: var(--button-text-color);
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        main {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        #left-panel, #right-panel {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .panel-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+        }
+
+        #code-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            line-height: 1.8;
+            white-space: pre;
+        }
+
+        #code-display .line {
+            padding: 0.2em 0.5em;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        #code-display .line.highlight {
+            background-color: var(--code-highlight-bg);
+        }
+
+        #explanation-panel {
+            min-height: 3em;
+            padding: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            background-color: #e9f5fd;
+            border-left: 5px solid var(--button-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        #controls button {
+            background-color: var(--button-bg);
+            color: var(--button-text-color);
+            border: none;
+            padding: 0.6em 1.2em;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        
+        #controls button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        #controls #auto-run-btn.running {
+            background-color: #e74c3c;
+        }
+
+        #input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #n-input {
+            width: 60px;
+            font-size: 1rem;
+            padding: 0.5em;
+            text-align: center;
+            border: 2px solid var(--grid-line-color);
+            border-radius: 5px;
+        }
+        
+        #speed-control {
+            grid-column: 1 / -1; /* Span across both columns */
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+        #speed-slider {
+            width: 120px;
+        }
+        #speed-display {
+            font-weight: bold;
+            min-width: 45px;
+            text-align: left;
+        }
+
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+            border: 2px solid var(--header-color);
+            margin: 0 auto;
+        }
+
+        .grid-cell {
+            border: 1px solid var(--grid-line-color);
+            transition: background-color 0.1s ease-in-out;
+        }
+        
+        .grid-cell.value-1 {
+            background-color: var(--cell-one-bg);
+        }
+
+        #vars-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 1rem;
+            text-align: center;
+        }
+        .var {
+            background-color: #ecf0f1;
+            padding: 0.5rem;
+            border-radius: 5px;
+        }
+        .var-name {
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .var-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--button-bg);
+        }
+
+        @media (max-width: 800px) {
+            main { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <header>偽代碼同步執行模擬器 (可调速版)</header>
+    <main>
+        <div id="left-panel">
+            <div class="panel-box">
+                <div id="code-display">
+<span class="line" id="line-1">1  輸入 n</span>
+<span class="line" id="line-2">2  y ← 0</span>
+<span class="line" id="line-3">3  當 y < 10 執行</span>
+<span class="line" id="line-4">4      x ← 0</span>
+<span class="line" id="line-5">5      當 x < 10 執行</span>
+<span class="line" id="line-6">6          設 i 由 y 至 y + n - 1</span>
+<span class="line" id="line-7">7              設 j 由 x 至 x + n - 1</span>
+<span class="line" id="line-8">8                  如果 i < 10 且 j < 10 則</span>
+<span class="line" id="line-9">9                      F[i,j] ← 1</span>
+<span class="line" id="line-10">10         x ← x + n + n</span>
+<span class="line" id="line-11">11     y ← y + n + n</span>
+                </div>
+            </div>
+             <div class="panel-box" id="explanation-panel">
+                請輸入 n 的值，然後點擊「開始執行」。
+            </div>
+            <div class="panel-box">
+                <div id="controls">
+                    <div id="input-group">
+                        <label for="n-input"><b>n =</b></label>
+                        <input type="number" id="n-input" value="2" min="1" max="4">
+                    </div>
+                    <button id="start-btn">開始執行</button>
+                    <button id="next-step-btn" disabled>下一步</button>
+                    <button id="auto-run-btn" disabled>自動執行</button>
+                    <div id="speed-control">
+                        <label for="speed-slider">速度:</label>
+                        <input type="range" id="speed-slider" min="1" max="100" value="50">
+                        <span id="speed-display">x1.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="right-panel">
+            <div class="panel-box">
+                <h3>變數狀態</h3>
+                <div id="vars-display">
+                    <div class="var"><div class="var-name">n</div><div class="var-value" id="var-n">-</div></div>
+                    <div class="var"><div class="var-name">y</div><div class="var-value" id="var-y">-</div></div>
+                    <div class="var"><div class="var-name">x</div><div class="var-value" id="var-x">-</div></div>
+                    <div class="var"><div class="var-name">i</div><div class="var-value" id="var-i">-</div></div>
+                    <div class="var"><div class="var-name">j</div><div class="var-value" id="var-j">-</div></div>
+                </div>
+            </div>
+            <div class="panel-box">
+                <h3>農地 F[10][10]</h3>
+                <div id="grid-container"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const explanationPanel = document.getElementById('explanation-panel');
+    const startBtn = document.getElementById('start-btn');
+    const nextStepBtn = document.getElementById('next-step-btn');
+    const autoRunBtn = document.getElementById('auto-run-btn');
+    const nInput = document.getElementById('n-input');
+    const gridContainer = document.getElementById('grid-container');
+    const codeLines = document.querySelectorAll('.line');
+    const speedSlider = document.getElementById('speed-slider');
+    const speedDisplay = document.getElementById('speed-display');
+    const varDisplays = {
+        n: document.getElementById('var-n'),
+        y: document.getElementById('var-y'),
+        x: document.getElementById('var-x'),
+        i: document.getElementById('var-i'),
+        j: document.getElementById('var-j'),
+    };
+
+    let simulation = null;
+    let autoRunInterval = null;
+    let currentSpeedDelay = 200; // Default delay for 1x speed
+
+    // --- Simulation Generator ---
+    function* simulationGenerator(n) {
+        let vars = { n, y: null, x: null, i: null, j: null };
+        
+        yield { line: 1, vars, explanation: `開始執行，輸入 n = ${n}。` };
+        vars.y = 0;
+        yield { line: 2, vars, explanation: `初始化 y ← 0。` };
+
+        while (vars.y < 10) {
+            yield { line: 3, vars, explanation: `條件檢查：y < 10 ? (${vars.y} < 10 → 是)，進入 y 迴圈。` };
+            vars.x = 0;
+            yield { line: 4, vars, explanation: `初始化 x ← 0。` };
+
+            while (vars.x < 10) {
+                yield { line: 5, vars, explanation: `條件檢查：x < 10 ? (${vars.x} < 10 → 是)，進入 x 迴圈。` };
+
+                for (let i = vars.y; i <= vars.y + n - 1; i++) {
+                    vars.i = i;
+                    yield { line: 6, vars, explanation: `進入 i 迴圈，設定 i = ${i}。` };
+
+                    for (let j = vars.x; j <= vars.x + n - 1; j++) {
+                        vars.j = j;
+                        yield { line: 7, vars, explanation: `進入 j 迴圈，設定 j = ${j}。` };
+                        
+                        const conditionMet = vars.i < 10 && vars.j < 10;
+                        yield { line: 8, vars, explanation: `條件檢查：i < 10 且 j < 10 ? (${vars.i}<10 && ${vars.j}<10 → ${conditionMet ? '是' : '否'})` };
+                        
+                        if (conditionMet) {
+                            yield { line: 9, vars, explanation: `設定 F[${vars.i},${vars.j}] ← 1。`, gridUpdate: { i: vars.i, j: vars.j } };
+                        }
+                    }
+                    vars.j = null;
+                }
+                vars.i = null;
+
+                vars.x = vars.x + n + n;
+                yield { line: 10, vars, explanation: `更新 x ← x + n + n，新的 x 為 ${vars.x}。` };
+            }
+            yield { line: 5, vars, explanation: `條件檢查：x < 10 ? (${vars.x} < 10 → 否)，x 迴圈結束。` };
+            vars.x = null;
+
+            vars.y = vars.y + n + n;
+            yield { line: 11, vars, explanation: `更新 y ← y + n + n，新的 y 為 ${vars.y}。` };
+        }
+        yield { line: 3, vars, explanation: `條件檢查：y < 10 ? (${vars.y} < 10 → 否)，y 迴圈結束。` };
+        
+        return { line: null, vars: {n, y:vars.y, x:null, i:null, j:null}, explanation: '演算法執行完畢。' };
+    }
+
+    // --- UI Update Functions ---
+    function updateUI(step) {
+        codeLines.forEach(line => line.classList.remove('highlight'));
+        if (step.line) document.getElementById(`line-${step.line}`).classList.add('highlight');
+        
+        explanationPanel.textContent = step.explanation;
+        
+        for (const key in varDisplays) {
+            varDisplays[key].textContent = step.vars[key] ?? '-';
+        }
+        
+        if (step.gridUpdate) {
+            const cell = document.getElementById(`cell-${step.gridUpdate.i}-${step.gridUpdate.j}`);
+            if (cell) cell.classList.add('value-1');
+        }
+    }
+
+    // --- Control Functions ---
+    function startSimulation() {
+        const n = parseInt(nInput.value);
+        if (isNaN(n) || n < 1) {
+            alert('請輸入一個大於等於 1 的正整數 n。');
+            return;
+        }
+        
+        resetSimulationState();
+        
+        simulation = simulationGenerator(n);
+        
+        updateUI({ line: null, vars: {}, explanation: '點擊「下一步」開始執行第一行。' });
+        varDisplays.n.textContent = n;
+
+        startBtn.textContent = '重設';
+        startBtn.removeEventListener('click', startSimulation);
+        startBtn.addEventListener('click', resetSimulation);
+        
+        nextStepBtn.disabled = false;
+        autoRunBtn.disabled = false;
+        nInput.disabled = true;
+    }
+
+    function stepForward() {
+        if (!simulation) return;
+        const step = simulation.next();
+        
+        if (step.done) {
+            updateUI(step.value);
+            stopAutoRun();
+            nextStepBtn.disabled = true;
+            autoRunBtn.disabled = true;
+        } else {
+            updateUI(step.value);
+        }
+    }
+
+    function toggleAutoRun() {
+        if (autoRunInterval) {
+            stopAutoRun();
+        } else {
+            autoRunBtn.textContent = '暫停';
+            autoRunBtn.classList.add('running');
+            autoRunInterval = setInterval(stepForward, currentSpeedDelay);
+        }
+    }
+
+    function stopAutoRun() {
+        clearInterval(autoRunInterval);
+        autoRunInterval = null;
+        autoRunBtn.textContent = '自動執行';
+        autoRunBtn.classList.remove('running');
+    }
+
+    function resetSimulationState() {
+        stopAutoRun();
+        simulation = null;
+        createGrid();
+    }
+
+    function resetSimulation() {
+        resetSimulationState();
+        updateUI({ line: null, vars: {}, explanation: '請輸入 n 的值，然後點擊「開始執行」。' });
+        
+        startBtn.textContent = '開始執行';
+        startBtn.removeEventListener('click', resetSimulation);
+        startBtn.addEventListener('click', startSimulation);
+
+        nextStepBtn.disabled = true;
+        autoRunBtn.disabled = true;
+        nInput.disabled = false;
+        
+        // Reset speed slider
+        speedSlider.value = 50;
+        speedSlider.dispatchEvent(new Event('input'));
+    }
+
+    function handleSpeedChange() {
+        const sliderValue = parseInt(speedSlider.value);
+        // Map slider value (1-100) to delay (e.g., 800ms to 10ms).
+        // Using an exponential scale for a more noticeable effect at high speeds.
+        const maxDelay = 800;
+        const minDelay = 10;
+        // We use a reversed scale: slider at 100 is minDelay, slider at 1 is maxDelay.
+        currentSpeedDelay = maxDelay - Math.pow((sliderValue - 1) / 99, 2) * (maxDelay - minDelay);
+
+        // Update display
+        const baseDelay = 200; // Define 1x speed as 200ms
+        const multiplier = (baseDelay / currentSpeedDelay).toFixed(1);
+        speedDisplay.textContent = `x${multiplier}`;
+
+        // If auto-running, restart the interval with the new speed
+        if (autoRunInterval) {
+            clearInterval(autoRunInterval);
+            autoRunInterval = setInterval(stepForward, currentSpeedDelay);
+        }
+    }
+
+    function createGrid() {
+        gridContainer.innerHTML = '';
+        for (let i = 0; i < 100; i++) {
+            gridContainer.appendChild(Object.assign(document.createElement('div'), { className: 'grid-cell', id: `cell-${Math.floor(i/10)}-${i%10}` }));
+        }
+    }
+
+    // --- Event Listeners ---
+    startBtn.addEventListener('click', startSimulation);
+    nextStepBtn.addEventListener('click', stepForward);
+    autoRunBtn.addEventListener('click', toggleAutoRun);
+    speedSlider.addEventListener('input', handleSpeedChange);
+
+    // --- Initial Setup ---
+    createGrid();
+});
+</script>
+
+</body>
+</html>
