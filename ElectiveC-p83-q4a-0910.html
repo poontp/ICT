@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>賓果遊戲算法測驗與演示 - (b)(i) 直行檢查</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            color: #4a4a4a;
+            border-bottom: 2px solid #6c5ce7;
+            padding-bottom: 10px;
+        }
+        .content-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .left-panel, .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .grid-container { display: flex; justify-content: center; }
+        .bingo-grid { border-collapse: collapse; margin-bottom: 20px; }
+        .bingo-grid th, .bingo-grid td {
+            border: 1px solid #ccc;
+            width: 45px;
+            height: 45px;
+            text-align: center;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .bingo-grid th { background-color: #f2f2f2; }
+        .cell-true { background-color: #a7e9af; }
+        .cell-false { background-color: #f7baba; }
+        .cell-current {
+            outline: 3px solid #6c5ce7;
+            outline-offset: -3px;
+            box-shadow: 0 0 10px #6c5ce7;
+        }
+        .col-win { background-color: #fdcb6e !important; }
+        
+        .status-box {
+            background: #eef1f5;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        .code-line { display: block; min-height: 28px; padding-right: 10px; }
+        .animation-code .code-line { transition: background-color 0.3s; border-radius: 3px; }
+        .code-highlight { background-color: #fff4c2; }
+        .indent-0 { padding-left: 10px; }
+        .indent-1 { padding-left: 3em; }
+        .indent-2 { padding-left: 5em; }
+        .indent-3 { padding-left: 7em; }
+
+        .code-block input {
+            font-family: inherit; font-size: inherit; background: #eef1f5;
+            border: 1px solid #ccc; border-radius: 3px; padding: 2px 4px; text-align: center;
+        }
+        .code-block input.short { width: 40px; }
+        .code-block input.long { width: 250px; }
+        .code-block input.error { border: 2px solid #d63031; }
+
+        .button-group { margin-top: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        button {
+            background-color: #6c5ce7; color: white; border: none;
+            padding: 12px 20px; font-size: 16px; border-radius: 5px;
+            cursor: pointer; transition: background-color 0.3s;
+        }
+        button:hover { background-color: #5849d1; }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+        button.secondary { background-color: #636e72; }
+        button.secondary:hover { background-color: #2d3436; }
+        button.play-pause { background-color: #27ae60; }
+        button.play-pause:hover { background-color: #2ecc71; }
+
+        #feedback {
+            margin-top: 15px; padding: 10px; border-radius: 5px;
+            font-weight: bold; display: none;
+        }
+        #feedback.success { background-color: #d4edda; color: #155724; display: block; }
+        #feedback.error { background-color: #f8d7da; color: #721c24; display: block; }
+
+        .hidden { display: none !important; }
+        
+        #step-description {
+            margin-top: 20px; padding: 15px; background-color: #e9ecef;
+            border-radius: 5px; border-left: 5px solid #6c5ce7;
+            font-weight: bold; min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Section 1: User Input -->
+    <div id="input-section">
+        <h2>題目 (b)(i) 填空測驗</h2>
+        <p>請完成以下算法，以檢查某一**直行**是否已完全連上。完成後點擊「檢查答案」。</p>
+        <div id="answer-form" class="code-block">
+            <div class="code-line indent-0">win ← False</div>
+            <div class="code-line indent-0">設 j 由 <input type="text" id="ans-j-from" class="short"> 至 <input type="text" id="ans-j-to" class="short"></div>
+            <div class="code-line indent-1">col ← True</div>
+            <div class="code-line indent-1">設 i 由 <input type="text" id="ans-i-from" class="short"> 至 <input type="text" id="ans-i-to" class="short"></div>
+            <div class="code-line indent-2">如果 <input type="text" id="ans-cond1" class="long"> 則</div>
+            <div class="code-line indent-3">col ← False</div>
+            <div class="code-line indent-1">如果 <input type="text" id="ans-cond2" class="long"> 則</div>
+            <div class="code-line indent-2">win ← True</div>
+            <div class="code-line indent-0">輸出 win</div>
+        </div>
+        <div id="feedback"></div>
+        <div class="button-group">
+            <button type="button" onclick="checkAnswers()">檢查答案</button>
+        </div>
+    </div>
+
+    <!-- Section 2: Animation (hidden by default) -->
+    <div id="animation-section" class="hidden">
+        <h2>算法動畫解說</h2>
+        <p>您的答案正確！請使用下方按鈕逐步執行動畫，或點擊自動播放。</p>
+        <div class="button-group">
+            <button id="autoPlayButton" class="play-pause" onclick="toggleAutoPlay()">自動播放</button>
+            <button id="prevButton" onclick="manualPrevStep()">« 上一步</button>
+            <button id="nextButton" onclick="manualNextStep()">下一步 »</button>
+            <button class="secondary" onclick="resetAnimation()">重設動畫</button>
+        </div>
+        <div id="step-description">請點擊按鈕開始。</div>
+        <div class="content-wrapper">
+            <div class="left-panel">
+                <h3>賓果卡狀態 (result)</h3>
+                <div id="grid-container" class="grid-container"></div>
+                <h3>變數狀態</h3>
+                <div id="status-box" class="status-box">
+                    win = ?<br> j (欄) = ?<br> col = ?<br> i (列) = ?
+                </div>
+            </div>
+            <div class="right-panel">
+                <h3>算法虛擬碼</h3>
+                <div class="code-block animation-code">
+                    <span class="code-line indent-0" id="line-0">win ← False</span>
+                    <span class="code-line indent-0" id="line-1">設 j 由 0 至 4</span>
+                    <span class="code-line indent-1" id="line-2">col ← True</span>
+                    <span class="code-line indent-1" id="line-3">設 i 由 0 至 4</span>
+                    <span class="code-line indent-2" id="line-4">如果 result[i, j] = False 則</span>
+                    <span class="code-line indent-3" id="line-5">col ← False</span>
+                    <span class="code-line indent-1" id="line-6">如果 col = True 則</span>
+                    <span class="code-line indent-2" id="line-7">win ← True</span>
+                    <span class="code-line indent-0" id="line-8">輸出 win</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const result = [
+        [false, false, true, false, true],
+        [true, false, true, true, false],
+        [true, true, true, true, true],
+        [false, true, true, false, false],
+        [true, false, false, false, false]
+    ];
+    const AUTO_PLAY_DELAY = 1200;
+
+    // DOM Elements
+    const inputSection = document.getElementById('input-section');
+    const animationSection = document.getElementById('animation-section');
+    const feedbackDiv = document.getElementById('feedback');
+    const gridContainer = document.getElementById('grid-container');
+    const statusBox = document.getElementById('status-box');
+    const stepDescription = document.getElementById('step-description');
+    const autoPlayButton = document.getElementById('autoPlayButton');
+    
+    // Note the new IDs for (b)(i)
+    const answerFields = {
+        jFrom: document.getElementById('ans-j-from'), jTo: document.getElementById('ans-j-to'),
+        iFrom: document.getElementById('ans-i-from'), iTo: document.getElementById('ans-i-to'),
+        cond1: document.getElementById('ans-cond1'), cond2: document.getElementById('ans-cond2')
+    };
+
+    const correctAnswers = {
+        jFrom: "0", jTo: "4",
+        iFrom: "0", iTo: "4",
+        cond1: "result[i,j]=false",
+        cond2: "col=true"
+    };
+
+    // Global state for animation
+    let animationSteps = [];
+    let currentStepIndex = 0;
+    let autoPlayTimer = null;
+    let isAutoPlaying = false;
+
+    function formatBoolean(value) {
+        if (value === true) return 'True';
+        if (value === false) return 'False';
+        return String(value);
+    }
+
+    function normalizeAnswer(str) {
+        return str.toLowerCase().replace(/\s/g, '').replace('==', '=');
+    }
+
+    function checkAnswers() {
+        let allCorrect = true;
+        feedbackDiv.className = '';
+        Object.values(answerFields).forEach(input => input.classList.remove('error'));
+
+        const userAnswers = {
+            jFrom: answerFields.jFrom.value.trim(), jTo: answerFields.jTo.value.trim(),
+            iFrom: answerFields.iFrom.value.trim(), iTo: answerFields.iTo.value.trim(),
+            cond1: normalizeAnswer(answerFields.cond1.value),
+            cond2: normalizeAnswer(answerFields.cond2.value)
+        };
+
+        if (userAnswers.jFrom !== correctAnswers.jFrom) { allCorrect = false; answerFields.jFrom.classList.add('error'); }
+        if (userAnswers.jTo !== correctAnswers.jTo) { allCorrect = false; answerFields.jTo.classList.add('error'); }
+        if (userAnswers.iFrom !== correctAnswers.iFrom) { allCorrect = false; answerFields.iFrom.classList.add('error'); }
+        if (userAnswers.iTo !== correctAnswers.iTo) { allCorrect = false; answerFields.iTo.classList.add('error'); }
+        if (userAnswers.cond1 !== correctAnswers.cond1) { allCorrect = false; answerFields.cond1.classList.add('error'); }
+        if (userAnswers.cond2 !== correctAnswers.cond2) { allCorrect = false; answerFields.cond2.classList.add('error'); }
+
+        if (allCorrect) {
+            feedbackDiv.className = 'success';
+            feedbackDiv.textContent = '完全正確！動畫已解鎖。';
+            inputSection.classList.add('hidden');
+            animationSection.classList.remove('hidden');
+            generateAnimationSteps();
+            renderStep(0);
+        } else {
+            feedbackDiv.className = 'error';
+            feedbackDiv.textContent = '答案不完全正確，請檢查標紅的欄位後再試一次。';
+        }
+    }
+    
+    function resetQuiz() {
+        inputSection.classList.remove('hidden');
+        animationSection.classList.add('hidden');
+        feedbackDiv.className = '';
+        feedbackDiv.textContent = '';
+        Object.values(answerFields).forEach(input => {
+            input.value = '';
+            input.classList.remove('error');
+        });
+    }
+
+    function createGrid() {
+        let table = '<table class="bingo-grid"><thead><tr><th>i\\j</th>';
+        for (let j = 0; j < 5; j++) { table += `<th>${j}</th>`; }
+        table += '</tr></thead><tbody>';
+        for (let i = 0; i < 5; i++) {
+            table += `<tr><th>${i}</th>`;
+            for (let j = 0; j < 5; j++) {
+                const isTrue = result[i][j];
+                table += `<td id="cell-${i}-${j}" class="${isTrue ? 'cell-true' : 'cell-false'}">${isTrue ? 'T' : 'F'}</td>`;
+            }
+            table += '</tr>';
+        }
+        table += '</tbody></table>';
+        gridContainer.innerHTML = table;
+    }
+
+    // --- NEW LOGIC FOR (b)(i) COLUMN CHECK ---
+    function generateAnimationSteps() {
+        animationSteps = [];
+        const addStep = (line, status, cell, winCols, description) => {
+            animationSteps.push({ line, status: JSON.parse(JSON.stringify(status)), cell, winCols: winCols ? [...winCols] : [], description });
+        };
+
+        let state = { win: '?', j: '?', col: '?', i: '?' };
+        let foundWinCols = [];
+
+        addStep(null, state, null, foundWinCols, "動畫開始前的初始狀態。");
+
+        state.win = false;
+        addStep('line-0', state, null, foundWinCols, `將變數 'win' 初始化為 ${formatBoolean(false)}。`);
+
+        // Outer loop iterates through COLUMNS (j)
+        for (let j = 0; j < 5; j++) {
+            state.j = j; state.col = '?'; state.i = '?';
+            
+            let desc1 = `外層迴圈 (j=${j})：開始檢查第 ${j} 直行。`;
+            if (state.win === true) {
+                desc1 = `(j=${j}) 即使 'win' 已是 ${formatBoolean(true)}，算法仍繼續檢查第 ${j} 直行。`;
+            }
+            addStep('line-1', state, null, foundWinCols, desc1);
+
+            state.col = true;
+            addStep('line-2', state, null, foundWinCols, `(j=${j}) 樂觀假設：假設此直行會連線，將 'col' 設為 ${formatBoolean(true)}。`);
+
+            // Inner loop iterates through ROWS (i) for the current column
+            for (let i = 0; i < 5; i++) {
+                state.i = i;
+                addStep('line-3', state, {i, j}, foundWinCols, `內層迴圈 (i=${i})：檢查儲存格 [${i}, ${j}]。`);
+
+                addStep('line-4', state, {i, j}, foundWinCols, `(j=${j}, i=${i}) 條件判斷：儲存格的值是 ${formatBoolean(result[i][j])}。是否為 ${formatBoolean(false)}？`);
+                if (result[i][j] === false) {
+                    state.col = false;
+                    addStep('line-5', state, {i, j}, foundWinCols, `(j=${j}, i=${i}) 是! 值為 ${formatBoolean(false)}，推翻假設。將 'col' 設為 ${formatBoolean(false)}。`);
+                }
+            }
+            state.i = '結束';
+            addStep('line-6', state, null, foundWinCols, `(j=${j}) 內層迴圈結束。判斷 'col' 是否仍為 ${formatBoolean(true)}？`);
+
+            if (state.col === true) {
+                let alreadyWon = state.win === true;
+                state.win = true;
+                if (!foundWinCols.includes(j)) {
+                    foundWinCols.push(j);
+                }
+                let desc7 = `(j=${j}) 是! 'col' 仍為 ${formatBoolean(true)}，此直行已連線。將 'win' 設為 ${formatBoolean(true)}。`;
+                if (alreadyWon) {
+                    desc7 += ` ('win' 狀態保持為 ${formatBoolean(true)})`;
+                }
+                addStep('line-7', state, null, foundWinCols, desc7);
+            }
+        }
+
+        state.j = '結束';
+        state.col = false; // The last col (j=4) was not a win
+        addStep('line-8', state, null, foundWinCols, `所有迴圈結束，輸出最終結果 win = ${formatBoolean(state.win)}。`);
+        addStep(null, state, null, foundWinCols, "動畫結束。");
+    }
+
+    function renderStep(index) {
+        if (index < 0 || index >= animationSteps.length) return;
+        currentStepIndex = index;
+        const step = animationSteps[index];
+
+        clearHighlights();
+        if (step.line) document.getElementById(step.line).classList.add('code-highlight');
+        
+        statusBox.innerHTML = `win = ${formatBoolean(step.status.win)}<br>j (欄) = ${formatBoolean(step.status.j)}<br>col = ${formatBoolean(step.status.col)}<br>i (列) = ${formatBoolean(step.status.i)}`;
+        
+        stepDescription.textContent = step.description;
+        if (step.cell) document.getElementById(`cell-${step.cell.i}-${step.cell.j}`).classList.add('cell-current');
+        
+        // Render all winning columns found so far
+        if (step.winCols && step.winCols.length > 0) {
+            step.winCols.forEach(colIndex => {
+                for (let k = 0; k < 5; k++) { // Iterate through rows (k) for the winning column
+                    document.getElementById(`cell-${k}-${colIndex}`).classList.add('col-win');
+                }
+            });
+        }
+
+        document.getElementById('prevButton').disabled = (index === 0 || isAutoPlaying);
+        document.getElementById('nextButton').disabled = (index === animationSteps.length - 1 || isAutoPlaying);
+    }
+    
+    function manualNextStep() { pauseAutoPlay(); renderStep(currentStepIndex + 1); }
+    function manualPrevStep() { pauseAutoPlay(); renderStep(currentStepIndex - 1); }
+    function resetAnimation() { pauseAutoPlay(); renderStep(0); }
+
+    function toggleAutoPlay() {
+        if (isAutoPlaying) {
+            pauseAutoPlay();
+        } else {
+            startAutoPlay();
+        }
+    }
+
+    function startAutoPlay() {
+        isAutoPlaying = true;
+        autoPlayButton.textContent = '暫停';
+        autoPlayButton.style.backgroundColor = '#e74c3c';
+        
+        const playLoop = () => {
+            if (currentStepIndex >= animationSteps.length - 1) {
+                pauseAutoPlay();
+                return;
+            }
+            renderStep(currentStepIndex + 1);
+            autoPlayTimer = setTimeout(playLoop, AUTO_PLAY_DELAY);
+        };
+        
+        if (currentStepIndex >= animationSteps.length - 1) {
+            renderStep(0);
+        }
+        
+        playLoop();
+    }
+
+    function pauseAutoPlay() {
+        clearTimeout(autoPlayTimer);
+        isAutoPlaying = false;
+        autoPlayButton.textContent = '自動播放';
+        autoPlayButton.style.backgroundColor = '#27ae60';
+        renderStep(currentStepIndex);
+    }
+    
+    function clearHighlights() {
+        document.querySelectorAll('.animation-code .code-line').forEach(l => l.classList.remove('code-highlight'));
+        document.querySelectorAll('.bingo-grid td').forEach(c => c.classList.remove('cell-current', 'col-win'));
+    }
+
+    window.onload = () => {
+        createGrid();
+        resetQuiz();
+    };
+</script>
+
+</body>
+</html>
