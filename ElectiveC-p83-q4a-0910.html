@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>賓果遊戲算法測驗與演示 - (b)(i) 直行檢查</title>
+    <title>賓果遊戲算法測驗與演示</title>
     <style>
         body {
             font-family: 'Microsoft JhengHei', 'Heiti TC', sans-serif;
@@ -54,7 +54,7 @@
             outline-offset: -3px;
             box-shadow: 0 0 10px #6c5ce7;
         }
-        .col-win { background-color: #fdcb6e !important; }
+        .row-win { background-color: #fdcb6e !important; }
         
         .status-box {
             background: #eef1f5;
@@ -125,15 +125,15 @@
 <div class="container">
     <!-- Section 1: User Input -->
     <div id="input-section">
-        <h2>題目 (b)(i) 填空測驗</h2>
-        <p>請完成以下算法，以檢查某一**直行**是否已完全連上。完成後點擊「檢查答案」。</p>
+        <h2>題目 (a)(i) 填空測驗</h2>
+        <p>請完成以下算法，以檢查某一列是否已完全連上。完成後點擊「檢查答案」。</p>
         <div id="answer-form" class="code-block">
             <div class="code-line indent-0">win ← False</div>
-            <div class="code-line indent-0">設 j 由 <input type="text" id="ans-j-from" class="short"> 至 <input type="text" id="ans-j-to" class="short"></div>
-            <div class="code-line indent-1">col ← True</div>
-            <div class="code-line indent-1">設 i 由 <input type="text" id="ans-i-from" class="short"> 至 <input type="text" id="ans-i-to" class="short"></div>
+            <div class="code-line indent-0">設 i 由 <input type="text" id="ans-i-from" class="short"> 至 <input type="text" id="ans-i-to" class="short"></div>
+            <div class="code-line indent-1">row ← True</div>
+            <div class="code-line indent-1">設 j 由 <input type="text" id="ans-j-from" class="short"> 至 <input type="text" id="ans-j-to" class="short"></div>
             <div class="code-line indent-2">如果 <input type="text" id="ans-cond1" class="long"> 則</div>
-            <div class="code-line indent-3">col ← False</div>
+            <div class="code-line indent-3">row ← False</div>
             <div class="code-line indent-1">如果 <input type="text" id="ans-cond2" class="long"> 則</div>
             <div class="code-line indent-2">win ← True</div>
             <div class="code-line indent-0">輸出 win</div>
@@ -161,19 +161,19 @@
                 <div id="grid-container" class="grid-container"></div>
                 <h3>變數狀態</h3>
                 <div id="status-box" class="status-box">
-                    win = ?<br> j (欄) = ?<br> col = ?<br> i (列) = ?
+                    win = ?<br> i (列) = ?<br> row = ?<br> j (欄) = ?
                 </div>
             </div>
             <div class="right-panel">
                 <h3>算法虛擬碼</h3>
                 <div class="code-block animation-code">
                     <span class="code-line indent-0" id="line-0">win ← False</span>
-                    <span class="code-line indent-0" id="line-1">設 j 由 0 至 4</span>
-                    <span class="code-line indent-1" id="line-2">col ← True</span>
-                    <span class="code-line indent-1" id="line-3">設 i 由 0 至 4</span>
+                    <span class="code-line indent-0" id="line-1">設 i 由 0 至 4</span>
+                    <span class="code-line indent-1" id="line-2">row ← True</span>
+                    <span class="code-line indent-1" id="line-3">設 j 由 0 至 4</span>
                     <span class="code-line indent-2" id="line-4">如果 result[i, j] = False 則</span>
-                    <span class="code-line indent-3" id="line-5">col ← False</span>
-                    <span class="code-line indent-1" id="line-6">如果 col = True 則</span>
+                    <span class="code-line indent-3" id="line-5">row ← False</span>
+                    <span class="code-line indent-1" id="line-6">如果 row = True 則</span>
                     <span class="code-line indent-2" id="line-7">win ← True</span>
                     <span class="code-line indent-0" id="line-8">輸出 win</span>
                 </div>
@@ -201,18 +201,15 @@
     const stepDescription = document.getElementById('step-description');
     const autoPlayButton = document.getElementById('autoPlayButton');
     
-    // Note the new IDs for (b)(i)
     const answerFields = {
-        jFrom: document.getElementById('ans-j-from'), jTo: document.getElementById('ans-j-to'),
         iFrom: document.getElementById('ans-i-from'), iTo: document.getElementById('ans-i-to'),
+        jFrom: document.getElementById('ans-j-from'), jTo: document.getElementById('ans-j-to'),
         cond1: document.getElementById('ans-cond1'), cond2: document.getElementById('ans-cond2')
     };
 
     const correctAnswers = {
-        jFrom: "0", jTo: "4",
-        iFrom: "0", iTo: "4",
-        cond1: "result[i,j]=false",
-        cond2: "col=true"
+        iFrom: "0", iTo: "4", jFrom: "0", jTo: "4",
+        cond1: "result[i,j]=false", cond2: "row=true"
     };
 
     // Global state for animation
@@ -221,6 +218,7 @@
     let autoPlayTimer = null;
     let isAutoPlaying = false;
 
+    // --- NEW HELPER FUNCTION ---
     function formatBoolean(value) {
         if (value === true) return 'True';
         if (value === false) return 'False';
@@ -237,16 +235,16 @@
         Object.values(answerFields).forEach(input => input.classList.remove('error'));
 
         const userAnswers = {
-            jFrom: answerFields.jFrom.value.trim(), jTo: answerFields.jTo.value.trim(),
             iFrom: answerFields.iFrom.value.trim(), iTo: answerFields.iTo.value.trim(),
+            jFrom: answerFields.jFrom.value.trim(), jTo: answerFields.jTo.value.trim(),
             cond1: normalizeAnswer(answerFields.cond1.value),
             cond2: normalizeAnswer(answerFields.cond2.value)
         };
 
-        if (userAnswers.jFrom !== correctAnswers.jFrom) { allCorrect = false; answerFields.jFrom.classList.add('error'); }
-        if (userAnswers.jTo !== correctAnswers.jTo) { allCorrect = false; answerFields.jTo.classList.add('error'); }
         if (userAnswers.iFrom !== correctAnswers.iFrom) { allCorrect = false; answerFields.iFrom.classList.add('error'); }
         if (userAnswers.iTo !== correctAnswers.iTo) { allCorrect = false; answerFields.iTo.classList.add('error'); }
+        if (userAnswers.jFrom !== correctAnswers.jFrom) { allCorrect = false; answerFields.jFrom.classList.add('error'); }
+        if (userAnswers.jTo !== correctAnswers.jTo) { allCorrect = false; answerFields.jTo.classList.add('error'); }
         if (userAnswers.cond1 !== correctAnswers.cond1) { allCorrect = false; answerFields.cond1.classList.add('error'); }
         if (userAnswers.cond2 !== correctAnswers.cond2) { allCorrect = false; answerFields.cond2.classList.add('error'); }
 
@@ -290,66 +288,63 @@
         gridContainer.innerHTML = table;
     }
 
-    // --- NEW LOGIC FOR (b)(i) COLUMN CHECK ---
     function generateAnimationSteps() {
         animationSteps = [];
-        const addStep = (line, status, cell, winCols, description) => {
-            animationSteps.push({ line, status: JSON.parse(JSON.stringify(status)), cell, winCols: winCols ? [...winCols] : [], description });
+        const addStep = (line, status, cell, winRows, description) => {
+            animationSteps.push({ line, status: JSON.parse(JSON.stringify(status)), cell, winRows: winRows ? [...winRows] : [], description });
         };
 
-        let state = { win: '?', j: '?', col: '?', i: '?' };
-        let foundWinCols = [];
+        let state = { win: '?', i: '?', row: '?', j: '?' };
+        let foundWinRows = [];
 
-        addStep(null, state, null, foundWinCols, "動畫開始前的初始狀態。");
+        addStep(null, state, null, foundWinRows, "動畫開始前的初始狀態。");
 
         state.win = false;
-        addStep('line-0', state, null, foundWinCols, `將變數 'win' 初始化為 ${formatBoolean(false)}。`);
+        addStep('line-0', state, null, foundWinRows, `將變數 'win' 初始化為 ${formatBoolean(false)}。`);
 
-        // Outer loop iterates through COLUMNS (j)
-        for (let j = 0; j < 5; j++) {
-            state.j = j; state.col = '?'; state.i = '?';
+        for (let i = 0; i < 5; i++) {
+            state.i = i; state.row = '?'; state.j = '?';
             
-            let desc1 = `外層迴圈 (j=${j})：開始檢查第 ${j} 直行。`;
+            let desc1 = `外層迴圈 (i=${i})：開始檢查第 ${i} 列。`;
             if (state.win === true) {
-                desc1 = `(j=${j}) 即使 'win' 已是 ${formatBoolean(true)}，算法仍繼續檢查第 ${j} 直行。`;
+                desc1 = `(i=${i}) 即使 'win' 已是 ${formatBoolean(true)}，算法仍繼續檢查第 ${i} 列。`;
             }
-            addStep('line-1', state, null, foundWinCols, desc1);
+            addStep('line-1', state, null, foundWinRows, desc1);
 
-            state.col = true;
-            addStep('line-2', state, null, foundWinCols, `(j=${j}) 樂觀假設：假設此直行會連線，將 'col' 設為 ${formatBoolean(true)}。`);
+            state.row = true;
+            addStep('line-2', state, null, foundWinRows, `(i=${i}) 樂觀假設：假設此列會連線，將 'row' 設為 ${formatBoolean(true)}。`);
 
-            // Inner loop iterates through ROWS (i) for the current column
-            for (let i = 0; i < 5; i++) {
-                state.i = i;
-                addStep('line-3', state, {i, j}, foundWinCols, `內層迴圈 (i=${i})：檢查儲存格 [${i}, ${j}]。`);
+            for (let j = 0; j < 5; j++) {
+                state.j = j;
+                addStep('line-3', state, {i, j}, foundWinRows, `內層迴圈 (j=${j})：檢查儲存格 [${i}, ${j}]。`);
 
-                addStep('line-4', state, {i, j}, foundWinCols, `(j=${j}, i=${i}) 條件判斷：儲存格的值是 ${formatBoolean(result[i][j])}。是否為 ${formatBoolean(false)}？`);
+                addStep('line-4', state, {i, j}, foundWinRows, `(i=${i}, j=${j}) 條件判斷：儲存格的值是 ${formatBoolean(result[i][j])}。是否為 ${formatBoolean(false)}？`);
                 if (result[i][j] === false) {
-                    state.col = false;
-                    addStep('line-5', state, {i, j}, foundWinCols, `(j=${j}, i=${i}) 是! 值為 ${formatBoolean(false)}，推翻假設。將 'col' 設為 ${formatBoolean(false)}。`);
+                    state.row = false;
+                    addStep('line-5', state, {i, j}, foundWinRows, `(i=${i}, j=${j}) 是! 值為 ${formatBoolean(false)}，推翻假設。將 'row' 設為 ${formatBoolean(false)}。`);
                 }
             }
-            state.i = '結束';
-            addStep('line-6', state, null, foundWinCols, `(j=${j}) 內層迴圈結束。判斷 'col' 是否仍為 ${formatBoolean(true)}？`);
+            state.j = '結束';
+            addStep('line-6', state, null, foundWinRows, `(i=${i}) 內層迴圈結束。判斷 'row' 是否仍為 ${formatBoolean(true)}？`);
 
-            if (state.col === true) {
+            if (state.row === true) {
                 let alreadyWon = state.win === true;
                 state.win = true;
-                if (!foundWinCols.includes(j)) {
-                    foundWinCols.push(j);
+                if (!foundWinRows.includes(i)) {
+                    foundWinRows.push(i);
                 }
-                let desc7 = `(j=${j}) 是! 'col' 仍為 ${formatBoolean(true)}，此直行已連線。將 'win' 設為 ${formatBoolean(true)}。`;
+                let desc7 = `(i=${i}) 是! 'row' 仍為 ${formatBoolean(true)}，此列已連線。將 'win' 設為 ${formatBoolean(true)}。`;
                 if (alreadyWon) {
                     desc7 += ` ('win' 狀態保持為 ${formatBoolean(true)})`;
                 }
-                addStep('line-7', state, null, foundWinCols, desc7);
+                addStep('line-7', state, null, foundWinRows, desc7);
             }
         }
 
-        state.j = '結束';
-        state.col = false; // The last col (j=4) was not a win
-        addStep('line-8', state, null, foundWinCols, `所有迴圈結束，輸出最終結果 win = ${formatBoolean(state.win)}。`);
-        addStep(null, state, null, foundWinCols, "動畫結束。");
+        state.i = '結束';
+        state.row = false; // The last row (i=4) was not a win
+        addStep('line-8', state, null, foundWinRows, `所有迴圈結束，輸出最終結果 win = ${formatBoolean(state.win)}。`);
+        addStep(null, state, null, foundWinRows, "動畫結束。");
     }
 
     function renderStep(index) {
@@ -360,16 +355,16 @@
         clearHighlights();
         if (step.line) document.getElementById(step.line).classList.add('code-highlight');
         
-        statusBox.innerHTML = `win = ${formatBoolean(step.status.win)}<br>j (欄) = ${formatBoolean(step.status.j)}<br>col = ${formatBoolean(step.status.col)}<br>i (列) = ${formatBoolean(step.status.i)}`;
+        // Use the formatBoolean helper function for display
+        statusBox.innerHTML = `win = ${formatBoolean(step.status.win)}<br>i (列) = ${formatBoolean(step.status.i)}<br>row = ${formatBoolean(step.status.row)}<br>j (欄) = ${formatBoolean(step.status.j)}`;
         
         stepDescription.textContent = step.description;
         if (step.cell) document.getElementById(`cell-${step.cell.i}-${step.cell.j}`).classList.add('cell-current');
         
-        // Render all winning columns found so far
-        if (step.winCols && step.winCols.length > 0) {
-            step.winCols.forEach(colIndex => {
-                for (let k = 0; k < 5; k++) { // Iterate through rows (k) for the winning column
-                    document.getElementById(`cell-${k}-${colIndex}`).classList.add('col-win');
+        if (step.winRows && step.winRows.length > 0) {
+            step.winRows.forEach(rowIndex => {
+                for (let k = 0; k < 5; k++) {
+                    document.getElementById(`cell-${rowIndex}-${k}`).classList.add('row-win');
                 }
             });
         }
@@ -421,7 +416,7 @@
     
     function clearHighlights() {
         document.querySelectorAll('.animation-code .code-line').forEach(l => l.classList.remove('code-highlight'));
-        document.querySelectorAll('.bingo-grid td').forEach(c => c.classList.remove('cell-current', 'col-win'));
+        document.querySelectorAll('.bingo-grid td').forEach(c => c.classList.remove('cell-current', 'row-win'));
     }
 
     window.onload = () => {
