@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>找字遊戲 (c) - 選項隨機版</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #0056b3;
+        }
+        .controls, .navigation-controls {
+            text-align: center;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .controls input[type="text"], .controls button, .navigation-controls button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        .controls button, .navigation-controls button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .controls button:hover, .navigation-controls button:hover {
+            background-color: #0056b3;
+        }
+        .controls button:disabled, .navigation-controls button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #status-area {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+            min-height: 50px;
+            transition: background-color 0.3s;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        #puzzle-container, #code-container {
+            flex: 1;
+            min-width: 300px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        #puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            border: 2px solid #333;
+        }
+        .grid-cell {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(12px, 2.5vw, 20px);
+            font-weight: bold;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+            transition: background-color 0.1s ease-in-out;
+        }
+        #code-display {
+            background-color: #f8f9fa;
+            color: #3c4043;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            white-space: pre;
+            line-height: 1.5;
+        }
+        .code-line {
+            display: block;
+            min-height: 1.5em;
+            border-radius: 3px;
+        }
+        .code-select {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            border: 1px dashed #007bff;
+            border-radius: 4px;
+            background-color: #fff9c4;
+            color: #3c4043;
+            padding: 2px 6px;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .active-select {
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.6);
+        }
+        .filled-blank-text {
+            color: #155724;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .code-keyword { color: #881391; }
+        .code-number { color: #d9534f; }
+        .code-operator { color: #555; }
+        .code-boolean { color: #d9534f; }
+
+        .highlight-line { background-color: #cde4f2 !important; }
+        .highlight-checking { background-color: #f0e68c !important; }
+        .highlight-match { background-color: #90ee90 !important; }
+        .highlight-mismatch { background-color: #ffcccb !important; }
+        .highlight-found { background-color: #28a745 !important; color: white; }
+
+        @media (max-width: 768px) {
+            .main-content { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>找字遊戲 (c) - 選項隨機版</h1>
+    <div class="controls">
+        <button id="code-fill-start-btn">開始填寫程式碼</button>
+        <input type="text" id="word-input" value="CAR" class="hidden">
+        <button id="exec-start-btn" class="hidden">開始/載入執行動畫</button>
+        <button id="reset-btn">重設</button>
+    </div>
+    <div id="navigation-controls" class="navigation-controls hidden">
+        <button id="prev-btn" disabled>上一步</button>
+        <button id="play-pause-btn" disabled>播放</button>
+        <button id="next-btn" disabled>下一步</button>
+        <div class="speed-control">
+            <label for="speed-slider">速度:</label>
+            <input type="range" id="speed-slider" min="50" max="1500" value="1000" step="50" style="direction: rtl;">
+        </div>
+    </div>
+
+    <div id="status-area">
+        點擊「開始填寫程式碼」來學習如何建構這個程式。
+    </div>
+
+    <div class="main-content">
+        <div id="puzzle-container" class="hidden">
+            <h2>字母矩陣</h2>
+            <div id="puzzle-grid"></div>
+        </div>
+        <div id="code-container">
+            <h2>Python 程式碼</h2>
+            <div id="code-display"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- DOM Elements ---
+    const puzzle = [ "JGJGDDAOYD", "IDGFHSPOSA", "FGDIOSAFSC", "INTERNETSO", "FJKCOSAFSM", "DJSGAPAHDP", "HAUSTRFBFU", "KDGFUCNSKT", "WSJDYCFXDE", "ODVFKXJVCR" ];
+    const gridEl = document.getElementById('puzzle-grid');
+    const statusArea = document.getElementById('status-area');
+    const codeDisplay = document.getElementById('code-display');
+    const codeFillStartBtn = document.getElementById('code-fill-start-btn');
+    const execStartBtn = document.getElementById('exec-start-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const wordInput = document.getElementById('word-input');
+    const navControls = document.getElementById('navigation-controls');
+    const prevBtn = document.getElementById('prev-btn');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const speedSlider = document.getElementById('speed-slider');
+    const puzzleContainer = document.getElementById('puzzle-container');
+
+    // --- State Management ---
+    let appPhase = 'INIT';
+    let activeSteps = [];
+    let currentStep = -1;
+    let isPlaying = false;
+    let playInterval = null;
+
+    // --- Phase 1: Code Filling Data for Diagonal Search ---
+    const codeFillingSteps = [
+        { choices: ["len(word)", "10", "len(puzzle)"], answer: "len(word)", explanation: "完全正確！對角線搜尋需要同時檢查水平和垂直方向的邊界。", hints: {"10": "我們需要的是單字的長度，以確保從當前位置 `j` 開始有足夠的空間放下整個單字。", "len(puzzle)": "`len(puzzle)` 的值是 10，但使用 `len(word)` 更具通用性，即使單字長度改變也不需修改程式碼。"}},
+        { choices: ["True", "False", "None"], answer: "True", explanation: "是的，找到起始點後，我們先樂觀地假設它是一個匹配 (`is_match = True`)。", hints: {"False": "我們應該先假設匹配成功，然後在後續的比對中若發現錯誤再將其推翻為 `False`。", "None": "這是一個布林旗標，應該初始化為 `True` 或 `False`。"}},
+        { choices: ["i+k", "j+k", "i"], answer: "i+k", explanation: "做得好！對角線移動意味著列索引 `i` 隨著 `k` 的增加而增加。", hints: {"j+k": "這是列索引，不是欄索引。`j+k` 是用來計算欄位移的。", "i": "只用 `i` 會導致一直在同一列上檢查，無法形成對角線。我們需要從起始列 `i` 向下移動 `k` 格。"}},
+        { choices: ["j+k", "i+k", "j"], answer: "j+k", explanation: "完美！同時，欄索引 `j` 也隨著 `k` 的增加而增加，這樣就構成了對角線。", hints: {"i+k": "這是欄索引，不是列索引。`i+k` 是用來計算列位移的。", "j": "只用 `j` 會導致一直在同一欄上檢查，形成的是垂直線，而不是對角線。"}},
+        { choices: ["False", "True", "break"], answer: "False", explanation: "正確，一旦發現不匹配的字母，就立即將 `is_match` 設為 `False`。", hints: {"True": "這裡的 `if` 條件是檢查字母是否**不匹配**。如果不匹配，就應該將 `is_match` 設為 `False`。", "break": "在設定 `is_match = False` 之後，下一步才是 `break`。這個位置應該是填入 `False`。"}},
+        { choices: ["break", "continue", "pass"], answer: "break", explanation: "是的，`break` 會中斷最內層的 `k` 迴圈，因為這次的對角線嘗試已經失敗了。", hints: {"continue": "`continue` 只會跳過當前的 `k`，但既然已經不匹配，整個單字的比對就失敗了，應該要完全跳出 `k` 迴圈。", "pass": "`pass` 是一個空操作，迴圈會繼續執行，這是不對的。我們需要用 `break` 來提前終止。"}},
+        { choices: ["is_match", "found", "True"], answer: "is_match", explanation: "做得好！如果 `k` 迴圈順利完成，我們就檢查 `is_match` 是否依然為 `True`。", hints: {"found": "`found` 是全局旗標，在找到單字後才會變為 `True`。這裡我們是檢查當前的對角線比對是否成功。", "True": "直接寫 `if True:` 會讓程式碼永遠執行這個區塊，這是錯誤的。我們需要檢查 `is_match` 變數的值。"}},
+        { choices: ["print", "show", "return"], answer: "print", explanation: "恭喜完成所有挑戰！最後用 `print()` 函式印出 `found` 的最終結果。", hints: {"show": "`show` 不是 Python 的標準輸出函式。請使用 `print()`。", "return": "`return` 用於函式中返回值，在主腳本層級我們使用 `print()` 來顯示結果。"}},
+    ];
+
+    const fullCodeTemplate = [
+        `puzzle <span class="code-operator">=</span> [...]`,
+        `word <span class="code-operator">=</span> <span class="code-keyword">input</span>()`,
+        `found <span class="code-operator">=</span> <span class="code-boolean">False</span>`,
+        `<span class="code-keyword">for</span> i <span class="code-keyword">in</span> <span class="code-keyword">range</span>(<span class="code-number">10</span>):`,
+        `  <span class="code-keyword">for</span> j <span class="code-keyword">in</span> <span class="code-keyword">range</span>(<span class="code-number">10</span>):`,
+        `    <span class="code-keyword">if</span> i <span class="code-operator">+</span> <span class="code-keyword">len</span>(word) <span class="code-operator">&lt;=</span> <span class="code-number">10</span> <span class="code-keyword">and</span> j <span class="code-operator">+</span> {0} <span class="code-operator">&lt;=</span> <span class="code-number">10</span>:`,
+        `      <span class="code-keyword">if</span> puzzle[i][j] <span class="code-operator">==</span> word[<span class="code-number">0</span>]:`,
+        `        is_match <span class="code-operator">=</span> {1}`,
+        `        <span class="code-keyword">for</span> k <span class="code-keyword">in</span> <span class="code-keyword">range</span>(<span class="code-number">1</span>, <span class="code-keyword">len</span>(word)):`,
+        `          <span class="code-keyword">if</span> puzzle[{2}][{3}] <span class="code-operator">!=</span> word[k]:`,
+        `            is_match <span class="code-operator">=</span> {4}`,
+        `            {5}`,
+        `        <span class="code-keyword">if</span> {6}:`,
+        `          found <span class="code-operator">=</span> <span class="code-boolean">True</span>`,
+        `          <span class="code-keyword">break</span>`,
+        `  <span class="code-keyword">if</span> found:`,
+        `    <span class="code-keyword">break</span>`,
+        `{7}(found)`
+    ];
+    const codeIndents = [0, 0, 0, 0, 2, 4, 6, 8, 10, 12, 14, 14, 8, 10, 10, 2, 4, 0];
+
+    // --- Phase 1: Code Filling ---
+    function handleCodeFillStart() {
+        appPhase = 'CODE_FILLING';
+        codeFillStartBtn.classList.add('hidden');
+        
+        let codeHTML = '';
+        fullCodeTemplate.forEach((lineTemplate, index) => {
+            const indent = codeIndents[index];
+            let processedLine = lineTemplate.replace(/\{(\d+)\}/g, (match, p1) => {
+                const step = codeFillingSteps[p1];
+                let optionsHTML = `<option value="" disabled selected>請選擇</option>`;
+                
+                // --- 修改：複製並隨機排序選項 ---
+                const shuffledChoices = [...step.choices];
+                for (let i = shuffledChoices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledChoices[i], shuffledChoices[j]] = [shuffledChoices[j], shuffledChoices[i]];
+                }
+                
+                // 使用隨機排序後的陣列來生成選項
+                shuffledChoices.forEach(choice => {
+                    optionsHTML += `<option value="${choice}">${choice}</option>`;
+                });
+                
+                const answerIsBoolean = step.answer === 'True' || step.answer === 'False';
+                const selectClass = answerIsBoolean ? 'code-select code-boolean' : 'code-select';
+                return `<select class="${selectClass}" data-blank-index="${p1}" disabled>${optionsHTML}</select>`;
+            });
+            codeHTML += `<span class="code-line" style="padding-left: ${indent}ch">${processedLine}</span>`;
+        });
+        
+        codeDisplay.innerHTML = codeHTML;
+        codeDisplay.querySelectorAll('.code-select').forEach(sel => {
+            sel.addEventListener('change', handleSelectChange);
+            sel.addEventListener('change', () => {
+                if (sel.value === 'True' || sel.value === 'False') {
+                    sel.classList.add('code-boolean');
+                } else {
+                    sel.classList.remove('code-boolean');
+                }
+            });
+        });
+
+        currentStep = 0;
+        activateBlank(currentStep);
+    }
+
+    function activateBlank(blankIndex) {
+        updateStatus("請從下拉選單中選擇正確的程式碼。");
+        const activeSelect = document.querySelector(`[data-blank-index="${blankIndex}"]`);
+        if (activeSelect) {
+            activeSelect.disabled = false;
+            activeSelect.classList.add('active-select');
+            activeSelect.focus();
+        }
+    }
+
+    function handleSelectChange(event) {
+        const select = event.target;
+        const selectedValue = select.value;
+        const blankIndex = parseInt(select.dataset.blankIndex, 10);
+
+        if (blankIndex !== currentStep) return;
+
+        const step = codeFillingSteps[blankIndex];
+
+        if (selectedValue === step.answer) {
+            updateStatus(step.explanation);
+            statusArea.style.backgroundColor = '#d4edda';
+            
+            const replacementSpan = document.createElement('span');
+            replacementSpan.textContent = step.answer;
+            
+            if (step.answer === 'True' || step.answer === 'False') {
+                replacementSpan.className = 'filled-blank-text code-boolean';
+            } else {
+                replacementSpan.className = 'filled-blank-text';
+            }
+            
+            select.parentNode.replaceChild(replacementSpan, select);
+
+            setTimeout(() => {
+                statusArea.style.backgroundColor = '#e9ecef';
+                currentStep++;
+                if (currentStep < codeFillingSteps.length) {
+                    activateBlank(currentStep);
+                } else {
+                    transitionToExecSetup();
+                }
+            }, 2500);
+
+        } else {
+            const hint = step.hints?.[selectedValue] || "選擇錯誤，請再試一次！";
+            updateStatus(hint);
+            statusArea.style.backgroundColor = '#f8d7da';
+            select.value = "";
+            select.classList.remove('code-boolean');
+        }
+    }
+    
+    // --- Other Functions ---
+    function createGrid() {
+        gridEl.innerHTML = '';
+        for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) {
+            const cell = document.createElement('div');
+            cell.classList.add('grid-cell');
+            cell.id = `cell-${i}-${j}`;
+            cell.textContent = puzzle[i][j];
+            gridEl.appendChild(cell);
+        }
+    }
+
+    function transitionToExecSetup() {
+        appPhase = 'EXEC_SETUP';
+        puzzleContainer.classList.remove('hidden');
+        execStartBtn.classList.remove('hidden');
+        wordInput.classList.remove('hidden');
+        navControls.classList.remove('hidden');
+        updateStatus("程式碼已完成！請確認想搜尋的單字 (例如 CAR)，然後點擊「開始/載入執行動畫」。");
+    }
+
+    function handleExecStart() {
+        appPhase = 'EXECUTION';
+        activeSteps = generateExecSteps();
+        if (activeSteps.length > 0) {
+            execStartBtn.disabled = true;
+            wordInput.disabled = true;
+            playPauseBtn.disabled = false;
+            nextBtn.disabled = false;
+            prevBtn.disabled = false;
+            currentStep = -1;
+            renderExecStep(0);
+        }
+    }
+    
+    function generateExecSteps() {
+        const word = wordInput.value.toUpperCase();
+        if (!word) { updateStatus("錯誤：請輸入要尋找的單字。"); return []; }
+        const steps = [];
+        const addStep = (line, status, highlights = {}) => steps.push({ line, status, highlights });
+        
+        const lineMap = {
+            loop_i: 4, loop_j: 5, check_bounds: 6, check_start: 7, init_match: 8, loop_k: 9,
+            check_k: 10, set_mismatch: 11, break_k: 12, check_match: 13, set_found: 14,
+            break_j: 15, check_found_i: 16, break_i: 17, print: 18
+        };
+
+        let found = false;
+
+        for (let i = 0; i < 10; i++) {
+            addStep(lineMap.loop_i, `進入外層迴圈: <strong>i = ${i}</strong>`);
+            for (let j = 0; j < 10; j++) {
+                let currentHighlights = [{ i, j, className: 'highlight-checking' }];
+                addStep(lineMap.loop_j, `進入內層迴圈: <strong>j = ${j}</strong>`, { cells: currentHighlights });
+
+                const canFitVertically = i + word.length <= 10;
+                const canFitHorizontally = j + word.length <= 10;
+                addStep(lineMap.check_bounds, `檢查邊界: i+len <= 10 (${canFitVertically}) AND j+len <= 10 (${canFitHorizontally})`, { cells: currentHighlights });
+
+                if (canFitVertically && canFitHorizontally) {
+                    const startsWith = puzzle[i][j] === word[0];
+                    addStep(lineMap.check_start, `檢查起始字母: puzzle[${i}][${j}] ('${puzzle[i][j]}') == word[0] ('${word[0]}') -> ${startsWith}`, { cells: currentHighlights });
+
+                    if (startsWith) {
+                        addStep(lineMap.check_start, `條件成立！找到起始字母 '${word[0]}' 且空間足夠。`, { cells: currentHighlights });
+                        let is_match = true;
+                        addStep(lineMap.init_match, `假設匹配成功: <strong>is_match = True</strong>`, { cells: currentHighlights });
+                        
+                        let matchedCells = [{ i, j, className: 'highlight-match' }];
+
+                        for (let k = 1; k < word.length; k++) {
+                            const check_i = i + k;
+                            const check_j = j + k;
+                            addStep(lineMap.loop_k, `比對下一個字母: <strong>k = ${k}</strong>`, { cells: [...matchedCells, { i: check_i, j: check_j, className: 'highlight-checking' }] });
+                            
+                            const isMismatch = puzzle[check_i][check_j] !== word[k];
+                            addStep(lineMap.check_k, `檢查: puzzle[${check_i}][${check_j}] ('${puzzle[check_i][check_j]}') ${isMismatch ? '!=' : '=='} word[${k}] ('${word[k]}')`, { cells: [...matchedCells, { i: check_i, j: check_j, className: 'highlight-checking' }] });
+
+                            if (isMismatch) {
+                                is_match = false;
+                                const finalCells = [...matchedCells, { i: check_i, j: check_j, className: 'highlight-mismatch' }];
+                                addStep(lineMap.set_mismatch, `嘗試失敗: 設定 <strong>is_match = False</strong>`, { cells: finalCells });
+                                addStep(lineMap.break_k, `中斷 k 迴圈 (break)`, { cells: finalCells });
+                                break;
+                            } else {
+                                matchedCells.push({ i: check_i, j: check_j, className: 'highlight-match' });
+                                addStep(lineMap.check_k, `字母匹配成功！`, { cells: matchedCells });
+                            }
+                        }
+
+                        addStep(lineMap.check_match, `檢查 if is_match: (${is_match})`, { cells: matchedCells });
+                        if (is_match) {
+                            found = true;
+                            const foundCells = Array.from({ length: word.length }, (_, k) => ({ i: i + k, j: j + k, className: 'highlight-found' }));
+                            addStep(lineMap.set_found, `<strong>單字 "${word}" 找到！</strong> 設定 <strong>found = True</strong>`, { cells: foundCells });
+                            addStep(lineMap.break_j, `中斷 j 迴圈 (break)`, { cells: foundCells });
+                            break; // Break j loop
+                        }
+                    }
+                }
+            }
+            addStep(lineMap.check_found_i, `檢查 if found: (${found})`);
+            if (found) {
+                addStep(lineMap.break_i, `中斷 i 迴圈 (break)`);
+                break; // Break i loop
+            }
+        }
+        addStep(lineMap.print, `所有迴圈結束。最終結果: <strong>print(${found})</strong>`);
+        return steps;
+    }
+
+    function renderExecStep(stepIndex) {
+        if (stepIndex < 0 || stepIndex >= activeSteps.length) return;
+        currentStep = stepIndex;
+        const step = activeSteps[stepIndex];
+        updateStatus(step.status);
+        
+        codeDisplay.querySelectorAll('.code-line').forEach(line => line.classList.remove('highlight-line'));
+        const lineEl = codeDisplay.querySelector(`.code-line:nth-child(${step.line})`);
+        if(lineEl) lineEl.classList.add('highlight-line');
+        
+        const cells = gridEl.children;
+        for(const cell of cells) cell.className = 'grid-cell';
+
+        if (step.highlights && step.highlights.cells) {
+            step.highlights.cells.forEach(c => {
+                const cellEl = document.getElementById(`cell-${c.i}-${c.j}`);
+                if (cellEl) cellEl.classList.add(c.className);
+            });
+        }
+        updateNavControls();
+    }
+
+    function play() {
+        if (currentStep >= activeSteps.length - 1) return;
+        isPlaying = true;
+        const delay = 1550 - speedSlider.value;
+        playInterval = setInterval(() => {
+            if (currentStep < activeSteps.length - 1) {
+                renderExecStep(currentStep + 1);
+            } else { pause(); }
+        }, delay);
+        updateNavControls();
+    }
+
+    function pause() {
+        isPlaying = false;
+        clearInterval(playInterval);
+        playInterval = null;
+        if (activeSteps.length > 0) updateNavControls();
+    }
+
+    function handlePlayPause() { isPlaying ? pause() : play(); }
+    function handleNext() { pause(); if (currentStep < activeSteps.length - 1) renderExecStep(currentStep + 1); }
+    function handlePrev() { pause(); if (currentStep > 0) renderExecStep(currentStep - 1); }
+
+    function updateNavControls() {
+        prevBtn.disabled = currentStep <= 0;
+        nextBtn.disabled = currentStep >= activeSteps.length - 1;
+        playPauseBtn.textContent = isPlaying ? "暫停" : "播放";
+        if (currentStep >= activeSteps.length - 1) pause();
+    }
+    
+    function updateStatus(text) { statusArea.innerHTML = text; }
+
+    function resetState() {
+        appPhase = 'INIT';
+        pause();
+        activeSteps = [];
+        currentStep = -1;
+        codeDisplay.innerHTML = '';
+        statusArea.style.backgroundColor = '#e9ecef';
+        updateStatus("點擊「開始填寫程式碼」來學習如何建構這個程式。");
+        wordInput.value = "CAR";
+        codeFillStartBtn.classList.remove('hidden');
+        execStartBtn.classList.add('hidden');
+        wordInput.classList.add('hidden');
+        puzzleContainer.classList.add('hidden');
+        navControls.classList.add('hidden');
+        execStartBtn.disabled = false;
+        wordInput.disabled = false;
+        playPauseBtn.disabled = true;
+        playPauseBtn.textContent = "播放";
+        nextBtn.disabled = true;
+        prevBtn.disabled = true;
+    }
+
+    // --- Event Listeners ---
+    codeFillStartBtn.addEventListener('click', handleCodeFillStart);
+    execStartBtn.addEventListener('click', handleExecStart);
+    resetBtn.addEventListener('click', resetState);
+    playPauseBtn.addEventListener('click', handlePlayPause);
+    nextBtn.addEventListener('click', handleNext);
+    prevBtn.addEventListener('click', handlePrev);
+    speedSlider.addEventListener('input', () => { if (isPlaying) { pause(); play(); } });
+
+    // --- Initial setup ---
+    createGrid();
+    resetState();
+</script>
+
+</body>
+</html>
