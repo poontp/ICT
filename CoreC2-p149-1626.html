@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>區塊鏈安全交易動畫解說</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #6c757d;
+            --dark-color: #333;
+            --light-color: #f4f4f4;
+            --sender-color: #f5a623;
+            --receiver-color: #bd10e0;
+            --node-color: #7ed321;
+            --block-color: #d8d8d8;
+            --border-color: #979797;
+            --highlight-color: #ffc107;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+        }
+
+        .animation-container {
+            position: relative;
+            width: 100%;
+            height: 450px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #eee;
+            overflow: hidden;
+        }
+
+        .explanation-box {
+            padding: 1.5rem;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .explanation-box p {
+            margin: 0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .controls {
+            padding: 1rem;
+            text-align: center;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 0 5px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3a7bc8;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        /* --- Animation Elements --- */
+        .actor {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 1s ease-in-out;
+            opacity: 0;
+        }
+        .actor .head {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ffdbac;
+            border: 2px solid #333;
+        }
+        .actor .body {
+            width: 40px;
+            height: 40px;
+            background-color: currentColor;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        #sender {
+            color: var(--sender-color);
+            left: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #receiver {
+            color: var(--receiver-color);
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .node {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: var(--node-color);
+            border: 2px solid #333;
+            border-radius: 50%;
+            transition: all 1s ease-in-out;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        .node::after {
+            content: '⛏️';
+            position: absolute;
+            font-size: 20px;
+            animation: mining-animation 1s infinite;
+            display: none;
+        }
+        
+        .node.miner::after {
+            display: block;
+        }
+
+        @keyframes mining-animation {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(45deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        #node1 { top: 10%; left: 30%; }
+        #node2 { top: 10%; left: 60%; }
+        #node3 { top: 80%; left: 30%; }
+        #node4 { top: 80%; left: 60%; }
+
+        .transaction {
+            position: absolute;
+            width: 150px;
+            padding: 10px;
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 1s ease-in-out;
+            opacity: 0;
+            font-size: 12px;
+            text-align: center;
+            transform-origin: center center;
+        }
+
+        .transaction {
+            top: 50%;
+            left: 5%;
+            transform: translateY(-50%);
+        }
+        
+        .transaction.signed {
+            border-color: #e64a19;
+        }
+        
+        .key {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            opacity: 0;
+            transition: all 0.5s ease-in-out;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        
+        #private-key {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23d32f2f"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
+        }
+        
+        #public-key {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23388e3c" stroke-width="2"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
+        }
+
+        .blockchain {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .block {
+            position: static;
+            opacity: 1;
+            width: 100px;
+            height: 120px;
+            background-color: var(--block-color);
+            border: 2px solid var(--border-color);
+            margin: 0 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .block-content {
+            font-size: 10px;
+            word-break: break-all;
+        }
+        
+        .block-hash {
+            font-weight: bold;
+            font-size: 11px;
+            background-color: #eee;
+            padding: 2px;
+            border-radius: 3px;
+            transition: all 0.3s ease-in-out;
+            font-family: "Courier New", Courier, monospace; /* Monospace for hash */
+        }
+        
+        .link {
+            position: absolute;
+            height: 4px;
+            background-color: var(--border-color);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            transition: all 0.3s ease-in-out;
+        }
+        
+        #link1 { 
+            left: calc(50% - 80px);
+        }
+
+        #link2 { 
+            left: calc(50% + 50px);
+        }
+        
+        .hacker {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-200px);
+            opacity: 0;
+            transition: all 1s ease-in-out;
+            font-size: 40px;
+        }
+        
+        .tamper-effect {
+            animation: tamper 0.5s infinite alternate;
+        }
+        
+        @keyframes tamper {
+            from { background-color: #ffcccc; border-color: red; }
+            to { background-color: var(--block-color); border-color: var(--border-color); }
+        }
+        
+        .break-effect {
+            animation: break 1s forwards;
+        }
+        
+        @keyframes break {
+            from { background-color: var(--border-color); }
+            to { background-color: red; transform: translateY(-50%) scaleX(0); }
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 4px var(--highlight-color), 0 0 8px var(--highlight-color); }
+            50% { box-shadow: 0 0 12px var(--highlight-color), 0 0 20px var(--highlight-color); }
+            100% { box-shadow: 0 0 4px var(--highlight-color), 0 0 8px var(--highlight-color); }
+        }
+        .highlight-pulse {
+            animation: pulse-glow 1.5s infinite;
+            border-radius: 3px;
+        }
+        .link.highlight-link {
+            background-color: var(--highlight-color);
+            height: 6px;
+            z-index: 10;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5rem; }
+            .animation-container { height: 500px; }
+            .actor { width: 45px; height: 60px; }
+            .actor .head { width: 25px; height: 25px; }
+            .actor .body { width: 30px; height: 30px; }
+            .node { width: 40px; height: 40px; }
+            #node1 { top: 5%; left: 25%; }
+            #node2 { top: 5%; left: 65%; }
+            #node3 { top: 85%; left: 25%; }
+            #node4 { top: 85%; left: 65%; }
+            
+            .blockchain { 
+                flex-direction: column; 
+                justify-content: center;
+                align-items: center;
+            }
+            .block { margin: 15px 0; }
+            .explanation-box p { font-size: 1rem; }
+
+            .link {
+                width: 4px;
+                height: 30px;
+                left: 50%;
+                top: auto;
+                transform: translateX(-50%);
+            }
+            .link.highlight-link {
+                height: 30px;
+                width: 6px;
+            }
+            #link1 { 
+                top: calc(50% - (120px / 2 + 30px / 2));
+                left: 50%;
+            }
+            #link2 { 
+                top: calc(50% + (120px / 2 + 30px / 2));
+                left: 50%;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>動畫解說：區塊鏈安全交易原理</h1>
+
+    <div class="container">
+        <div class="animation-container" id="animation-area">
+            <!-- Actors -->
+            <div class="actor" id="sender"><div class="head"></div><div class="body"></div>家明</div>
+            <div class="actor" id="receiver"><div class="head"></div><div class="body"></div>嘉欣</div>
+
+            <!-- Nodes -->
+            <div class="node" id="node1">節點</div>
+            <div class="node" id="node2">節點</div>
+            <div class="node" id="node3">節點</div>
+            <div class="node" id="node4">節點</div>
+
+            <!-- Transaction -->
+            <div class="transaction" id="tx">
+                <b>交易:</b><br>
+                家明 → 嘉欣<br>
+                1 BTC
+            </div>
+            
+            <!-- Keys -->
+            <div class="key" id="private-key"></div>
+            <div class="key" id="public-key"></div>
+            
+            <!-- Blockchain -->
+            <div class="blockchain" id="blockchain">
+                <div class="block" id="block1">
+                    <div class="block-content">...舊交易...</div>
+                    <div class="block-hash" id="hash1">雜湊: a1b2</div>
+                </div>
+                <div class="link" id="link1"></div>
+                <div class="block" id="block2">
+                    <div class="block-content" id="b2-content">...舊交易...</div>
+                    <div class="block-hash" id="hash-prev2">前雜湊: a1b2</div>
+                    <div class="block-hash" id="hash2">雜湊: c3d4</div>
+                </div>
+                <div class="link" id="link2"></div>
+                <div class="block" id="block3" style="border-style: dashed;">
+                    <div class="block-content" id="b3-content"></div>
+                    <div class="block-hash" id="hash-prev3"></div>
+                    <div class="block-hash" id="hash3">雜湊: ???</div>
+                </div>
+            </div>
+            
+            <!-- Hacker -->
+            <div class="hacker" id="hacker">😈</div>
+
+        </div>
+        <div class="explanation-box">
+            <p id="explanation">點擊「開始」以啟動區塊鏈交易動畫。</p>
+        </div>
+        <div class="controls">
+            <button id="prev-btn" class="btn btn-secondary" disabled>上一步</button>
+            <button id="next-btn" class="btn btn-primary">開始</button>
+        </div>
+    </div>
+
+    <script>
+        const elements = {
+            animationArea: document.getElementById('animation-area'),
+            sender: document.getElementById('sender'),
+            receiver: document.getElementById('receiver'),
+            nodes: [document.getElementById('node1'), document.getElementById('node2'), document.getElementById('node3'), document.getElementById('node4')],
+            tx: document.getElementById('tx'),
+            privateKey: document.getElementById('private-key'),
+            publicKey: document.getElementById('public-key'),
+            blockchain: document.getElementById('blockchain'),
+            blocks: [document.getElementById('block1'), document.getElementById('block2'), document.getElementById('block3')],
+            links: [document.getElementById('link1'), document.getElementById('link2')],
+            hacker: document.getElementById('hacker'),
+            explanation: document.getElementById('explanation'),
+            prevBtn: document.getElementById('prev-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            hash1: document.getElementById('hash1'),
+            hashPrev2: document.getElementById('hash-prev2'),
+            hash2: document.getElementById('hash2'),
+            hashPrev3: document.getElementById('hash-prev3'),
+            hash3: document.getElementById('hash3'),
+        };
+
+        let step = 0;
+        const totalSteps = 12;
+        let hashingInterval = null; // To store the interval ID for the hashing animation
+
+        const explanations = [
+            "1. 家明想發送 1 枚比特幣給嘉欣。他創建了一筆交易。",
+            "2. 家明使用他的「私鑰」對交易進行數位簽章。這就像親筆簽名，證明交易確實由他發起。",
+            "3. 簽章後的交易被廣播到整個去中心化網路，所有參與的節點（礦工）都會收到這筆交易。",
+            "4. 每個節點使用家明的「公鑰」來驗證簽章。如果驗證通過，就確認了交易的真實性和完整性。",
+            // --- MODIFIED EXPLANATION ---
+            "5. 礦工們開始「挖礦」：他們不斷嘗試不同的隨機數（Nonce）進行高速運算，目標是找出一個符合特定條件的「雜湊值」。",
+            "6. 其中一位礦工最先找到答案！他將新區塊廣播出去，其他節點驗證後，便將此區塊正式添加到區塊鏈上。",
+            "7. 這條線代表「鏈」。新區塊包含了前一個區塊的「雜湊值 (c3d4)」。正是這種環環相扣的關係，形成了無法被輕易竄改的區塊鏈。",
+            "8. 交易完成！嘉欣收到了比特幣。這筆交易被永久記錄，所有節點都擁有這份同步更新、不可篡改的帳本。",
+            "9. 【安全性展示】如果駭客想篡改歷史區塊（例如，區塊2）中的一筆交易...",
+            "10. ...任何微小的改動都會導致該區塊的雜湊值完全改變。",
+            "11. 舊雜湊值的改變，會導致與下一個區塊的連結斷裂！因為下個區塊記錄的是『舊的』雜湊值。",
+            "12. 要想讓篡改成功，駭客必須重新計算之後所有區塊的雜湊值，並且速度要超過全網其他誠實的礦工。這在現實中幾乎不可能！這就是區塊鏈的不可篡改性。"
+        ];
+
+        // --- NEW FUNCTIONS for Hashing Animation ---
+        function startHashingAnimation() {
+            if (hashingInterval) clearInterval(hashingInterval); // Clear any existing interval
+            hashingInterval = setInterval(() => {
+                const randomHash = Math.random().toString(36).substring(2, 6);
+                elements.hash3.textContent = `雜湊: ${randomHash}...`;
+            }, 50);
+        }
+
+        function stopHashingAnimation(finalHash) {
+            clearInterval(hashingInterval);
+            hashingInterval = null;
+            elements.hash3.textContent = finalHash;
+        }
+        // --- END NEW FUNCTIONS ---
+
+        const forward_steps = [
+            // Step 0: Create Transaction
+            () => {
+                elements.sender.style.opacity = '1';
+                elements.receiver.style.opacity = '1';
+                elements.tx.style.opacity = '1';
+            },
+            // Step 1: Digital Signature
+            () => {
+                elements.privateKey.style.opacity = '1';
+                elements.privateKey.style.top = '50%';
+                elements.privateKey.style.left = '15%';
+                elements.privateKey.style.transform = 'translateY(-50%) rotate(-360deg)';
+                setTimeout(() => {
+                    elements.tx.classList.add('signed');
+                    elements.tx.innerHTML = '<b>交易:</b><br>家明 → 嘉欣<br>1 BTC<br><span style="color: #d32f2f;">已簽章</span>';
+                    elements.privateKey.style.opacity = '0';
+                }, 1000);
+            },
+            // Step 2: Broadcast to Network
+            () => {
+                elements.nodes.forEach(node => node.style.opacity = '1');
+                elements.tx.style.left = '50%';
+                elements.tx.style.top = '50%';
+                elements.tx.style.transform = 'translate(-50%, -50%) scale(0.8)';
+            },
+            // Step 3: Verification
+            () => {
+                elements.publicKey.style.opacity = '1';
+                elements.publicKey.style.top = '40%';
+                elements.publicKey.style.left = '50%';
+                elements.publicKey.style.transform = 'translateX(-50%)';
+                setTimeout(() => {
+                    elements.publicKey.style.opacity = '0';
+                    elements.nodes.forEach(node => node.style.backgroundColor = '#4caf50');
+                }, 1500);
+            },
+            // Step 4: Mining
+            () => {
+                elements.tx.style.opacity = '0';
+                elements.nodes.forEach(node => {
+                    node.style.backgroundColor = 'var(--node-color)';
+                    node.classList.add('miner');
+                });
+                elements.blockchain.style.opacity = '1';
+                document.getElementById('b3-content').innerHTML = '家明→嘉欣: 1BTC<br>...其他交易...';
+                document.getElementById('hash-prev3').textContent = '前雜湊: c3d4';
+                startHashingAnimation(); // Start the hashing animation
+            },
+            // Step 5: Block Found
+            () => {
+                stopHashingAnimation('雜湊: e5f6'); // Stop animation and set final hash
+                elements.nodes.forEach(node => node.classList.remove('miner'));
+                const winnerNode = elements.nodes[1];
+                winnerNode.style.transform = 'scale(1.5)';
+                winnerNode.style.backgroundColor = 'gold';
+                setTimeout(() => {
+                    elements.blocks[2].style.borderStyle = 'solid';
+                    winnerNode.style.transform = 'scale(1)';
+                    winnerNode.style.backgroundColor = 'var(--node-color)';
+                }, 1500);
+            },
+            // Step 6: Explain the Chain
+            () => {
+                elements.hash2.classList.add('highlight-pulse');
+                elements.hashPrev3.classList.add('highlight-pulse');
+                elements.links[1].classList.add('highlight-link');
+            },
+            // Step 7: Transaction Complete
+            () => {
+                elements.nodes.forEach(node => node.style.opacity = '0');
+
+                const animAreaRect = elements.animationArea.getBoundingClientRect();
+                const block3Rect = elements.blocks[2].getBoundingClientRect();
+                const receiverRect = elements.receiver.getBoundingClientRect();
+
+                const startX = block3Rect.left - animAreaRect.left + (block3Rect.width / 2);
+                const startY = block3Rect.top - animAreaRect.top + (block3Rect.height / 2);
+                const endX = receiverRect.left - animAreaRect.left + (receiverRect.width / 2);
+                const endY = receiverRect.top - animAreaRect.top + (receiverRect.height / 2);
+
+                const finalTx = document.createElement('div');
+                finalTx.id = 'final-tx-coin';
+                finalTx.textContent = '💰';
+                finalTx.style.position = 'absolute';
+                finalTx.style.fontSize = '30px';
+                finalTx.style.zIndex = '20';
+                finalTx.style.transform = 'translate(-50%, -50%)';
+                finalTx.style.transition = 'all 1s ease-in-out';
+                
+                finalTx.style.left = `${startX}px`;
+                finalTx.style.top = `${startY}px`;
+                
+                elements.animationArea.appendChild(finalTx);
+
+                setTimeout(() => {
+                    finalTx.style.left = `${endX}px`;
+                    finalTx.style.top = `${endY}px`;
+                }, 100);
+
+                setTimeout(() => {
+                    finalTx.remove();
+                }, 1100);
+            },
+            // Step 8: Immutability Demo
+            () => {
+                elements.hacker.style.opacity = '1';
+                elements.hacker.style.transform = `translateX(${elements.blocks[1].offsetLeft - elements.blockchain.offsetLeft - 20}px)`;
+                setTimeout(() => { elements.blocks[1].classList.add('tamper-effect'); }, 1000);
+            },
+            // Step 9: Hash Change
+            () => {
+                elements.blocks[1].classList.remove('tamper-effect');
+                document.getElementById('b2-content').innerHTML = '<b><font color="red">駭客的交易</font></b>';
+                document.getElementById('hash2').innerHTML = '雜湊: <font color="red">xxxx</font>';
+            },
+            // Step 10: Chain Break
+            () => {
+                elements.links[1].classList.add('break-effect');
+            },
+            // Step 11: Impossibility of Attack
+            () => {
+                elements.hacker.textContent = '😫';
+                elements.hacker.style.opacity = '0';
+            },
+        ];
+
+        const reverse_steps = [
+            // Reverse Step 0
+            () => {
+                elements.sender.style.opacity = '0';
+                elements.receiver.style.opacity = '0';
+                elements.tx.style.opacity = '0';
+            },
+            // Reverse Step 1
+            () => {
+                elements.tx.classList.remove('signed');
+                elements.tx.innerHTML = '<b>交易:</b><br>家明 → 嘉欣<br>1 BTC';
+            },
+            // Reverse Step 2
+            () => {
+                elements.nodes.forEach(node => node.style.opacity = '0');
+                elements.tx.style.left = '5%';
+                elements.tx.style.top = '50%';
+                elements.tx.style.transform = 'translateY(-50%) scale(1)';
+            },
+            // Reverse Step 3
+            () => {
+                elements.nodes.forEach(node => node.style.backgroundColor = 'var(--node-color)');
+            },
+            // Reverse Step 4
+            () => {
+                elements.tx.style.opacity = '1';
+                elements.nodes.forEach(node => node.classList.remove('miner'));
+                elements.blockchain.style.opacity = '0';
+                stopHashingAnimation('雜湊: ???'); // Stop animation
+            },
+            // Reverse Step 5
+            () => {
+                elements.nodes.forEach(node => node.classList.add('miner'));
+                elements.blocks[2].style.borderStyle = 'dashed';
+                startHashingAnimation(); // Restart animation
+            },
+            // Reverse Step 6
+            () => {
+                elements.hash2.classList.remove('highlight-pulse');
+                elements.hashPrev3.classList.remove('highlight-pulse');
+                elements.links[1].classList.remove('highlight-link');
+            },
+            // Reverse Step 7
+            () => {
+                elements.nodes.forEach(node => node.style.opacity = '1');
+            },
+            // Reverse Step 8
+            () => {
+                elements.hacker.style.opacity = '0';
+                elements.blocks[1].classList.remove('tamper-effect');
+            },
+            // Reverse Step 9
+            () => {
+                elements.blocks[1].classList.add('tamper-effect');
+                document.getElementById('b2-content').innerHTML = '...舊交易...';
+                document.getElementById('hash2').innerHTML = '雜湊: c3d4';
+            },
+            // Reverse Step 10
+            () => {
+                elements.links[1].classList.remove('break-effect');
+                elements.links[1].style.transform = 'translateY(-50%) scaleX(1)';
+            },
+            // Reverse Step 11
+            () => {
+                elements.hacker.textContent = '😈';
+                elements.hacker.style.opacity = '1';
+            },
+        ];
+
+        function resetAnimation() {
+            elements.explanation.textContent = "點擊「開始」以啟動區塊鏈交易動畫。";
+            elements.nextBtn.textContent = "開始";
+            elements.prevBtn.disabled = true;
+            step = 0;
+
+            if (hashingInterval) clearInterval(hashingInterval);
+            hashingInterval = null;
+
+            [elements.sender, elements.receiver, elements.tx, elements.privateKey, elements.publicKey, elements.blockchain, elements.hacker].forEach(el => el.style.opacity = '0');
+            elements.nodes.forEach(node => {
+                node.style.opacity = '0';
+                node.style.transform = 'scale(1)';
+                node.style.backgroundColor = 'var(--node-color)';
+                node.classList.remove('miner');
+            });
+
+            elements.tx.style.left = '5%';
+            elements.tx.style.top = '50%';
+            elements.tx.style.transform = 'translateY(-50%) scale(1)';
+            elements.tx.classList.remove('signed');
+            elements.tx.innerHTML = '<b>交易:</b><br>家明 → 嘉欣<br>1 BTC';
+            
+            elements.blocks[1].classList.remove('tamper-effect');
+            document.getElementById('b2-content').innerHTML = '...舊交易...';
+            document.getElementById('hash2').innerHTML = '雜湊: c3d4';
+            
+            elements.blocks[2].style.borderStyle = 'dashed';
+            document.getElementById('b3-content').innerHTML = '';
+            document.getElementById('hash-prev3').textContent = '';
+            document.getElementById('hash3').textContent = '雜湊: ???';
+            
+            elements.links[1].classList.remove('break-effect');
+            elements.links[1].style.backgroundColor = 'var(--border-color)';
+            elements.links[1].style.transform = 'translateY(-50%) scaleX(1)';
+            
+            elements.hacker.textContent = '😈';
+            
+            const coin = document.getElementById('final-tx-coin');
+            if(coin) coin.remove();
+
+            elements.hash1.classList.remove('highlight-pulse');
+            elements.hashPrev2.classList.remove('highlight-pulse');
+            elements.hash2.classList.remove('highlight-pulse');
+            elements.hashPrev3.classList.remove('highlight-pulse');
+            elements.links[0].classList.remove('highlight-link');
+            elements.links[1].classList.remove('highlight-link');
+        }
+
+        elements.nextBtn.addEventListener('click', () => {
+            if (elements.nextBtn.textContent === "重新開始") {
+                resetAnimation();
+                return;
+            }
+
+            if (step < totalSteps) {
+                if (step > 0 && step-1 < reverse_steps.length) {
+                     if (step === 7) { 
+                        elements.hash2.classList.remove('highlight-pulse');
+                        elements.hashPrev3.classList.remove('highlight-pulse');
+                        elements.links[1].classList.remove('highlight-link');
+                     }
+                }
+
+                elements.explanation.textContent = explanations[step];
+                forward_steps[step]();
+                step++;
+                
+                elements.prevBtn.disabled = false;
+                elements.nextBtn.textContent = (step === totalSteps) ? "重新開始" : "下一步";
+            }
+        });
+
+        elements.prevBtn.addEventListener('click', () => {
+            if (step > 0) {
+                step--;
+                reverse_steps[step]();
+                elements.explanation.textContent = (step === 0) ? "點擊「開始」以啟動區塊鏈交易動畫。" : explanations[step-1];
+                
+                elements.nextBtn.textContent = "下一步";
+                if (step === 0) {
+                    elements.prevBtn.disabled = true;
+                    elements.nextBtn.textContent = "開始";
+                }
+            }
+        });
+        
+        resetAnimation();
+
+    </script>
+</body>
+</html>
