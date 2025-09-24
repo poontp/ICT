@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>互動動畫：人工智能認證模擬器</title>
+<style>
+    :root {
+        --bg-color: #f0f4f8;
+        --text-color: #333;
+        --primary-color: #007bff;
+        --green: #28a745;
+        --yellow: #ffc107;
+        --red: #dc3545;
+        --white: #fff;
+        --gray: #6c757d;
+        --light-gray: #f8f9fa;
+        --border-color: #dee2e6;
+        --font-family: 'Helvetica Neue', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+    }
+
+    body {
+        font-family: var(--font-family);
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        box-sizing: border-box;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 850px;
+        background-color: var(--white);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .header {
+        background-color: var(--primary-color);
+        color: var(--white);
+        padding: 20px;
+        text-align: center;
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    .animation-window {
+        position: relative;
+        width: 100%;
+        height: 500px;
+        overflow: hidden;
+    }
+
+    .scene {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        padding: 20px;
+        box-sizing: border-box;
+        /* --- 修正開始 --- */
+        /* 非作用中的場景不應攔截點擊事件 */
+        pointer-events: none;
+        /* --- 修正結束 --- */
+    }
+
+    .scene.active {
+        opacity: 1;
+        /* --- 修正開始 --- */
+        /* 作用中的場景恢復正常的點擊功能 */
+        pointer-events: auto;
+        /* --- 修正結束 --- */
+    }
+
+    .scene h3 {
+        font-size: 1.3em;
+        color: var(--primary-color);
+        margin-bottom: 20px;
+    }
+
+    /* Interactive Scene Styles */
+    #interactive-scene {
+        flex-direction: row;
+        gap: 20px;
+        align-items: flex-start;
+    }
+
+    .interactive-controls, .simulation-result {
+        flex: 1;
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        height: calc(100% - 40px);
+    }
+    
+    .simulation-result {
+        background-color: var(--light-gray);
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: var(--gray);
+    }
+
+    .form-group select {
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        font-size: 1em;
+    }
+
+    #simulateButton {
+        width: 100%;
+        margin-top: 20px;
+        padding: 12px;
+        font-size: 1.1em;
+        font-weight: bold;
+    }
+    
+    #result-display h4 {
+        margin-top: 0;
+    }
+
+    #result-items {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    #result-items li {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    .status-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+    }
+    .status-icon svg { width: 12px; height: 12px; }
+    .status-icon.green { background-color: var(--green); }
+    .status-icon.yellow { background-color: var(--yellow); }
+    .status-icon.red { background-color: var(--red); }
+
+    #final-outcome {
+        margin-top: 20px;
+        text-align: center;
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    .result-icon {
+        width: 4em;
+        height: 4em;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .result-icon svg { width: 100%; height: 100%; }
+    .result-icon.green { color: var(--green); }
+    .result-icon.yellow { color: var(--yellow); }
+    .result-icon.red { color: var(--red); }
+    
+    #final-outcome p {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .controls {
+        padding: 15px;
+        text-align: center;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    button {
+        background-color: var(--primary-color);
+        color: var(--white);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background-color 0.3s, opacity 0.3s;
+        min-width: 100px;
+    }
+    
+    #resetButton { background-color: var(--gray); }
+    button:hover:not(:disabled) { opacity: 0.85; }
+    button:disabled { background-color: var(--gray); cursor: not-allowed; opacity: 0.6; }
+
+    /* Keyframes and other styles */
+    .ai-brain { width: 7em; height: 7em; color: var(--primary-color); position: relative; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite; }
+    .ai-brain svg { width: 100%; height: 100%; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInScale { to { opacity: 1; transform: scale(1); } }
+    .description { margin-top: 15px; font-size: 1em; color: var(--gray); min-height: 40px; max-width: 500px; }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .animation-window { height: auto; min-height: 600px; }
+        #interactive-scene { flex-direction: column; }
+        .interactive-controls, .simulation-result { width: calc(100% - 40px); height: auto; }
+        .simulation-result { min-height: 250px; }
+    }
+</style>
+</head>
+<body>
+
+<!-- SVG Icons Definition -->
+<svg width="0" height="0" style="display:none;">
+    <symbol id="icon-brain" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 15.5c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3-4c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm2.5 1.5c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-7-5c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM12 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.5 2.5c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+    <symbol id="icon-warn" viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2z"/></symbol>
+    <symbol id="icon-cross" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+    <symbol id="icon-unlocked" viewBox="0 0 24 24"><path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></symbol>
+</svg>
+
+<div class="container">
+    <div class="header">人工智能認證模擬器</div>
+    <div class="animation-window">
+        <!-- Scene 1: Introduction -->
+        <div class="scene" id="scene1">
+            <h3>什麼是人工智能認證？</h3>
+            <div class="ai-brain"><svg><use href="#icon-brain"></use></svg></div>
+            <p class="description">AI 會學習您的獨特習慣與情境，建立一個動態的安全模型。<br>點擊「下一步」開始互動模擬。</p>
+        </div>
+
+        <!-- Scene 2: Interactive Simulator -->
+        <div class="scene" id="interactive-scene">
+            <div class="interactive-controls">
+                <h3>設定登入條件</h3>
+                <form id="simulation-form">
+                    <div class="form-group">
+                        <label for="password">1. 密碼</label>
+                        <select id="password">
+                            <option value="correct" selected>密碼正確</option>
+                            <option value="incorrect">密碼錯誤</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">2. 地理位置</label>
+                        <select id="location">
+                            <option value="normal" selected>常用地區</option>
+                            <option value="domestic">國內其他城市</option>
+                            <option value="abroad">國外</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="time">3. 登入時間</label>
+                        <select id="time">
+                            <option value="normal" selected>正常時段 (白天)</option>
+                            <option value="unusual">異常時段 (凌晨 3 點)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ip">4. 網路位址 (IP)</label>
+                        <select id="ip">
+                            <option value="known" selected>常用網路</option>
+                            <option value="unknown">未曾使用的網路</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="simulateButton">模擬登入</button>
+                </form>
+            </div>
+            <div class="simulation-result">
+                <div id="result-display">
+                    <h4>AI 分析結果</h4>
+                    <ul id="result-items">
+                        <!-- JS will populate this -->
+                    </ul>
+                    <div id="final-outcome">
+                        <!-- JS will populate this -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scene 3: Conclusion -->
+        <div class="scene" id="scene3">
+            <h3>總結：更智能、更安全的認證</h3>
+            <div class="ai-brain" style="animation: none; width: 6em; height: 6em;">
+                 <svg><use href="#icon-shield"></use></svg>
+            </div>
+            <p class="description">透過互動模擬，您可以看到 AI 如何整合多種因素來做出判斷。<br>這種方式在不犧牲安全性的前提下，大大提升了正常登入時的便利性。</p>
+        </div>
+    </div>
+    <div class="controls">
+        <button id="prevButton">上一步</button>
+        <button id="nextButton">下一步</button>
+        <button id="resetButton">重置模擬</button>
+    </div>
+</div>
+
+<script>
+    const scenes = document.querySelectorAll('.scene');
+    const prevButton = document.getElementById('prevButton');
+    const nextButton = document.getElementById('nextButton');
+    const resetButton = document.getElementById('resetButton');
+    const simForm = document.getElementById('simulation-form');
+    const resultItemsList = document.getElementById('result-items');
+    const finalOutcomeDiv = document.getElementById('final-outcome');
+
+    let currentSceneIndex = 0;
+    const sceneOrder = ['scene1', 'interactive-scene', 'scene3'];
+
+    // --- Helper Functions ---
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    function updateButtonStates() {
+        prevButton.disabled = currentSceneIndex === 0;
+        nextButton.disabled = currentSceneIndex === sceneOrder.length - 1;
+        resetButton.style.display = (sceneOrder[currentSceneIndex] === 'interactive-scene') ? 'inline-block' : 'none';
+    }
+
+    function showScene(index) {
+        currentSceneIndex = index;
+        scenes.forEach(s => s.classList.remove('active'));
+        const sceneId = sceneOrder[currentSceneIndex];
+        document.getElementById(sceneId).classList.add('active');
+        updateButtonStates();
+    }
+
+    function resetSimulation() {
+        resultItemsList.innerHTML = '';
+        finalOutcomeDiv.innerHTML = '';
+        finalOutcomeDiv.style.opacity = 0;
+    }
+
+    // --- Main Simulation Logic ---
+    async function handleSimulation(event) {
+        event.preventDefault();
+        resetSimulation();
+
+        // 1. Get user inputs
+        const inputs = {
+            password: document.getElementById('password').value,
+            location: document.getElementById('location').value,
+            time: document.getElementById('time').value,
+            ip: document.getElementById('ip').value,
+        };
+
+        // 2. Calculate risk score and gather reasons
+        let riskScore = 0;
+        const reasons = [];
+
+        // Password check (critical)
+        if (inputs.password === 'incorrect') {
+            riskScore = 10; // High score, immediate failure
+            reasons.push({ text: '密碼錯誤', status: 'red', icon: 'cross' });
+        } else {
+            reasons.push({ text: '密碼正確', status: 'green', icon: 'check' });
+        }
+
+        // Other factors (only if password is correct)
+        if (riskScore < 10) {
+            switch (inputs.location) {
+                case 'domestic':
+                    riskScore += 1;
+                    reasons.push({ text: '位置在國內其他城市', status: 'yellow', icon: 'warn' });
+                    break;
+                case 'abroad':
+                    riskScore += 3;
+                    reasons.push({ text: '位置在國外', status: 'red', icon: 'cross' });
+                    break;
+                default:
+                    reasons.push({ text: '位置在常用地區', status: 'green', icon: 'check' });
+            }
+
+            if (inputs.time === 'unusual') {
+                riskScore += 1;
+                reasons.push({ text: '在異常時段登入', status: 'yellow', icon: 'warn' });
+            } else {
+                reasons.push({ text: '在正常時段登入', status: 'green', icon: 'check' });
+            }
+
+            if (inputs.ip === 'unknown') {
+                riskScore += 2;
+                reasons.push({ text: '使用未知的網路', status: 'red', icon: 'cross' });
+            } else {
+                reasons.push({ text: '使用常用網路', status: 'green', icon: 'check' });
+            }
+        }
+
+        // 3. Animate and display results
+        for (const reason of reasons) {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="status-icon ${reason.status}"><svg><use href="#icon-${reason.icon}"></use></svg></span> ${reason.text}`;
+            resultItemsList.appendChild(li);
+            await sleep(300);
+            li.style.animation = 'fadeIn 0.5s forwards';
+        }
+
+        // 4. Determine and display final outcome
+        let outcomeHTML = '';
+        if (riskScore >= 4) { // High risk or wrong password
+            outcomeHTML = `<div class="result-icon red"><svg><use href="#icon-shield"></use></svg></div><p>高度風險：需要多重要素驗證</p>`;
+        } else if (riskScore >= 1) { // Medium risk
+            outcomeHTML = `<div class="result-icon yellow"><svg><use href="#icon-phone"></use></svg></div><p>輕微風險：需要兩步驟驗證 (2FA)</p>`;
+        } else { // No risk
+            outcomeHTML = `<div class="result-icon green"><svg><use href="#icon-unlocked"></use></svg></div><p>安全：登入成功</p>`;
+        }
+        
+        finalOutcomeDiv.innerHTML = outcomeHTML;
+        await sleep(300);
+        finalOutcomeDiv.style.animation = 'fadeInScale 0.5s forwards';
+    }
+
+    // --- Event Listeners ---
+    prevButton.addEventListener('click', () => {
+        if (currentSceneIndex > 0) showScene(currentSceneIndex - 1);
+    });
+
+    nextButton.addEventListener('click', () => {
+        if (currentSceneIndex < sceneOrder.length - 1) showScene(currentSceneIndex + 1);
+    });
+    
+    resetButton.addEventListener('click', resetSimulation);
+    simForm.addEventListener('submit', handleSimulation);
+
+    // Initial setup
+    window.addEventListener('load', () => {
+        showScene(0);
+    });
+</script>
+
+</body>
+</html>
