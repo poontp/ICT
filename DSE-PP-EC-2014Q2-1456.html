@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>互動式迷宮矩陣解說（最終正確版）</title>
+<style>
+    :root {
+        --bg-color: #f0f2f5;
+        --container-bg: #ffffff;
+        --text-color: #333;
+        --header-color: #005a9e;
+        --true-color: #4CAF50;
+        --false-color: #f44336;
+        --highlight-color: #ffeb3b;
+        --highlight-secondary: #ff9800;
+        --known-color: #b0bec5;
+        --redundant-color: #e0e0e0;
+        --border-color: #ccc;
+        --dashed-border-color: #aaa;
+        --button-bg: #007bff;
+        --button-hover-bg: #0056b3;
+        --button-disabled-bg: #cccccc;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    .container {
+        background-color: var(--container-bg);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 25px;
+        width: 100%;
+        max-width: 900px;
+        text-align: center;
+    }
+    h1 {
+        color: var(--header-color);
+        margin-bottom: 20px;
+    }
+    .main-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        justify-content: center;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+    .maze-container {
+        display: grid;
+        grid-template-columns: repeat(3, 80px);
+        grid-template-rows: repeat(2, 80px);
+        border: 3px solid black;
+        gap: 0;
+    }
+    .maze-block {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.8em;
+        font-weight: bold;
+        transition: background-color 0.5s ease;
+        box-sizing: border-box;
+    }
+    /* Define internal walls (solid) and connections (dashed) */
+    #block-1 { border-right: 3px solid black; border-bottom: 2px dashed var(--dashed-border-color); }
+    #block-2 { border-right: 2px dashed var(--dashed-border-color); border-bottom: 2px dashed var(--dashed-border-color); }
+    #block-3 { border-bottom: 3px solid black; }
+    #block-4 { border-right: 2px dashed var(--dashed-border-color); }
+    #block-5 { border-right: 2px dashed var(--dashed-border-color); }
+    #block-6 { /* No right or bottom border needed within the grid */ }
+
+    .matrix-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    h2 {
+        margin: 0 0 10px 0;
+        color: var(--header-color);
+    }
+    #matrixA {
+        border-collapse: collapse;
+    }
+    .matrix-cell {
+        width: 45px;
+        height: 45px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+        font-size: 0.9em;
+        transition: background-color 0.5s ease, color 0.5s ease;
+        position: relative;
+    }
+    .matrix-cell.header {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    .matrix-cell.true { background-color: var(--true-color); color: white; }
+    .matrix-cell.false { background-color: var(--false-color); color: white; }
+    .matrix-cell.highlight { background-color: var(--highlight-color); }
+    .matrix-cell.diagonal { background-color: var(--known-color); }
+    .matrix-cell.redundant { background-color: var(--redundant-color); }
+
+    .explanation-box {
+        background-color: #e9f5ff;
+        border: 1px solid #b3e0ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        min-height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: left;
+    }
+    #explanation-text {
+        margin: 0;
+        line-height: 1.6;
+    }
+    .controls {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+    .controls button {
+        padding: 10px 20px;
+        font-size: 1em;
+        border: none;
+        border-radius: 5px;
+        background-color: var(--button-bg);
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .controls button:hover:not(:disabled) {
+        background-color: var(--button-hover-bg);
+    }
+    .controls button:disabled {
+        background-color: var(--button-disabled-bg);
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            flex-direction: column;
+            align-items: center;
+        }
+        .maze-container {
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(2, 60px);
+        }
+        .matrix-cell {
+            width: 35px;
+            height: 35px;
+            font-size: 0.7em;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>互動式迷宮矩陣解說（最終正確版）</h1>
+    <div class="main-content">
+        <div class="maze-container">
+            <div class="maze-block" id="block-1">1</div>
+            <div class="maze-block" id="block-2">2</div>
+            <div class="maze-block" id="block-3">3</div>
+            <div class="maze-block" id="block-4">4</div>
+            <div class="maze-block" id="block-5">5</div>
+            <div class="maze-block" id="block-6">6</div>
+        </div>
+        <div class="matrix-container">
+            <h2>矩陣 A</h2>
+            <table id="matrixA"></table>
+        </div>
+    </div>
+    <div class="explanation-box">
+        <p id="explanation-text"></p>
+    </div>
+    <div class="controls">
+        <button id="prevBtn">上一步</button>
+        <button id="nextBtn">下一步</button>
+    </div>
+</div>
+
+<script>
+    // Connections based on the FINAL CORRECT diagram.
+    // A solid wall means no connection. Dashed/no line means connection.
+    const mazeConnections = {
+        1: [4],
+        2: [3, 5],
+        3: [2],
+        4: [1, 5],
+        5: [2, 4, 6],
+        6: [5]
+    };
+
+    const steps = [
+        { // 0: Intro
+            explanation: "這是一個由 6 個方塊組成的迷宮。我們使用一個 6x6 矩陣 A 來表示方塊之間的連接。如果方塊 i 和 j 之間沒有實心牆，則它們直接相連，A[i, j] 為 true。",
+            action: () => resetAll()
+        },
+        { // 1: Part (a)(i)
+            explanation: "<strong>(a)(i) 填寫 i=2 的元素：</strong>根據圖形，方塊 2 直接連接到方塊 3 和 5。因此，A[2,3] 和 A[2,5] 為 true，該行的其餘元素為 false。",
+            action: () => {
+                resetAll();
+                highlightBlock(2, 'var(--highlight-color)');
+                highlightBlock([3, 5], 'var(--highlight-secondary)');
+                for (let j = 1; j <= 6; j++) {
+                    const isConnected = mazeConnections[2].includes(j);
+                    setCell(2, j, isConnected);
+                }
+            }
+        },
+        { // 2: Part (a)(ii)
+            explanation: "<strong>(a)(ii) A 內有多少個元素？</strong>因為有 6 個方塊，所以矩陣 A 是一個 6x6 的方陣。總元素數量為 6 × 6 = 36 個。",
+            action: () => {
+                resetAll();
+                fillFullMatrix(false); // Fill but don't show text
+                for (let i = 1; i <= 6; i++) {
+                    for (let j = 1; j <= 6; j++) {
+                        highlightCell(i, j, 'var(--highlight-color)');
+                    }
+                }
+            }
+        },
+        { // 3: Part (b)(i)
+            explanation: "<strong>(b)(i) A[i, j] 和 A[j, i] 的關係：</strong>如果方塊 i 能連接到 j，那麼 j 也能連接到 i。這意味著連接是雙向的，所以 A[i, j] = A[j, i]。這種矩陣稱為「對稱矩陣」。例如，因為 A[2,5] 是 true，所以 A[5,2] 也必須是 true。",
+            action: () => {
+                resetAll();
+                fillFullMatrix(true);
+                setTimeout(() => highlightCell([2, 5], [5, 2]), 500);
+                setTimeout(() => highlightCell([4, 1], [1, 4]), 1000);
+                setTimeout(() => highlightCell([5, 6], [6, 5]), 1500);
+            }
+        },
+        { // 4: Part (b)(ii) - Diagonals
+            explanation: "<strong>(b)(ii) 志偉的想法（第一步）：</strong>一個方塊不能連接到它自己，所以 A[i, i] 永遠是 false。這 6 個對角線元素是已知的，不需要儲存。這讓我們剩下 36 - 6 = 30 個需要考慮的元素。",
+            action: () => {
+                resetAll();
+                fillFullMatrix(true);
+                for (let i = 1; i <= 6; i++) {
+                    const cell = document.getElementById(`cell-${i}-${i}`);
+                    cell.classList.add('diagonal');
+                    cell.innerText = 'false';
+                }
+            }
+        },
+        { // 5: Part (b)(ii) - Symmetry
+            explanation: "<strong>(b)(ii) 志偉的想法（第二步）：</strong>我們已知矩陣是對稱的 (A[i, j] = A[j, i])。這意味著對角線右上方的元素與左下方的元素是鏡像。我們只需要儲存其中一半的資訊。因此，我們只需要儲存 30 / 2 = 15 個元素。",
+            action: () => {
+                resetAll();
+                fillFullMatrix(true);
+                 for (let i = 1; i <= 6; i++) {
+                    document.getElementById(`cell-${i}-${i}`).classList.add('diagonal');
+                    for (let j = 1; j <= 6; j++) {
+                        if (j > i) { // Upper triangle
+                            highlightCell(i, j, 'var(--true-color)');
+                            const cell = document.getElementById(`cell-${i}-${j}`);
+                            cell.style.color = 'white';
+                        } else if (j < i) { // Lower triangle
+                            document.getElementById(`cell-${i}-${j}`).classList.add('redundant');
+                        }
+                    }
+                }
+            }
+        },
+        { // 6: Conclusion
+            explanation: "<strong>結論：</strong>志偉是對的。我們只需儲存右上方的 15 個元素值（綠色部分），就可以推斷出左下方的 15 個多餘元素（灰色部分）和 6 個恆為 false 的對角線元素（藍灰色部分），從而完整描述整個迷宮。",
+            action: () => {
+                steps[5].action();
+            }
+        }
+    ];
+
+    let currentStep = 0;
+
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const explanationText = document.getElementById('explanation-text');
+    const matrixTable = document.getElementById('matrixA');
+
+    function createMatrix() {
+        let html = '<thead><tr><th class="matrix-cell header">i\\j</th>';
+        for (let j = 1; j <= 6; j++) {
+            html += `<th class="matrix-cell header">${j}</th>`;
+        }
+        html += '</tr></thead><tbody>';
+        for (let i = 1; i <= 6; i++) {
+            html += `<tr><td class="matrix-cell header">${i}</td>`;
+            for (let j = 1; j <= 6; j++) {
+                html += `<td class="matrix-cell" id="cell-${i}-${j}"></td>`;
+            }
+            html += '</tr>';
+        }
+        html += '</tbody>';
+        matrixTable.innerHTML = html;
+    }
+
+    function resetAll() {
+        for (let i = 1; i <= 6; i++) {
+            document.getElementById(`block-${i}`).style.backgroundColor = '';
+        }
+        for (let i = 1; i <= 6; i++) {
+            for (let j = 1; j <= 6; j++) {
+                const cell = document.getElementById(`cell-${i}-${j}`);
+                cell.className = 'matrix-cell';
+                cell.innerText = '';
+                cell.style.backgroundColor = '';
+                cell.style.color = 'var(--text-color)';
+            }
+        }
+    }
+
+    function highlightBlock(blockIds, color) {
+        const ids = Array.isArray(blockIds) ? blockIds : [blockIds];
+        ids.forEach(id => {
+            document.getElementById(`block-${id}`).style.backgroundColor = color;
+        });
+    }
+    
+    function highlightCell(row, col, color = 'var(--highlight-color)') {
+        if (Array.isArray(row) && Array.isArray(col)) {
+             document.getElementById(`cell-${row[0]}-${col[0]}`).style.backgroundColor = color;
+             document.getElementById(`cell-${row[1]}-${col[1]}`).style.backgroundColor = color;
+        } else {
+             document.getElementById(`cell-${row}-${col}`).style.backgroundColor = color;
+        }
+    }
+
+    function setCell(i, j, isConnected) {
+        const cell = document.getElementById(`cell-${i}-${j}`);
+        cell.innerText = isConnected ? 'true' : 'false';
+        cell.classList.add(isConnected ? 'true' : 'false');
+    }
+
+    function fillFullMatrix(showText) {
+        for (let i = 1; i <= 6; i++) {
+            for (let j = 1; j <= 6; j++) {
+                const isConnected = mazeConnections[i].includes(j);
+                if (showText) {
+                    setCell(i, j, isConnected);
+                } else {
+                    const cell = document.getElementById(`cell-${i}-${j}`);
+                    cell.classList.add(isConnected ? 'true' : 'false');
+                }
+            }
+        }
+    }
+
+    function updateUI() {
+        const step = steps[currentStep];
+        explanationText.innerHTML = step.explanation;
+        step.action();
+
+        prevBtn.disabled = currentStep === 0;
+        nextBtn.disabled = currentStep === steps.length - 1;
+    }
+
+    nextBtn.addEventListener('click', () => {
+        if (currentStep < steps.length - 1) {
+            currentStep++;
+            updateUI();
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 0) {
+            currentStep--;
+            updateUI();
+        }
+    });
+
+    // Initial setup
+    createMatrix();
+    updateUI();
+
+</script>
+
+</body>
+</html>

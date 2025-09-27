@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>演算法互動解說</title>
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        background-color: #f4f4f9;
+        color: #333;
+        margin: 0;
+        padding: 15px;
+    }
+    .container {
+        max-width: 1200px; /* Increased max-width for side-by-side layout */
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .tabs {
+        display: flex;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 20px;
+    }
+    .tab-button {
+        padding: 10px 20px;
+        cursor: pointer;
+        border: none;
+        background-color: transparent;
+        font-size: 1.1em;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+    }
+    .tab-button.active {
+        border-bottom: 3px solid #007bff;
+        color: #007bff;
+        font-weight: bold;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* --- NEW: Side-by-side Layout --- */
+    .layout-container {
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+    }
+    .layout-left {
+        flex: 2; /* Takes 2 parts of space */
+        min-width: 0;
+    }
+    .layout-right {
+        flex: 3; /* Takes 3 parts of space */
+        min-width: 0;
+    }
+    /* Responsive: Stack columns on smaller screens */
+    @media (max-width: 800px) {
+        .layout-container {
+            flex-direction: column;
+            gap: 20px;
+        }
+    }
+
+    pre {
+        background-color: #eee;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        height: 100%; /* Make pre take full height in column */
+    }
+    code {
+        display: block;
+        font-size: 0.95em;
+        line-height: 1.7;
+    }
+    .code-line {
+        padding: 2px 15px;
+        white-space: pre;
+    }
+    .line-highlight {
+        background-color: #ffecb3;
+    }
+    
+    .controls-wrapper {
+        padding-bottom: 15px;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .progress-indicator {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .step-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+    button {
+        padding: 8px 15px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.3s;
+    }
+    button.secondary { background-color: #6c757d; }
+    button.success { background-color: #28a745; }
+    button.warning { background-color: #ffc107; color: #212529;}
+    button:hover { background-color: #0056b3; }
+    button:disabled { background-color: #ccc; cursor: not-allowed; }
+    .animation-area {
+        position: relative;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        min-height: 250px;
+    }
+    .string-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1.5em;
+        position: relative;
+        padding-bottom: 30px;
+        min-height: 70px;
+    }
+    .char-box {
+        width: 35px; height: 35px; line-height: 35px;
+        text-align: center; border: 1px solid #999;
+        margin: 0 10px; /* Reduced margin for wider screens */
+        background-color: #fff;
+        transition: all 0.3s ease; flex-shrink: 0;
+    }
+    .pointer {
+        position: absolute; bottom: 0;
+        transition: left 0.5s ease; white-space: nowrap; 
+        transform: translateX(-50%); display: flex;
+        flex-direction: column; align-items: center; line-height: 1.1;
+    }
+    .pointer-label { font-size: 0.8em; font-weight: bold; }
+    .pointer-value { font-size: 1em; font-weight: bold; color: #555; }
+    .pointer-i .pointer-label, .pointer-i .pointer-value { color: #dc3545; }
+    .pointer-n .pointer-label, .pointer-n .pointer-value { color: #28a745; }
+    
+    .char-box.highlight-i, .char-box.highlight-compare-s1 { border: 2px solid #dc3545; }
+    .char-box.highlight-n, .char-box.highlight-compare-s2 { border: 2px solid #28a745; }
+    .char-box.match { border: 2px solid #28a745; background-color: #d4edda; }
+    .char-box.mismatch { border: 2px solid #dc3545; background-color: #f8d7da; }
+
+    .variable-display, .explanation {
+        margin-top: 10px; padding: 8px; background: #e9ecef;
+        border-radius: 5px; font-size: 0.9em; min-height: 50px;
+    }
+    .answer-section {
+        margin-top: 20px; padding: 15px;
+        background-color: #f0f9ff; border-left: 5px solid #007bff;
+    }
+    
+    #anim-area-b { min-height: 300px; }
+    #partB .string-container { justify-content: flex-start; }
+    #string-display-s1-wrapper { position: relative; height: 50px; margin-top: 10px; }
+    #string-display-s1 { position: absolute; display: flex; transition: left 0.5s ease; }
+    .char-box-b { width: 30px; height: 30px; line-height: 30px; margin: 0 5px; }
+    .string-label { font-family: 'Courier New', Courier, monospace; font-weight: bold; margin-right: 10px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>演算法互動解說</h1>
+
+    <div class="tabs">
+        <button class="tab-button active" onclick="showTab('partA', this)">a) 迴文檢查演算法</button>
+        <button class="tab-button" onclick="showTab('partB', this)">b) 子字串搜尋演算法</button>
+    </div>
+
+    <!-- Part A Content -->
+    <div id="partA" class="tab-content active">
+        <div class="layout-container">
+            <div class="layout-left">
+                <h2>(a) 分析字串模式</h2>
+                <pre><code id="codeA">check ← TRUE
+n ← ST 的長度
+設 i 由 1 至 n 執行
+    如果 ST 第 i 個字符 ≠ ST 第 (n-i+1) 個字符
+        check ← FALSE
+傳回 check</code></pre>
+            </div>
+            <div class="layout-right">
+                <h4>(i) 執行演算法</h4>
+                <div class="controls-wrapper">
+                    <div id="progress-indicator-a" class="progress-indicator"></div>
+                    <div class="step-controls">
+                        <button id="autoplay-a" class="success">自動播放</button>
+                        <button id="prev-step-a" class="secondary">上一步</button>
+                        <button id="next-step-a" class="secondary">下一步</button>
+                        <button id="reset-a" class="warning">重設</button>
+                    </div>
+                    <button id="continue-to-b-btn" class="success" style="display: none;">繼續作答 (b) 部分</button>
+                </div>
+                <div class="animation-area" id="anim-area-a">
+                    <div id="string-display-a" class="string-container"></div>
+                    <div id="variable-display-a" class="variable-display"></div>
+                    <div id="explanation-a" class="explanation"></div>
+                </div>
+                <div id="answer-section-a" class="answer-section" style="display:none;">
+                    <h4>(a) 部分解答</h4>
+                    <table border="1" cellpadding="5" style="width:100%; text-align:center;">
+                        <thead><tr><th>ST</th><th>check</th></tr></thead>
+                        <tbody>
+                            <tr><td>ACGT</td><td>FALSE</td></tr>
+                            <tr><td>GACTTCAG</td><td>FALSE</td></tr>
+                            <tr><td>ACGCA</td><td>TRUE</td></tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top:10px;"><b>(ii) 演算法目的:</b> 檢查輸入的字串 <strong>ST</strong> 是否為一個「迴文」。</p>
+                    <p><b>(iii) 效率改善:</b> 優化後的迴圈應為：設 i 由 1 至 n DIV 2 執行。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Part B Content -->
+    <div id="partB" class="tab-content">
+        <div class="layout-container">
+            <div class="layout-left">
+                <h2>(b) 子字串搜尋</h2>
+                <pre><code id="codeB">S1 ← "ACTG"
+S2 ← "GACTGCAG"
+n ← S2 的長度
+m ← S1 的長度
+k ← 1
+max ← n - m + 1
+found ← FALSE
+當 (k ≤ max) AND (found = FALSE) 執行
+    i ← 1
+    mismatch ← FALSE
+    當 (i ≤ m) AND (mismatch = FALSE) 執行
+        如果 S1 第 i 個字符 ≠ S2 第 (k+i-1) 個字符
+            mismatch ← TRUE
+        i ← i + 1
+    如果 (mismatch = FALSE)
+        found ← TRUE
+    k ← k + 1
+傳回 found</code></pre>
+            </div>
+            <div class="layout-right">
+                <h4>(i) 執行演算法</h4>
+                <div class="controls-wrapper">
+                     <div class="step-controls">
+                        <button id="autoplay-b" class="success">自動播放</button>
+                        <button id="prev-step-b" class="secondary">上一步</button>
+                        <button id="next-step-b" class="secondary">下一步</button>
+                        <button id="reset-b" class="warning">重設</button>
+                    </div>
+                </div>
+                <div class="animation-area" id="anim-area-b">
+                    <div id="string-display-s2" class="string-container"><span class="string-label">S2:</span></div>
+                    <div id="string-display-s1-wrapper">
+                        <div id="string-display-s1" class="string-container"><span class="string-label">S1:</span></div>
+                    </div>
+                    <div id="variable-display-b" class="variable-display"></div>
+                    <div id="explanation-b" class="explanation"></div>
+                </div>
+                <div id="answer-section-b" class="answer-section" style="display:none;">
+                    <h4>(b) 部分解答</h4>
+                    <p><b>(ii) 演算法目的:</b> 在字串 <strong>S2</strong> 中搜尋是否存在子字串 <strong>S1</strong>。</p>
+                    <p><b>(iii) k 的終止值:</b> 當演算法終止時，<strong>k</strong> 的值是 <strong>3</strong>。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- UTILITY FUNCTIONS ---
+    function showTab(tabId, element) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        element.classList.add('active');
+        stopAutoPlayA();
+        stopAutoPlayB();
+    }
+    
+    function highlightCodeLine(codeElement, originalCode, lineNumber) {
+        const cleanLines = originalCode.split('\n');
+        const newHtml = cleanLines.map((line, index) => {
+            const currentLineNumber = index + 1;
+            const lineClass = (currentLineNumber === lineNumber) ? "code-line line-highlight" : "code-line";
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = line;
+            const htmlLine = tempDiv.innerHTML.replace(/ /g, '\u00A0') || '\u00A0';
+            return `<div class="${lineClass}">${htmlLine}</div>`;
+        }).join('');
+        codeElement.innerHTML = newHtml;
+    }
+
+    // --- GLOBAL STATE ---
+    let isPartASolved = false;
+    let isPartBSolved = false;
+
+    // --- PART A: PALINDROME CHECK ---
+    const codeA = document.getElementById('codeA');
+    const originalCodeA = codeA.textContent;
+    const displayA = document.getElementById('string-display-a');
+    const varDisplayA = document.getElementById('variable-display-a');
+    const explanationA = document.getElementById('explanation-a');
+    const answerSectionA = document.getElementById('answer-section-a');
+    const progressIndicatorA = document.getElementById('progress-indicator-a');
+    const autoPlayBtnA = document.getElementById('autoplay-a');
+    const prevStepBtnA = document.getElementById('prev-step-a');
+    const nextStepBtnA = document.getElementById('next-step-a');
+    const resetBtnA = document.getElementById('reset-a');
+    const continueToBBtn = document.getElementById('continue-to-b-btn');
+    let animationSequenceA = [];
+    let currentSequenceIndexA = 0;
+    let isAutoPlayingA = false;
+    let autoPlayTimerA = null;
+
+    const generateAnimationStepsA = (st) => {
+        const steps = []; const n = st.length; let check = true;
+        const addStep = (data) => steps.push(data);
+        addStep({ codeLine: 0, explanation: "請點擊「下一步」或「自動播放」開始。", varDisplay: "" });
+        addStep({ codeLine: 1, explanation: "初始化 <strong>check</strong> 為 <strong>TRUE</strong>。", varDisplay: `i = -, n = -, check = <strong>TRUE</strong>` });
+        addStep({ codeLine: 2, explanation: `取得字串長度 n = ${n}。`, varDisplay: `i = -, n = ${n}, check = <strong>TRUE</strong>` });
+        for (let i = 1; i <= n; i++) {
+            const index1 = i - 1; const index2 = n - i;
+            addStep({ codeLine: 3, explanation: `進入迴圈，i = ${i}。`, varDisplay: `i = ${i}, n = ${n}, check = <strong>${check}</strong>`, pointers: { i: { val: i, index: index1 }, n: { val: n - i + 1, index: index2 } }});
+            addStep({ codeLine: 4, explanation: `比較第 i (${i}) 個字元 '${st[index1]}' 和第 n-i+1 (${n - i + 1}) 個字元 '${st[index2]}'。`, varDisplay: `i = ${i}, n = ${n}, check = <strong>${check}</strong>`, pointers: { i: { val: i, index: index1 }, n: { val: n - i + 1, index: index2 } }});
+            if (st[index1] !== st[index2]) {
+                check = false;
+                addStep({ codeLine: 5, explanation: `'${st[index1]}' ≠ '${st[index2]}'，不匹配。<strong>check</strong> ← <strong>FALSE</strong>。`, varDisplay: `i = ${i}, n = ${n}, check = <strong>${check}</strong>`, pointers: { i: { val: i, index: index1 }, n: { val: n - i + 1, index: index2 } }, highlights: [ { index: index1, class: 'mismatch' }, { index: index2, class: 'mismatch' } ] });
+            } else {
+                addStep({ codeLine: 4, explanation: `'${st[index1]}' == '${st[index2]}'，匹配。`, varDisplay: `i = ${i}, n = ${n}, check = <strong>${check}</strong>`, pointers: { i: { val: i, index: index1 }, n: { val: n - i + 1, index: index2 } }, highlights: [ { index: index1, class: 'match' }, { index: index2, class: 'match' } ] });
+            }
+        }
+        addStep({ codeLine: 6, explanation: `迴圈結束。最終 <strong>check</strong> 為 <strong>${check}</strong>。`, varDisplay: `i = ${n + 1}, n = ${n}, check = <strong>${check}</strong>`, isFinalStep: true });
+        return steps;
+    };
+    function renderCurrentStateA() {
+        const state = animationSequenceA[currentSequenceIndexA];
+        const step = state.steps[state.currentStepIndex];
+        highlightCodeLine(codeA, originalCodeA, step.codeLine);
+        explanationA.innerHTML = step.explanation;
+        varDisplayA.innerHTML = step.varDisplay;
+        const charBoxes = displayA.querySelectorAll('.char-box');
+        charBoxes.forEach(box => {
+            box.className = 'char-box';
+            box.style.border = '1px solid #999';
+        });
+        
+        const pointerI = document.getElementById('pointer-i-a');
+        const pointerN = document.getElementById('pointer-n-a');
+        if (step.pointers && charBoxes.length > 0) {
+            pointerI.style.visibility = 'visible';
+            pointerN.style.visibility = 'visible';
+            const center1 = charBoxes[step.pointers.i.index].offsetLeft + charBoxes[step.pointers.i.index].offsetWidth / 2;
+            const center2 = charBoxes[step.pointers.n.index].offsetLeft + charBoxes[step.pointers.n.index].offsetWidth / 2;
+            pointerI.style.left = `${center1}px`;
+            pointerN.style.left = `${center2}px`;
+            pointerI.querySelector('.pointer-value').textContent = step.pointers.i.val;
+            pointerN.querySelector('.pointer-value').textContent = step.pointers.n.val;
+            
+            charBoxes[step.pointers.i.index].classList.add('highlight-i');
+            charBoxes[step.pointers.n.index].classList.add('highlight-n');
+
+        } else {
+            if(pointerI) { pointerI.style.visibility = 'hidden'; pointerN.style.visibility = 'hidden';}
+        }
+
+        if (step.highlights) {
+            step.highlights.forEach(h => {
+                if(charBoxes[h.index]) {
+                    charBoxes[h.index].classList.remove('highlight-i', 'highlight-n');
+                    charBoxes[h.index].classList.add(h.class);
+                }
+            });
+        }
+
+        prevStepBtnA.disabled = (currentSequenceIndexA === 0 && state.currentStepIndex === 0);
+        const isLastStepOfLastString = (currentSequenceIndexA === animationSequenceA.length - 1) && (state.currentStepIndex === state.steps.length - 1);
+        nextStepBtnA.disabled = isLastStepOfLastString;
+        if (step.isFinalStep) {
+            state.isComplete = true; stopAutoPlayA();
+            if (currentSequenceIndexA < animationSequenceA.length - 1) { nextStepBtnA.textContent = '開始下一個字串'; }
+        } else { state.isComplete = false; nextStepBtnA.textContent = '下一步'; }
+        
+        if (animationSequenceA.every(s => s.isComplete)) {
+            if (!isPartASolved) {
+                isPartASolved = true;
+                answerSectionA.style.display = 'block';
+                continueToBBtn.style.display = 'inline-block';
+            }
+        }
+    };
+    function loadSequenceA(sequenceIndex) {
+        stopAutoPlayA(); currentSequenceIndexA = sequenceIndex;
+        const state = animationSequenceA[currentSequenceIndexA];
+        state.currentStepIndex = 0;
+        progressIndicatorA.innerHTML = `目前進度: ${sequenceIndex + 1} / ${animationSequenceA.length} - <strong>${state.string}</strong>`;
+        displayA.innerHTML = '';
+        state.string.split('').forEach(c => displayA.innerHTML += `<div class="char-box">${c}</div>`);
+        displayA.innerHTML += `<div id="pointer-i-a" class="pointer pointer-i" style="visibility: hidden;"><div class="pointer-label">i</div><div class="pointer-value"></div></div> <div id="pointer-n-a" class="pointer pointer-n" style="visibility: hidden;"><div class="pointer-label">n-i+1</div><div class="pointer-value"></div></div>`;
+        renderCurrentStateA();
+    };
+    function stopAutoPlayA() { if (isAutoPlayingA) { clearInterval(autoPlayTimerA); isAutoPlayingA = false; autoPlayBtnA.textContent = '自動播放'; autoPlayBtnA.classList.remove('warning'); autoPlayBtnA.classList.add('success'); } };
+    function globalResetA() {
+        stopAutoPlayA();
+        isPartASolved = false;
+        animationSequenceA.forEach(state => { state.isComplete = false; });
+        answerSectionA.style.display = 'none';
+        continueToBBtn.style.display = 'none';
+        loadSequenceA(0);
+    };
+    nextStepBtnA.addEventListener('click', () => { const state = animationSequenceA[currentSequenceIndexA]; if (state.currentStepIndex < state.steps.length - 1) { state.currentStepIndex++; renderCurrentStateA(); } else if (currentSequenceIndexA < animationSequenceA.length - 1) { loadSequenceA(currentSequenceIndexA + 1); } });
+    prevStepBtnA.addEventListener('click', () => { stopAutoPlayA(); const state = animationSequenceA[currentSequenceIndexA]; if (state.currentStepIndex > 0) { state.currentStepIndex--; renderCurrentStateA(); } else if (currentSequenceIndexA > 0) { loadSequenceA(currentSequenceIndexA - 1); } });
+    resetBtnA.addEventListener('click', globalResetA);
+    autoPlayBtnA.addEventListener('click', () => { if (isAutoPlayingA) { stopAutoPlayA(); } else { const state = animationSequenceA[currentSequenceIndexA]; if (state.isComplete) return; isAutoPlayingA = true; autoPlayBtnA.textContent = '暫停'; autoPlayBtnA.classList.remove('success'); autoPlayBtnA.classList.add('warning'); autoPlayTimerA = setInterval(() => { const currentState = animationSequenceA[currentSequenceIndexA]; if (!currentState.isComplete) { nextStepBtnA.click(); } else { stopAutoPlayA(); } }, 1500); } });
+    
+    continueToBBtn.addEventListener('click', () => {
+        const tabButtonB = document.querySelector('button[onclick="showTab(\'partB\', this)"]');
+        if (tabButtonB) {
+            tabButtonB.click();
+            setTimeout(() => {
+                 const autoPlayBtnB = document.getElementById('autoplay-b');
+                 if (autoPlayBtnB && !isAutoPlayingB) {
+                    autoPlayBtnB.click();
+                 }
+            }, 500);
+        }
+    });
+
+    // --- PART B: SUBSTRING SEARCH ---
+    const codeB = document.getElementById('codeB');
+    const originalCodeB = codeB.textContent;
+    const s2Display = document.getElementById('string-display-s2');
+    const s1Display = document.getElementById('string-display-s1');
+    const varDisplayB = document.getElementById('variable-display-b');
+    const explanationB = document.getElementById('explanation-b');
+    const answerSectionB = document.getElementById('answer-section-b');
+    const autoPlayBtnB = document.getElementById('autoplay-b');
+    const prevStepBtnB = document.getElementById('prev-step-b');
+    const nextStepBtnB = document.getElementById('next-step-b');
+    const resetBtnB = document.getElementById('reset-b');
+    let animationStateB = {};
+    let isAutoPlayingB = false;
+    let autoPlayTimerB = null;
+
+    function generateAnimationStepsB() {
+        const S1 = "ACTG", S2 = "GACTGCAG", n = S2.length, m = S1.length, max = n - m + 1;
+        let k = 1, found = false, steps = [];
+        const addStep = (data) => steps.push(data);
+        const getVar = (k_val, i_val, mismatch_val, found_val) => `k=${k_val}, i=${i_val}, max=${max}, mismatch=${mismatch_val}, found=${found_val}`;
+        addStep({ codeLine: 0, explanation: "請點擊「下一步」開始。", varDisplay: getVar('-', '-', '-', false) });
+        addStep({ codeLine: 5, explanation: "初始化 k = 1。", k: 1, varDisplay: getVar(1, '-', '-', false) });
+        addStep({ codeLine: 6, explanation: `計算 max = n - m + 1 = ${n} - ${m} + 1 = ${max}。`, k: 1, varDisplay: getVar(1, '-', '-', false) });
+        addStep({ codeLine: 7, explanation: "初始化 found = FALSE。", k: 1, varDisplay: getVar(1, '-', '-', false) });
+        while (k <= max && !found) {
+            addStep({ codeLine: 8, explanation: `進入外層迴圈。`, k: k, varDisplay: getVar(k, '-', '-', found) });
+            addStep({ codeLine: 9, explanation: "初始化 i = 1。", k: k, varDisplay: getVar(k, 1, '-', found) });
+            let i = 1;
+            addStep({ codeLine: 10, explanation: "初始化 mismatch = FALSE。", k: k, varDisplay: getVar(k, 1, false, found) });
+            let mismatch = false;
+            while (i <= m && !mismatch) {
+                addStep({ codeLine: 11, explanation: `進入內層迴圈。`, k: k, varDisplay: getVar(k, i, mismatch, found) });
+                const s1_char = S1[i - 1], s2_char = S2[k + i - 2];
+                addStep({ codeLine: 12, explanation: `比較 S1[${i}] ('${s1_char}') 與 S2[${k + i - 1}] ('${s2_char}')。`, k: k, i: i, varDisplay: getVar(k, i, mismatch, found) });
+                if (s1_char !== s2_char) {
+                    mismatch = true;
+                    addStep({ codeLine: 13, explanation: `字元不匹配。設定 mismatch = TRUE。`, k: k, i: i, isMismatch: true, varDisplay: getVar(k, i, true, found) });
+                } else {
+                     addStep({ codeLine: 12, explanation: `字元匹配。`, k: k, i: i, isMatch: true, varDisplay: getVar(k, i, mismatch, found) });
+                }
+                addStep({ codeLine: 14, explanation: `i 增加為 ${i + 1}。`, k: k, i: i, varDisplay: getVar(k, i + 1, mismatch, found) });
+                i++;
+            }
+            addStep({ codeLine: 11, explanation: `內層迴圈結束。`, k: k, varDisplay: getVar(k, i, mismatch, found) });
+            if (!mismatch) {
+                found = true;
+                addStep({ codeLine: 15, explanation: "內層迴圈完成且無不匹配。", k: k, varDisplay: getVar(k, i, mismatch, found) });
+                addStep({ codeLine: 16, explanation: "找到匹配！設定 found = TRUE。", k: k, isFound: true, varDisplay: getVar(k, i, mismatch, true) });
+            } else {
+                 addStep({ codeLine: 15, explanation: "存在不匹配，繼續下一個 k。", k: k, varDisplay: getVar(k, i, mismatch, found) });
+            }
+            addStep({ codeLine: 17, explanation: `k 增加為 ${k + 1}。`, k: k, varDisplay: getVar(k + 1, i, mismatch, found) });
+            k++;
+        }
+        addStep({ codeLine: 18, explanation: `外層迴圈結束。`, k: k, varDisplay: getVar(k, '-', '-', found) });
+        addStep({ codeLine: 19, explanation: `演算法結束，傳回 found = ${found}。`, k: k, isFinalStep: true, varDisplay: getVar(k, '-', '-', found) });
+        return steps;
+    }
+
+    function renderStateB() {
+        const state = animationStateB;
+        const step = state.steps[state.currentStepIndex];
+        highlightCodeLine(codeB, originalCodeB, step.codeLine);
+        explanationB.innerHTML = step.explanation;
+        varDisplayB.innerHTML = step.varDisplay;
+        
+        if (step.isFinalStep) {
+            isPartBSolved = true;
+            stopAutoPlayB();
+        }
+        if (isPartBSolved) {
+            answerSectionB.style.display = 'block';
+        }
+
+        s2Display.querySelectorAll('.char-box-b').forEach(b => b.className = 'char-box char-box-b');
+        s1Display.querySelectorAll('.char-box-b').forEach(b => b.className = 'char-box char-box-b');
+        const slotWidth = 30 + 10; // width (30) + margin (5*2)
+        s1Display.style.left = step.k ? `${(step.k - 1) * slotWidth}px` : `0px`;
+        if (step.i) {
+            const s1_box = s1Display.querySelectorAll('.char-box-b')[step.i - 1];
+            const s2_box = s2Display.querySelectorAll('.char-box-b')[step.k + step.i - 2];
+            if (s1_box) s1_box.classList.add('highlight-compare-s1');
+            if (s2_box) s2_box.classList.add('highlight-compare-s2');
+            if (step.isMatch) { if (s1_box) s1_box.classList.add('match'); if (s2_box) s2_box.classList.add('match'); }
+            if (step.isMismatch) { if (s1_box) s1_box.classList.add('mismatch'); if (s2_box) s2_box.classList.add('mismatch'); }
+        }
+        if (step.isFound) {
+             for(let i=0; i<"ACTG".length; i++) {
+                s1Display.querySelectorAll('.char-box-b')[i].classList.add('match');
+                s2Display.querySelectorAll('.char-box-b')[step.k + i - 1].classList.add('match');
+             }
+        }
+        prevStepBtnB.disabled = state.currentStepIndex <= 0;
+        nextStepBtnB.disabled = state.currentStepIndex >= state.steps.length - 1;
+    }
+
+    function stopAutoPlayB() {
+        if (isAutoPlayingB) {
+            clearInterval(autoPlayTimerB); isAutoPlayingB = false;
+            autoPlayBtnB.textContent = '自動播放';
+            autoPlayBtnB.classList.remove('warning'); autoPlayBtnB.classList.add('success');
+        }
+    }
+
+    function resetB() {
+        stopAutoPlayB();
+        isPartBSolved = false;
+        animationStateB.currentStepIndex = 0;
+        answerSectionB.style.display = 'none';
+        renderStateB();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const stringListA = ['ACGT', 'GACTTCAG', 'ACGCA'];
+        animationSequenceA = stringListA.map(str => ({ string: str, steps: generateAnimationStepsA(str), currentStepIndex: 0, isComplete: false, }));
+        globalResetA();
+        "GACTGCAG".split('').forEach(c => s2Display.innerHTML += `<div class="char-box char-box-b">${c}</div>`);
+        "ACTG".split('').forEach(c => s1Display.innerHTML += `<div class="char-box char-box-b">${c}</div>`);
+        animationStateB = { steps: generateAnimationStepsB(), currentStepIndex: 0 };
+        resetB();
+    });
+
+    nextStepBtnB.addEventListener('click', () => { if (animationStateB.currentStepIndex < animationStateB.steps.length - 1) { animationStateB.currentStepIndex++; renderStateB(); } });
+    prevStepBtnB.addEventListener('click', () => { if (animationStateB.currentStepIndex > 0) { animationStateB.currentStepIndex--; renderStateB(); } });
+    resetBtnB.addEventListener('click', resetB);
+    autoPlayBtnB.addEventListener('click', () => {
+        if (isAutoPlayingB) { stopAutoPlayB(); } 
+        else {
+            if (animationStateB.currentStepIndex >= animationStateB.steps.length - 1) return;
+            isAutoPlayingB = true;
+            autoPlayBtnB.textContent = '暫停';
+            autoPlayBtnB.classList.remove('success'); autoPlayBtnB.classList.add('warning');
+            autoPlayTimerB = setInterval(() => {
+                if (animationStateB.currentStepIndex < animationStateB.steps.length - 1) { nextStepBtnB.click(); } 
+                else { stopAutoPlayB(); }
+            }, 1200);
+        }
+    });
+</script>
+
+</body>
+</html>
