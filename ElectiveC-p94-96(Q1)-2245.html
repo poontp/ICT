@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>演算法互動解析</title>
+<style>
+    body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, 'Microsoft JhengHei', sans-serif;
+        background-color: #f0f2f5;
+        color: #333;
+        line-height: 1.6;
+        margin: 0;
+        padding: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+    .container {
+        width: 100%;
+        max-width: 1000px; /* Increased max-width for wider layout */
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .tabs {
+        display: flex;
+        background-color: #e9ecef;
+    }
+    .tab-button {
+        padding: 12px 20px;
+        cursor: pointer;
+        border: none;
+        background-color: transparent;
+        font-size: 16px;
+        font-weight: 500;
+        color: #495057;
+        transition: all 0.3s ease;
+        flex-grow: 1;
+    }
+    .tab-button.active {
+        background-color: #007bff;
+        color: white;
+    }
+    .tab-button:hover:not(.active) {
+        background-color: #dee2e6;
+    }
+    .content {
+        padding: 20px;
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .controls {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+        text-align: center;
+    }
+    .btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: 1px solid #007bff;
+        border-radius: 5px;
+        color: #007bff;
+        background-color: white;
+        margin: 5px;
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        background-color: #007bff;
+        color: white;
+    }
+    .btn:disabled {
+        border-color: #ccc;
+        color: #ccc;
+        cursor: not-allowed;
+        background-color: #f8f9fa;
+    }
+    .explanation {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #eef7ff;
+        border-left: 4px solid #007bff;
+        border-radius: 4px;
+        min-height: 50px;
+    }
+    .code-container {
+        display: flex;
+        flex-wrap: nowrap; /* Changed from wrap */
+        gap: 20px;
+        margin-top: 15px;
+    }
+    .code {
+        flex: 3; /* Adjusted flex ratio */
+        min-width: 350px;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+    .variables {
+        flex: 4; /* Adjusted flex ratio to make it wider */
+        min-width: 450px;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+    h3 {
+        color: #0056b3;
+        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 5px;
+        margin-top: 0;
+    }
+    .code pre {
+        margin: 0;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+    }
+    .code .line {
+        padding: 2px 5px;
+        border-radius: 3px;
+        display: block;
+        transition: background-color 0.3s;
+    }
+    .code .line.highlight {
+        background-color: #ffc107;
+    }
+    .variable-display {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 16px;
+    }
+    .array-vis {
+        display: flex;
+        flex-wrap: nowrap; /* Changed from wrap */
+        gap: 5px;
+        margin-top: 10px;
+        padding-bottom: 5px;
+        overflow-x: auto;
+    }
+    .array-cell {
+        border: 1px solid #ccc;
+        padding: 5px;
+        text-align: center;
+        min-width: 35px; /* Slightly wider cells */
+        background-color: #fff;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+    .array-cell .index {
+        font-size: 10px;
+        color: #666;
+    }
+    .array-cell .value {
+        font-weight: bold;
+    }
+    .array-cell.highlight {
+        transform: scale(1.1);
+        border-color: #007bff;
+        background-color: #cce5ff;
+    }
+    .final-answer {
+        margin-top: 20px;
+        padding: 15px;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 5px;
+        color: #155724;
+    }
+    .final-answer h4 {
+        margin-top: 0;
+    }
+    .analysis-section {
+        margin-bottom: 25px;
+    }
+    .analysis-section h4 {
+        color: #0056b3;
+    }
+    .challenge-fail {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'a')">問題 (a)</button>
+        <button class="tab-button" onclick="openTab(event, 'b')">問題 (b)</button>
+        <button class="tab-button" onclick="openTab(event, 'c')">問題 (c)</button>
+        <button class="tab-button" onclick="openTab(event, 'd')">問題 (d)</button>
+    </div>
+
+    <!-- 問題 (a) 內容 -->
+    <div id="a" class="tab-content active">
+        <h2>演算法 1 解析</h2>
+        <div class="code-container">
+            <div class="code">
+                <h3>偽代碼</h3>
+                <pre><span id="a-line-1" class="line">1: weight ← 0</span>
+<span id="a-line-2" class="line">2: 設 i 由 A 至 A+9</span>
+<span id="a-line-3" class="line">3: &nbsp;&nbsp;&nbsp;&nbsp;weight ← weight + i</span>
+<span id="a-line-4" class="line">4: total ← 0</span>
+<span id="a-line-5" class="line">5: 設 i 由 0 至 8</span>
+<span id="a-line-6" class="line">6: &nbsp;&nbsp;&nbsp;&nbsp;total ← total + C[i]</span>
+<span id="a-line-7" class="line">7: 輸出 weight-total</span></pre>
+            </div>
+            <div class="variables">
+                <h3>變數狀態</h3>
+                <div class="variable-display">
+                    A = <span id="a-var-A">51</span><br>
+                    i = <span id="a-var-i">?</span><br>
+                    weight = <span id="a-var-weight">?</span><br>
+                    total = <span id="a-var-total">?</span><br>
+                </div>
+                <h3>陣列 C</h3>
+                <div id="a-array-C" class="array-vis"></div>
+            </div>
+        </div>
+        <div class="explanation" id="a-explanation">點擊「下一步」開始執行演算法 1。</div>
+        <div class="controls">
+            <button id="a-prev-btn" class="btn" onclick="prevStepA()">上一步</button>
+            <button id="a-next-btn" class="btn" onclick="stepA()">下一步</button>
+            <button class="btn" onclick="resetA()">重設</button>
+        </div>
+        <div id="a-final-answers" style="display:none;">
+            <div class="final-answer">
+                <h4>(i) 演算法 1 的輸出是什麼？</h4>
+                <p>輸出為 <strong>60</strong>。</p>
+            </div>
+            <div class="final-answer">
+                <h4>(ii) 變量 weight 的用途是什麼？</h4>
+                <p><code>weight</code> 用於計算並儲存「完整貨箱」（即包含從 A 到 A+9 所有 10 件貨物）的貨物編號總和。這是理論上應有的總和。</p>
+            </div>
+            <div class="final-answer">
+                <h4>(iii) 變量 total 的用途是什麼？</h4>
+                <p><code>total</code> 用於計算並儲存「實際貨箱」（即陣列 C 中現有的 9 件貨物）的貨物編號總和。這是實際量測到的總和。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 問題 (b) 內容 -->
+    <div id="b" class="tab-content">
+        <h2>演算法 2 解析</h2>
+        <div class="code-container">
+            <div class="code">
+                <h3>偽代碼</h3>
+                <pre><span id="b-line-1" class="line">1: 設 i 由 A 至 A+9</span>
+<span id="b-line-2" class="line">2: &nbsp;&nbsp;&nbsp;&nbsp;found ← False</span>
+<span id="b-line-3" class="line">3: &nbsp;&nbsp;&nbsp;&nbsp;設 j 由 0 至 8</span>
+<span id="b-line-4" class="line">4: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果 C[j] = i 則</span>
+<span id="b-line-5" class="line">5: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;found ← True</span>
+<span id="b-line-6" class="line">6: &nbsp;&nbsp;&nbsp;&nbsp;如果 found = False 則</span>
+<span id="b-line-7" class="line">7: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;輸出 i</span></pre>
+            </div>
+            <div class="variables">
+                <h3>變數狀態</h3>
+                <div class="variable-display">
+                    A = <span id="b-var-A">51</span><br>
+                    i = <span id="b-var-i">?</span><br>
+                    j = <span id="b-var-j">?</span><br>
+                    found = <span id="b-var-found">?</span><br>
+                    Line 4 執行次數 = <span id="b-var-counter">0</span>
+                </div>
+                <h3>陣列 C</h3>
+                <div id="b-array-C" class="array-vis"></div>
+            </div>
+        </div>
+        <div class="explanation" id="b-explanation">點擊「下一步」開始執行演算法 2。</div>
+        <div class="controls">
+            <button id="b-prev-btn" class="btn" onclick="prevStepB()">上一步</button>
+            <button id="b-next-btn" class="btn" onclick="stepB()">下一步</button>
+            <button class="btn" onclick="resetB()">重設</button>
+        </div>
+        <div id="b-final-answers" style="display:none;">
+            <div class="final-answer">
+                <h4>(i) 演算法 2 的輸出是什麼？</h4>
+                <p>輸出為 <strong>57</strong>。</p>
+            </div>
+            <div class="final-answer">
+                <h4>(ii) 演算法 2 的第 4 行被執行了多少次？</h4>
+                <p>第 4 行被執行了 <strong>90</strong> 次。這是因為外層迴圈 (i) 執行 10 次，對於每一次，內層迴圈 (j) 都會執行 9 次，所以總共是 10 * 9 = 90 次比較。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 問題 (c) 內容 -->
+    <div id="c" class="tab-content">
+        <h2>演算法 3 解析</h2>
+        <div class="code-container">
+            <div class="code">
+                <h3>偽代碼</h3>
+                <pre><span id="c-line-1" class="line">1: 設 i 由 A 至 A+9</span>
+<span id="c-line-2" class="line">2: &nbsp;&nbsp;&nbsp;&nbsp;found[i] ← False</span>
+<span id="c-line-3" class="line">3: 設 i 由 0 至 8</span>
+<span id="c-line-4" class="line">4: &nbsp;&nbsp;&nbsp;&nbsp;found[C[i]] ← True</span>
+<span id="c-line-5" class="line">5: 設 i 由 A 至 A+9</span>
+<span id="c-line-6" class="line">6: &nbsp;&nbsp;&nbsp;&nbsp;如果 found[i] = False 則</span>
+<span id="c-line-7" class="line">7: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;輸出 i</span></pre>
+            </div>
+            <div class="variables">
+                <h3>變數狀態</h3>
+                <div class="variable-display">
+                    A = <span id="c-var-A">51</span><br>
+                    i = <span id="c-var-i">?</span><br>
+                </div>
+                <h3>陣列 C</h3>
+                <div id="c-array-C" class="array-vis"></div>
+            </div>
+        </div>
+        <div class="explanation" id="c-explanation">點擊「下一步」開始執行演算法 3。</div>
+        <h3>陣列 found</h3>
+        <div id="c-array-found" class="array-vis"></div>
+        <div class="controls">
+            <button id="c-prev-btn" class="btn" onclick="prevStepC()">上一步</button>
+            <button id="c-next-btn" class="btn" onclick="stepC()">下一步</button>
+            <button class="btn" onclick="resetC()">重設</button>
+        </div>
+        <div id="c-final-answers" style="display:none;">
+            <div class="final-answer">
+                <h4>(i) 寫出執行演算法 3 後，陣列 found 的項目及其索引。</h4>
+                <p>陣列 found 的狀態如下（索引代表貨物編號）：</p>
+                <div id="c-final-found" class="array-vis"></div>
+            </div>
+            <div class="final-answer">
+                <h4>(ii) 演算法 3 的輸出是什麼？</h4>
+                <p>輸出為 <strong>58</strong>。</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 問題 (d) 內容 -->
+    <div id="d" class="tab-content">
+        <h2>演算法分析</h2>
+        <div class="analysis-section">
+            <h4>(i) 試簡略說明演算法 3 比演算法 2 的優勝之處。</h4>
+            <p><strong>答：</strong>演算法 3 比演算法 2 更有效率。演算法 2 使用巢狀迴圈，其執行時間與 (貨物種類數量 × 實際貨物數量) 成正比。而演算法 3 使用了類似「雜湊表」或「核對清單」的方法，它只需要分別掃描一次貨物種類和實際貨物，執行時間與 (貨物種類數量 + 實際貨物數量) 成正比，避免了巢狀迴圈，因此速度更快。</p>
+        </div>
+        <div class="analysis-section">
+            <h4>(ii) 試簡略說明演算法 1 比演算法 3 的優勝之處。</h4>
+            <p><strong>答：</strong>演算法 1 比演算法 3 更節省記憶體空間。演算法 1 只需要幾個變數來儲存總和。而演算法 3 需要一個額外的 `found` 陣列，其大小取決於貨物編號的範圍 (A 到 A+9)。如果貨物編號的範圍非常大（例如，從 1 到 1,000,000），演算法 3 將會需要非常大的記憶體空間，而演算法 1 的記憶體使用量則保持不變。</p>
+        </div>
+        <div class="analysis-section">
+            <h4>(iii) 以執行程式所需要的步數及時間而言，演算法 1 還是演算法 2 更有效率？試簡略說明。</h4>
+            <p><strong>答：</strong><strong>演算法 1 更有效率</strong>。演算法 1 的執行步數大致固定，約為 10 (計算理論總和) + 9 (計算實際總和) = 19 次加法運算。而演算法 2 在最壞情況下需要執行 10 × 9 = 90 次比較。演算法 1 的時間複雜度是線性的 O(N+M)，而演算法 2 是 O(N*M)，其中 N 是編號範圍，M 是物品數量。因此，演算法 1 的執行步數遠少於演算法 2，效率更高。</p>
+        </div>
+        <div class="analysis-section">
+            <h4>(iv) (挑戰題) 試舉出一個演算法 1 無法解決的特殊情況，但演算法 2 和演算法 3 能夠處理的特殊情況。</h4>
+            <p><strong>答：</strong>特殊情況是<strong>「一個貨物丟失，同時另一個貨物被重複放入」</strong>，導致箱子裡仍然是 9 件貨物。</p>
+            <p><strong>例子：</strong>假設貨箱編號 A=51，應有貨物 51 到 60。現在貨物 <strong>60</strong> 丟失了，但錯誤地多放了一個貨物 <strong>51</strong>。</p>
+            <ul>
+                <li><strong>實際貨物 (陣列 C):</strong> [51, 51, 52, 53, 54, 55, 56, 57, 58, 59] (其中一個 51 是多出來的)</li>
+                <li><strong>缺少的貨物:</strong> 60</li>
+            </ul>
+            <div class="final-answer challenge-fail">
+                <p><strong>演算法 1 的分析：</strong></p>
+                <ul>
+                    <li>理論總和 (weight) = 51 + ... + 60 = <strong>555</strong></li>
+                    <li>實際總和 (total) = (51+...+59) - 60 + 51 = 555 - 60 + 51 = <strong>546</strong></li>
+                    <li>演算法 1 輸出：weight - total = 555 - 546 = <strong>9</strong>。這是一個錯誤的結果。</li>
+                </ul>
+            </div>
+             <div class="final-answer">
+                <p><strong>演算法 2 和 3 的分析：</strong></p>
+                <ul>
+                    <li>這兩個演算法是逐一檢查每個編號 (51 到 60) 是否存在於陣列 C 中。</li>
+                    <li>當它們檢查到編號 <strong>60</strong> 時，它們會發現在陣列 C 中找不到 60，因此會正確地輸出 <strong>60</strong> 作為缺少的貨物。重複的 51 並不影響它們的判斷邏輯。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- 通用功能 ---
+function openTab(evt, tabName) {
+    let i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-button");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+    
+    // Reset animations when switching tabs
+    resetA();
+    resetB();
+    resetC();
+}
+
+function highlightLine(prefix, lineNum) {
+    for (let i = 1; i <= 7; i++) {
+        const el = document.getElementById(`${prefix}-line-${i}`);
+        if(el) el.classList.remove('highlight');
+    }
+    if (lineNum > 0) {
+        const el = document.getElementById(`${prefix}-line-${lineNum}`);
+        if(el) el.classList.add('highlight');
+    }
+}
+
+function renderArray(containerId, arr, highlightIndex = -1) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    arr.forEach((item, index) => {
+        const cell = document.createElement('div');
+        cell.className = 'array-cell';
+        if (index === highlightIndex) {
+            cell.classList.add('highlight');
+        }
+        cell.innerHTML = `<div class="index">${index}</div><div class="value">${item}</div>`;
+        container.appendChild(cell);
+    });
+}
+
+function renderKeyValueArray(containerId, obj, highlightKey = null) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    const keys = Object.keys(obj).sort((a, b) => a - b);
+    keys.forEach(key => {
+        const cell = document.createElement('div');
+        cell.className = 'array-cell';
+        if (key == highlightKey) {
+            cell.classList.add('highlight');
+        }
+        let value = obj[key];
+        if (typeof value === 'boolean') {
+            value = value ? 'True' : 'False';
+        }
+        cell.innerHTML = `<div class="index">${key}</div><div class="value">${value}</div>`;
+        container.appendChild(cell);
+    });
+}
+
+function deepCopy(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
+// --- 演算法 1 (a) ---
+let stateA = {};
+let historyA = [];
+const dataA = {
+    A: 51,
+    C: [54, 59, 51, 58, 55, 56, 53, 57, 52]
+};
+
+function getInitialStateA() {
+    return {
+        step: 0,
+        i: '?',
+        weight: '?',
+        total: '?',
+        loop1_i: dataA.A,
+        loop2_i: 0,
+        highlightLine: 0,
+        highlightC_idx: -1,
+        explanation: '點擊「下一步」開始執行演算法 1。',
+        isEnd: false
+    };
+}
+
+function resetA() {
+    stateA = getInitialStateA();
+    historyA = [];
+    updateUI_A();
+}
+
+function updateUI_A() {
+    document.getElementById('a-var-A').textContent = dataA.A;
+    document.getElementById('a-var-i').textContent = stateA.i;
+    document.getElementById('a-var-weight').textContent = stateA.weight;
+    document.getElementById('a-var-total').textContent = stateA.total;
+    document.getElementById('a-explanation').textContent = stateA.explanation;
+
+    highlightLine('a', stateA.highlightLine);
+    renderArray('a-array-C', dataA.C, stateA.highlightC_idx);
+
+    document.getElementById('a-final-answers').style.display = stateA.isEnd ? 'block' : 'none';
+    document.getElementById('a-prev-btn').disabled = historyA.length === 0;
+    document.getElementById('a-next-btn').disabled = stateA.isEnd;
+}
+
+function stepA() {
+    if (stateA.isEnd) return;
+    historyA.push(deepCopy(stateA));
+
+    stateA.step++;
+    stateA.highlightC_idx = -1; // Reset highlight by default
+    
+    if (stateA.step === 1) {
+        stateA.highlightLine = 1;
+        stateA.weight = 0;
+        stateA.explanation = '第 1 行：將變數 weight 初始化為 0。';
+    } else if (stateA.step === 2) {
+        stateA.highlightLine = 2;
+        stateA.explanation = '第 2 行：開始第一個迴圈，i 從 A (51) 循環到 A+9 (60)。';
+        stateA.i = stateA.loop1_i;
+    } else if (stateA.step >= 3 && stateA.step <= 12) {
+        stateA.highlightLine = 3;
+        const oldWeight = stateA.weight;
+        stateA.weight += stateA.loop1_i;
+        stateA.explanation = `第 3 行：執行加法。weight ← ${oldWeight} + ${stateA.loop1_i} = ${stateA.weight}。`;
+        stateA.loop1_i++;
+        stateA.i = (stateA.loop1_i <= dataA.A + 9) ? stateA.loop1_i : '-';
+    } else if (stateA.step === 13) {
+        stateA.highlightLine = 4;
+        stateA.total = 0;
+        stateA.i = '?';
+        stateA.explanation = '第 4 行：第一個迴圈結束。將變數 total 初始化為 0。';
+    } else if (stateA.step === 14) {
+        stateA.highlightLine = 5;
+        stateA.i = stateA.loop2_i;
+        stateA.explanation = '第 5 行：開始第二個迴圈，i 從 0 循環到 8，遍歷陣列 C。';
+    } else if (stateA.step >= 15 && stateA.step <= 23) {
+        stateA.highlightLine = 6;
+        const oldTotal = stateA.total;
+        const c_val = dataA.C[stateA.loop2_i];
+        stateA.total += c_val;
+        stateA.highlightC_idx = stateA.loop2_i;
+        stateA.explanation = `第 6 行：讀取 C[${stateA.loop2_i}] 的值 ${c_val}。total ← ${oldTotal} + ${c_val} = ${stateA.total}。`;
+        stateA.loop2_i++;
+        stateA.i = (stateA.loop2_i <= 8) ? stateA.loop2_i : '-';
+    } else if (stateA.step === 24) {
+        stateA.highlightLine = 7;
+        stateA.i = '-';
+        const result = stateA.weight - stateA.total;
+        stateA.explanation = `第 7 行：迴圈結束。計算 weight - total = ${stateA.weight} - ${stateA.total} = ${result}。輸出結果。`;
+        stateA.isEnd = true;
+    }
+    updateUI_A();
+}
+
+function prevStepA() {
+    if (historyA.length > 0) {
+        stateA = historyA.pop();
+        updateUI_A();
+    }
+}
+
+// --- 演算法 2 (b) ---
+let stateB = {};
+let historyB = [];
+const dataB = {
+    A: 51,
+    C: [54, 59, 51, 60, 55, 56, 53, 58, 52]
+};
+
+function getInitialStateB() {
+    return {
+        i: '?',
+        j: '?',
+        found: '?',
+        counter: 0,
+        outer_i: dataB.A,
+        inner_j: 0,
+        phase: 'START_OUTER_LOOP', // START_OUTER_LOOP, INIT_FOUND, START_INNER_LOOP, COMPARE, CHECK_FOUND, OUTPUT
+        highlightLine: 0,
+        highlightC_idx: -1,
+        explanation: '點擊「下一步」開始執行演算法 2。',
+        isEnd: false
+    };
+}
+
+function resetB() {
+    stateB = getInitialStateB();
+    historyB = [];
+    updateUI_B();
+}
+
+function updateUI_B() {
+    document.getElementById('b-var-A').textContent = dataB.A;
+    document.getElementById('b-var-i').textContent = stateB.i;
+    document.getElementById('b-var-j').textContent = stateB.j;
+    document.getElementById('b-var-found').textContent = stateB.found;
+    document.getElementById('b-var-counter').textContent = stateB.counter;
+    document.getElementById('b-explanation').textContent = stateB.explanation;
+    
+    highlightLine('b', stateB.highlightLine);
+    renderArray('b-array-C', dataB.C, stateB.highlightC_idx);
+
+    document.getElementById('b-final-answers').style.display = stateB.isEnd ? 'block' : 'none';
+    document.getElementById('b-prev-btn').disabled = historyB.length === 0;
+    document.getElementById('b-next-btn').disabled = stateB.isEnd;
+}
+
+function stepB() {
+    if (stateB.isEnd) return;
+    historyB.push(deepCopy(stateB));
+
+    stateB.highlightC_idx = -1;
+
+    switch(stateB.phase) {
+        case 'START_OUTER_LOOP':
+            if (stateB.outer_i > dataB.A + 9) {
+                stateB.explanation = '演算法執行完畢，未找到缺少的貨物。 (這不應該發生)';
+                stateB.isEnd = true;
+                break;
+            }
+            stateB.i = stateB.outer_i;
+            stateB.highlightLine = 1;
+            stateB.explanation = `第 1 行：外層迴圈開始，檢查數字 i = ${stateB.i}。`;
+            stateB.phase = 'INIT_FOUND';
+            break;
+        
+        case 'INIT_FOUND':
+            stateB.found = false;
+            stateB.highlightLine = 2;
+            stateB.explanation = `第 2 行：設定 found 為 False。`;
+            stateB.phase = 'START_INNER_LOOP';
+            break;
+
+        case 'START_INNER_LOOP':
+            stateB.inner_j = 0;
+            stateB.j = 0;
+            stateB.highlightLine = 3;
+            stateB.explanation = `第 3 行：內層迴圈開始，j 從 0 到 8。`;
+            stateB.phase = 'COMPARE';
+            break;
+
+        case 'COMPARE':
+            if (stateB.inner_j > 8) {
+                stateB.phase = 'CHECK_FOUND';
+                stepB(); // Immediately transition to the next phase
+                return; 
+            }
+            stateB.j = stateB.inner_j;
+            stateB.highlightC_idx = stateB.j;
+            stateB.counter++;
+            const c_val = dataB.C[stateB.j];
+            stateB.highlightLine = 4;
+            stateB.explanation = `第 4 行：比較 C[${stateB.j}] (${c_val}) 是否等於 i (${stateB.i})。 (執行次數: ${stateB.counter})`;
+
+            if (c_val === stateB.i) {
+                stateB.found = true;
+                stateB.phase = 'FOUND_TRUE';
+            } else {
+                stateB.inner_j++;
+            }
+            break;
+        
+        case 'FOUND_TRUE':
+            stateB.highlightLine = 5;
+            stateB.explanation = `第 5 行：找到相符！設定 found 為 True。繼續檢查剩餘項目。`;
+            stateB.inner_j++;
+            stateB.phase = 'COMPARE';
+            break;
+
+        case 'CHECK_FOUND':
+            stateB.j = '-';
+            stateB.highlightLine = 6;
+            stateB.explanation = `第 6 行：內層迴圈結束。檢查 found 是否為 False。 (found = ${stateB.found})`;
+            if (stateB.found === false) {
+                stateB.phase = 'OUTPUT';
+            } else {
+                stateB.outer_i++;
+                stateB.phase = 'START_OUTER_LOOP';
+            }
+            break;
+        
+        case 'OUTPUT':
+            stateB.highlightLine = 7;
+            stateB.explanation = `第 7 行：found 為 False，找到缺少的貨物！輸出 ${stateB.i}。`;
+            stateB.isEnd = true;
+            break;
+    }
+    updateUI_B();
+}
+
+function prevStepB() {
+    if (historyB.length > 0) {
+        stateB = historyB.pop();
+        updateUI_B();
+    }
+}
+
+// --- 演算法 3 (c) ---
+let stateC = {};
+let historyC = [];
+const dataC = {
+    A: 51,
+    C: [54, 59, 51, 60, 55, 56, 53, 57, 52]
+};
+
+function getInitialStateC() {
+    return {
+        i: '?',
+        found: {},
+        phase: 'INIT_START', // INIT_START, INIT_LOOP, POPULATE_START, POPULATE_LOOP, FIND_START, FIND_LOOP, OUTPUT
+        loop_idx: dataC.A,
+        highlightLine: 0,
+        highlightC_idx: -1,
+        highlightFound_key: null,
+        explanation: '點擊「下一步」開始執行演算法 3。',
+        isEnd: false
+    };
+}
+
+function resetC() {
+    stateC = getInitialStateC();
+    historyC = [];
+    updateUI_C();
+}
+
+function updateUI_C() {
+    document.getElementById('c-var-A').textContent = dataC.A;
+    document.getElementById('c-var-i').textContent = stateC.i;
+    document.getElementById('c-explanation').textContent = stateC.explanation;
+
+    highlightLine('c', stateC.highlightLine);
+    renderArray('c-array-C', dataC.C, stateC.highlightC_idx);
+    renderKeyValueArray('c-array-found', stateC.found, stateC.highlightFound_key);
+
+    if (stateC.isEnd || stateC.phase === 'FIND_START') {
+        const finalFoundContainer = document.getElementById('c-final-found');
+        finalFoundContainer.innerHTML = document.getElementById('c-array-found').innerHTML;
+    }
+    document.getElementById('c-final-answers').style.display = stateC.isEnd ? 'block' : 'none';
+    document.getElementById('c-prev-btn').disabled = historyC.length === 0;
+    document.getElementById('c-next-btn').disabled = stateC.isEnd;
+}
+
+function stepC() {
+    if (stateC.isEnd) return;
+    historyC.push(deepCopy(stateC));
+
+    stateC.highlightC_idx = -1;
+    stateC.highlightFound_key = null;
+
+    switch(stateC.phase) {
+        case 'INIT_START':
+            stateC.highlightLine = 1;
+            stateC.explanation = '第 1 行：開始第一個迴圈，初始化 found 陣列。';
+            stateC.phase = 'INIT_LOOP';
+            // Fall-through to execute first step of loop immediately
+        case 'INIT_LOOP':
+            if (stateC.loop_idx > dataC.A + 9) {
+                stateC.phase = 'POPULATE_START';
+                stateC.loop_idx = 0;
+                stateC.i = '?';
+                stepC(); return;
+            }
+            stateC.i = stateC.loop_idx;
+            stateC.highlightLine = 2;
+            stateC.found[stateC.loop_idx] = false;
+            stateC.highlightFound_key = stateC.loop_idx;
+            stateC.explanation = `第 2 行：設定 found[${stateC.loop_idx}] 為 False。`;
+            stateC.loop_idx++;
+            break;
+
+        case 'POPULATE_START':
+            stateC.highlightLine = 3;
+            stateC.explanation = '第 3 行：開始第二個迴圈，遍歷陣列 C 來標記已存在的貨物。';
+            stateC.phase = 'POPULATE_LOOP';
+            // Fall-through
+        case 'POPULATE_LOOP':
+            if (stateC.loop_idx > 8) {
+                stateC.phase = 'FIND_START';
+                stateC.loop_idx = dataC.A;
+                stateC.i = '?';
+                stepC(); return;
+            }
+            stateC.i = stateC.loop_idx;
+            const cargoId = dataC.C[stateC.loop_idx];
+            stateC.highlightLine = 4;
+            stateC.found[cargoId] = true;
+            stateC.highlightC_idx = stateC.loop_idx;
+            stateC.highlightFound_key = cargoId;
+            stateC.explanation = `第 4 行：讀取 C[${stateC.loop_idx}] 的值 ${cargoId}，設定 found[${cargoId}] 為 True。`;
+            stateC.loop_idx++;
+            break;
+
+        case 'FIND_START':
+            stateC.highlightLine = 5;
+            stateC.explanation = '第 5 行：開始第三個迴圈，尋找 found 陣列中值為 False 的項目。';
+            stateC.phase = 'FIND_LOOP';
+            // Fall-through
+        case 'FIND_LOOP':
+            if (stateC.loop_idx > dataC.A + 9) {
+                stateC.explanation = '演算法執行完畢，未找到缺少的貨物。';
+                stateC.isEnd = true;
+                break;
+            }
+            stateC.i = stateC.loop_idx;
+            stateC.highlightLine = 6;
+            stateC.highlightFound_key = stateC.loop_idx;
+            stateC.explanation = `第 6 行：檢查 found[${stateC.loop_idx}] 是否為 False。其值為 ${stateC.found[stateC.loop_idx]}。`;
+            if (stateC.found[stateC.loop_idx] === false) {
+                stateC.phase = 'OUTPUT';
+            } else {
+                stateC.loop_idx++;
+            }
+            break;
+
+        case 'OUTPUT':
+            stateC.highlightLine = 7;
+            stateC.highlightFound_key = stateC.loop_idx;
+            stateC.explanation = `第 7 行：found[${stateC.loop_idx}] 為 False，找到缺少的貨物！輸出 ${stateC.loop_idx}。`;
+            stateC.isEnd = true;
+            break;
+    }
+    updateUI_C();
+}
+
+function prevStepC() {
+    if (historyC.length > 0) {
+        stateC = historyC.pop();
+        updateUI_C();
+    }
+}
+
+// --- 初始化 ---
+window.onload = function() {
+    document.querySelector('.tab-button.active').click();
+    resetA();
+    resetB();
+    resetC();
+};
+
+</script>
+
+</body>
+</html>
