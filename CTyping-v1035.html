@@ -31,15 +31,7 @@
         .setup-section { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; text-align: left; }
         .setup-step { background-color: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
         .setup-step label { display: block; font-weight: bold; margin-bottom: 10px; }
-        /* 程式碼說明: 為新的下拉式選單設定樣式 */
-        .setup-step select#time-limit-input {
-            width: 120px;
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            background-color: white;
-            font-size: 14px;
-        }
+        .setup-step select#time-limit-input { width: 120px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; background-color: white; font-size: 14px; }
         .start-button-container { margin-bottom: 20px; }
         .btn { padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; background-color: var(--primary-color); color: white; font-weight: bold; font-size: 16px; transition: background-color 0.3s, transform 0.2s; }
         .btn:hover { background-color: #0056b3; transform: translateY(-2px); }
@@ -98,7 +90,6 @@
                 </div>
                 <div class="setup-step">
                     <label for="time-limit-input">4. 設定比賽時限</label>
-                    <!-- 程式碼說明: 將輸入框改為下拉式選單，提供預設選項並避免輸入法問題 -->
                     <select id="time-limit-input">
                         <option value="1">1 分鐘</option>
                         <option value="2">2 分鐘</option>
@@ -193,6 +184,9 @@
         let currentIndex = 0, isComposing = false, maxIndexReached = 0;
         let userInputArray = [], choicesInstance = null;
 
+        // 程式碼說明: 定義一個具名處理函數，以便後續可以新增和移除它
+        const globalFocusHandler = () => hiddenInput.focus();
+
         function initializeChoices() {
             if (choicesInstance) { choicesInstance.destroy(); }
             choicesInstance = new Choices(contestantSelect, {
@@ -254,14 +248,12 @@
             timerDisplay.textContent = formatSeconds(seconds);
         }
         
-        // 程式碼說明: 當下拉選單變更時，更新計時器預覽。這取代了之前複雜的輸入驗證。
         timeLimitInput.addEventListener('change', () => {
             const minutes = parseInt(timeLimitInput.value, 10);
             updateTimerDisplay(minutes * 60);
         });
 
         function startGame() {
-            // 直接從下拉選單獲取有效時間
             const minutes = parseInt(timeLimitInput.value, 10);
             totalTime = minutes * 60;
             timeRemaining = totalTime;
@@ -275,6 +267,9 @@
             updateTimerDisplay(timeRemaining);
             timerId = setInterval(updateTimer, 1000);
             hiddenInput.focus();
+            
+            // 程式碼說明: 在遊戲開始時，才啟用這個全域點擊監聽器
+            document.body.addEventListener('click', globalFocusHandler);
         }
 
         // --- 遊戲核心邏輯 ---
@@ -314,7 +309,8 @@
             const typedChar = e.target.value;
             if (typedChar) { handleTyping(typedChar); e.target.value = ''; }
         });
-        document.body.addEventListener('click', () => hiddenInput.focus());
+        // 程式碼說明: 移除原本在全域範圍內綁定的事件，改為在 startGame 中動態綁定
+        // document.body.addEventListener('click', () => hiddenInput.focus());
         function updateTimer() {
             timeRemaining--;
             updateTimerDisplay(timeRemaining);
@@ -367,6 +363,9 @@
             if (!gameActive) return;
             gameActive = false;
             clearInterval(timerId);
+            
+            // 程式碼說明: 遊戲結束時，移除全域點擊監聽器，避免影響結果頁面
+            document.body.removeEventListener('click', globalFocusHandler);
             
             gameTimeElapsed = totalTime - timeRemaining;
             
@@ -458,6 +457,9 @@
         });
 
         restartButton.addEventListener('click', () => {
+            // 程式碼說明: 重啟時也要移除監聽器，確保設定頁面功能正常
+            document.body.removeEventListener('click', globalFocusHandler);
+            
             setupContainer.style.display = 'block';
             resultsDiv.style.display = 'none';
             resetGame();
@@ -491,7 +493,6 @@
             setupContainer.style.display = 'block';
         });
         
-        // 初始化計時器顯示，使其與下拉選單的預設值保持一致
         updateTimerDisplay(parseInt(timeLimitInput.value, 10) * 60);
     </script>
 </body>
