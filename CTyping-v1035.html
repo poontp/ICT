@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香港管理專業協會羅桂祥中學 - 中文打字比賽</title>
+    
+    <!-- 引入函式庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --container-bg: #ffffff;
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --skipped-color: #fd7e14;
+            --border-color: #ddd;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 800px; background-color: var(--container-bg); padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); text-align: center; }
+        h1, h2 { color: var(--primary-color); }
+        h1 { margin-bottom: 25px; line-height: 1.3; }
+        h1 .sub-title { font-size: 0.8em; color: #333; }
+        .setup-section { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; text-align: left; }
+        .setup-step { background-color: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .setup-step label { display: block; font-weight: bold; margin-bottom: 10px; }
+        /* 程式碼說明: 為新的下拉式選單設定樣式 */
+        .setup-step select#time-limit-input {
+            width: 120px;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background-color: white;
+            font-size: 14px;
+        }
+        .start-button-container { margin-bottom: 20px; }
+        .btn { padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; background-color: var(--primary-color); color: white; font-weight: bold; font-size: 16px; transition: background-color 0.3s, transform 0.2s; }
+        .btn:hover { background-color: #0056b3; transform: translateY(-2px); }
+        .btn:disabled { background-color: #a0a0a0; cursor: not-allowed; transform: none; }
+        .btn-secondary { background-color: var(--secondary-color); }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .choices { margin-bottom: 0; }
+        .choices__inner { background-color: #fff; padding: 6px 7.5px 4px 10px; }
+        #contestant-display { font-size: 1.3em; color: #555; margin-bottom: 15px; font-weight: bold; }
+        #timer { font-size: 2em; font-weight: bold; color: var(--primary-color); margin-bottom: 20px; }
+        #text-display { font-size: 1.8em; line-height: 2.5; text-align: justify; border: 1px solid var(--border-color); padding: 20px; border-radius: 5px; height: 280px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-content: flex-start; }
+        .char-container { position: relative; display: inline-block; margin: 0 2px; padding-top: 20px; cursor: pointer; }
+        .char { transition: color 0.2s, background-color 0.2s; }
+        .feedback { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); font-size: 18px; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
+        .feedback-correct, .feedback-incorrect, .feedback-skipped { opacity: 1; }
+        .feedback-correct { color: var(--correct-color); }
+        .feedback-incorrect { color: var(--incorrect-color); }
+        .feedback-skipped { color: var(--skipped-color); }
+        .current .char { background-color: rgba(0, 123, 255, 0.2); border-bottom: 3px solid var(--primary-color); padding-bottom: 2px; }
+        .correct { color: var(--correct-color); }
+        .incorrect { color: var(--incorrect-color); }
+        .skipped { color: var(--skipped-color); }
+        #results { display: none; padding: 20px; border: 1px solid var(--border-color); border-radius: 5px; background-color: #f9f9f9; }
+        #results h2 { margin-top: 0; }
+        #results p { font-size: 1.2em; margin: 10px 0; text-align: left; }
+        #results span { font-weight: bold; }
+        #results .result-buttons { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
+        #hidden-input { position: absolute; left: -9999px; top: -9999px; opacity: 0; }
+        #confirmation-container { padding: 40px 20px; }
+        .confirmation-text { font-size: 1.5em; color: #333; margin-bottom: 10px; font-weight: 600; }
+        .confirmation-subtext { font-size: 1.1em; color: #555; margin-bottom: 30px; }
+        .confirmation-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>
+            香港管理專業協會羅桂祥中學<br>
+            <span class="sub-title">中文打字比賽</span>
+        </h1>
+        
+        <div id="setup-container">
+            <div class="setup-section">
+                <div class="setup-step">
+                    <label for="csv-input">1. 上載參賽者名單 (.csv)</label>
+                    <input type="file" id="csv-input" accept=".csv">
+                </div>
+                <div class="setup-step">
+                    <label for="file-input">2. 上載比賽文章 (.txt)</label>
+                    <input type="file" id="file-input" accept=".txt">
+                </div>
+                <div class="setup-step">
+                    <label for="contestant-select">3. 選擇參賽者 (可搜尋)</label>
+                    <select id="contestant-select"></select>
+                </div>
+                <div class="setup-step">
+                    <label for="time-limit-input">4. 設定比賽時限</label>
+                    <!-- 程式碼說明: 將輸入框改為下拉式選單，提供預設選項並避免輸入法問題 -->
+                    <select id="time-limit-input">
+                        <option value="1">1 分鐘</option>
+                        <option value="2">2 分鐘</option>
+                        <option value="3">3 分鐘</option>
+                        <option value="5">5 分鐘</option>
+                        <option value="10" selected>10 分鐘</option>
+                        <option value="15">15 分鐘</option>
+                        <option value="20">20 分鐘</option>
+                        <option value="30">30 分鐘</option>
+                        <option value="60">60 分鐘</option>
+                    </select>
+                </div>
+            </div>
+            <div class="start-button-container">
+                <button id="start-button" class="btn" disabled>開始比賽</button>
+            </div>
+        </div>
+
+        <div id="confirmation-container" style="display: none;">
+            <h2>準備開始</h2>
+            <p class="confirmation-text">請再次確認，您是否已切換到所需的中文輸入法？</p>
+            <p class="confirmation-subtext">點擊下方按鈕後，計時將立即開始。</p>
+            <div class="confirmation-buttons">
+                <button id="confirm-start-button" class="btn">確認，立即開始</button>
+                <button id="back-to-setup-button" class="btn btn-secondary">返回設定</button>
+            </div>
+        </div>
+
+        <div id="game-container" style="display: none;">
+            <div id="contestant-display"></div>
+            <div id="timer">10:00</div>
+            <div id="game-area"><div id="text-display"></div></div>
+        </div>
+       
+        <textarea id="hidden-input"></textarea>
+
+        <div id="results">
+            <h2>比賽結束！</h2>
+            <p>參賽者：<span id="result-contestant"></span></p>
+            <p>完成時間戳：<span id="result-time"></span></p>
+            <p>⏱️ 所用時間：<span id="result-duration"></span></p>
+            <hr>
+            <p>✅ 正確字數：<span id="correct-count">0</span></p>
+            <p>❌ 錯誤字數：<span id="incorrect-count">0</span></p>
+            <p>➖ 跳過字數：<span id="skipped-count">0</span></p>
+            <p>📊 總分：<span id="total-score">0</span></p>
+            <p>🚀 打字速度：<span id="wpm">0</span> 字/分鐘</p>
+            <div class="result-buttons">
+                <button id="restart-button" class="btn">重新選擇</button>
+                <button id="download-pdf-button" class="btn">下載成績 (PDF)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM 元素
+        const setupContainer = document.getElementById('setup-container');
+        const confirmationContainer = document.getElementById('confirmation-container');
+        const gameContainer = document.getElementById('game-container');
+        const resultsDiv = document.getElementById('results');
+        
+        const csvInput = document.getElementById('csv-input');
+        const fileInput = document.getElementById('file-input');
+        const contestantSelect = document.getElementById('contestant-select');
+        const timeLimitInput = document.getElementById('time-limit-input');
+        
+        const startButton = document.getElementById('start-button');
+        const confirmStartButton = document.getElementById('confirm-start-button');
+        const backToSetupButton = document.getElementById('back-to-setup-button');
+        
+        const timerDisplay = document.getElementById('timer');
+        const textDisplay = document.getElementById('text-display');
+        const correctCountSpan = document.getElementById('correct-count');
+        const incorrectCountSpan = document.getElementById('incorrect-count');
+        const skippedCountSpan = document.getElementById('skipped-count');
+        const totalScoreSpan = document.getElementById('total-score');
+        const wpmSpan = document.getElementById('wpm');
+        const restartButton = document.getElementById('restart-button');
+        const downloadPdfButton = document.getElementById('download-pdf-button');
+        const hiddenInput = document.getElementById('hidden-input');
+        const resultContestant = document.getElementById('result-contestant');
+        const resultTime = document.getElementById('result-time');
+        const resultDuration = document.getElementById('result-duration');
+        const contestantDisplay = document.getElementById('contestant-display');
+
+        // 遊戲狀態
+        let sourceText = "", contestants = [], selectedContestant = "";
+        let gameActive = false, timerId = null;
+        let totalTime = 600;
+        let timeRemaining = totalTime;
+        let gameTimeElapsed = 0;
+        let currentIndex = 0, isComposing = false, maxIndexReached = 0;
+        let userInputArray = [], choicesInstance = null;
+
+        function initializeChoices() {
+            if (choicesInstance) { choicesInstance.destroy(); }
+            choicesInstance = new Choices(contestantSelect, {
+                searchEnabled: true, itemSelectText: '選擇', placeholder: true,
+                placeholderValue: '請先上載檔案並選擇', removeItemButton: true,
+            });
+        }
+        document.addEventListener('DOMContentLoaded', initializeChoices);
+
+        function checkStartButtonState() {
+            startButton.disabled = !(sourceText && contestants.length > 0 && selectedContestant);
+        }
+
+        csvInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    encoding: "UTF-8", skipEmptyLines: true,
+                    complete: (results) => {
+                        contestants = results.data.map(row => row[0]).filter(name => name && name.trim() !== '');
+                        choicesInstance.clearStore();
+                        if (contestants.length > 0) {
+                            choicesInstance.setChoices(contestants.map(name => ({ value: name, label: name })), 'value', 'label', false);
+                            choicesInstance.enable();
+                        } else {
+                            choicesInstance.disable();
+                            choicesInstance.setChoices([{ value: '', label: '名單為空或格式錯誤', disabled: true }], 'value', 'label', false);
+                        }
+                        checkStartButtonState();
+                    }
+                });
+            }
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    sourceText = e.target.result.trim().replace(/\s+/g, '');
+                    checkStartButtonState();
+                };
+                reader.readAsText(file, "UTF-8");
+            }
+        });
+
+        contestantSelect.addEventListener('change', (event) => {
+            selectedContestant = event.target.value;
+            checkStartButtonState();
+        });
+
+        function formatSeconds(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerDisplay(seconds) {
+            timerDisplay.textContent = formatSeconds(seconds);
+        }
+        
+        // 程式碼說明: 當下拉選單變更時，更新計時器預覽。這取代了之前複雜的輸入驗證。
+        timeLimitInput.addEventListener('change', () => {
+            const minutes = parseInt(timeLimitInput.value, 10);
+            updateTimerDisplay(minutes * 60);
+        });
+
+        function startGame() {
+            // 直接從下拉選單獲取有效時間
+            const minutes = parseInt(timeLimitInput.value, 10);
+            totalTime = minutes * 60;
+            timeRemaining = totalTime;
+
+            prepareText();
+            gameActive = true;
+            confirmationContainer.style.display = 'none';
+            gameContainer.style.display = 'block';
+            resultsDiv.style.display = 'none';
+            contestantDisplay.textContent = `參賽者: ${selectedContestant}`;
+            updateTimerDisplay(timeRemaining);
+            timerId = setInterval(updateTimer, 1000);
+            hiddenInput.focus();
+        }
+
+        // --- 遊戲核心邏輯 ---
+        function prepareText() {
+            textDisplay.innerHTML = "";
+            userInputArray = new Array(sourceText.length).fill('');
+            sourceText.split('').forEach((char, index) => {
+                const container = document.createElement('div');
+                container.className = 'char-container';
+                container.dataset.index = index;
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = 'feedback';
+                const charSpan = document.createElement('span');
+                charSpan.className = 'char';
+                charSpan.textContent = char;
+                container.appendChild(feedbackDiv);
+                container.appendChild(charSpan);
+                textDisplay.appendChild(container);
+                container.addEventListener('click', () => { if (gameActive) setCursor(index); });
+            });
+            if (textDisplay.childNodes.length > 0) { setCursor(0); }
+        }
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            if (e.key === 'ArrowLeft') { e.preventDefault(); if (currentIndex > 0) setCursor(currentIndex - 1); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); if (currentIndex < sourceText.length - 1) setCursor(currentIndex + 1); }
+            else if (e.key === 'Backspace') { e.preventDefault(); if (currentIndex > 0) { setCursor(currentIndex - 1); clearCharacter(currentIndex); } }
+        });
+        hiddenInput.addEventListener('compositionstart', () => { isComposing = true; });
+        hiddenInput.addEventListener('compositionend', (e) => {
+            isComposing = false;
+            const typedChar = e.target.value;
+            if (gameActive && typedChar) { handleTyping(typedChar); e.target.value = ''; }
+        });
+        hiddenInput.addEventListener('input', (e) => {
+            if (isComposing || !gameActive) return;
+            const typedChar = e.target.value;
+            if (typedChar) { handleTyping(typedChar); e.target.value = ''; }
+        });
+        document.body.addEventListener('click', () => hiddenInput.focus());
+        function updateTimer() {
+            timeRemaining--;
+            updateTimerDisplay(timeRemaining);
+            if (timeRemaining <= 0) endGame();
+        }
+        function handleTyping(typedChar) {
+            if (currentIndex >= sourceText.length) return;
+            for (let i = 0; i < typedChar.length; i++) {
+                if (currentIndex >= sourceText.length) break;
+                userInputArray[currentIndex] = typedChar[i];
+                updateCharacter(currentIndex);
+                if (currentIndex < sourceText.length - 1) { setCursor(currentIndex + 1); } else { setCursor(currentIndex); }
+            }
+            if (currentIndex === sourceText.length - 1 && userInputArray.filter(c => c).length === sourceText.length) { endGame(); }
+        }
+        function clearCharacter(index) {
+            userInputArray[index] = '';
+            updateCharacter(index);
+        }
+        function updateCharacter(index) {
+            const container = textDisplay.childNodes[index];
+            if (!container) return;
+            const feedbackDiv = container.querySelector('.feedback');
+            const charSpan = container.querySelector('.char');
+            const userInput = userInputArray[index];
+            charSpan.classList.remove('correct', 'incorrect', 'skipped');
+            feedbackDiv.classList.remove('feedback-correct', 'feedback-incorrect', 'feedback-skipped');
+            feedbackDiv.textContent = '';
+            if (userInput) {
+                if (userInput === sourceText[index]) { charSpan.classList.add('correct'); feedbackDiv.classList.add('feedback-correct'); feedbackDiv.textContent = '✓'; }
+                else { charSpan.classList.add('incorrect'); feedbackDiv.classList.add('feedback-incorrect'); feedbackDiv.textContent = '✗'; }
+            } else if (index < maxIndexReached) {
+                charSpan.classList.add('skipped'); feedbackDiv.classList.add('feedback-skipped'); feedbackDiv.textContent = '-';
+            }
+        }
+        function setCursor(newIndex) {
+            const oldIndex = currentIndex;
+            if (oldIndex < textDisplay.childNodes.length) { textDisplay.childNodes[oldIndex].classList.remove('current'); }
+            currentIndex = newIndex;
+            if (currentIndex < textDisplay.childNodes.length) {
+                const newCurrent = textDisplay.childNodes[currentIndex];
+                newCurrent.classList.add('current');
+                newCurrent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            if (newIndex > maxIndexReached) { maxIndexReached = newIndex; }
+            if (newIndex > oldIndex) { for (let i = oldIndex; i < newIndex; i++) { updateCharacter(i); } }
+            hiddenInput.focus();
+        }
+        function endGame() {
+            if (!gameActive) return;
+            gameActive = false;
+            clearInterval(timerId);
+            
+            gameTimeElapsed = totalTime - timeRemaining;
+            
+            let finalCorrect = 0, finalIncorrect = 0, skippedCount = 0;
+            for (let i = 0; i <= maxIndexReached && i < sourceText.length; i++) {
+                if (userInputArray[i]) {
+                    if (userInputArray[i] === sourceText[i]) finalCorrect++;
+                    else finalIncorrect++;
+                } else { skippedCount++; }
+            }
+            const wpm = gameTimeElapsed > 0 ? Math.round((finalCorrect / gameTimeElapsed) * 60) : 0;
+            const totalScore = finalCorrect - finalIncorrect - skippedCount;
+            const completionTime = new Date().toLocaleString('zh-TW');
+            
+            resultContestant.textContent = selectedContestant;
+            resultTime.textContent = completionTime;
+            resultDuration.textContent = formatSeconds(gameTimeElapsed) + ' 分鐘';
+            correctCountSpan.textContent = finalCorrect;
+            incorrectCountSpan.textContent = finalIncorrect;
+            skippedCountSpan.textContent = skippedCount;
+            totalScoreSpan.textContent = totalScore;
+            wpmSpan.textContent = wpm;
+            
+            gameContainer.style.display = 'none';
+            resultsDiv.style.display = 'block';
+        }
+
+        ['copy', 'paste', 'cut', 'contextmenu'].forEach(eventName => {
+            document.body.addEventListener(eventName, (e) => {
+                if (gameActive) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        downloadPdfButton.addEventListener('click', () => {
+            const originalButtonText = downloadPdfButton.textContent;
+            downloadPdfButton.disabled = true;
+            downloadPdfButton.textContent = '生成中...';
+
+            setTimeout(() => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    doc.setFont('Helvetica', 'normal');
+
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const seconds = String(now.getSeconds()).padStart(2, '0');
+                    const formattedTimestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+                    doc.setFontSize(18);
+                    doc.text('HKMA K S Lo College', 105, 20, { align: 'center' });
+                    doc.setFontSize(22);
+                    doc.text('Typing Competition - Result Report', 105, 32, { align: 'center' });
+                    
+                    doc.setFontSize(14);
+                    doc.text(`Contestant: ${resultContestant.textContent}`, 20, 50); 
+                    doc.text(`Report Creation Time: ${formattedTimestamp}`, 20, 60);
+                    doc.text(`Duration: ${formatSeconds(gameTimeElapsed)} min`, 20, 70);
+                    
+                    doc.line(20, 78, 190, 78);
+                    
+                    doc.setFontSize(16);
+                    doc.text('Results', 20, 88);
+                    
+                    doc.setFontSize(12);
+                    doc.text(`Correct Characters: ${correctCountSpan.textContent}`, 25, 100);
+                    doc.text(`Incorrect Characters: ${incorrectCountSpan.textContent}`, 25, 110);
+                    doc.text(`Skipped Characters: ${skippedCountSpan.textContent}`, 25, 120);
+                    doc.text(`Final Score: ${totalScoreSpan.textContent}`, 25, 130);
+                    doc.text(`Typing Speed (WPM): ${wpmSpan.textContent} words/min`, 25, 140);
+                    
+                    const filename = `Typing_Result_${selectedContestant || 'Report'}.pdf`;
+                    doc.save(filename);
+
+                } catch (error) {
+                    console.error("生成 PDF 時發生錯誤:", error);
+                    alert(`抱歉，生成 PDF 失敗，請將以下錯誤訊息提供給技術人員：\n${error.message}`);
+                } finally {
+                    downloadPdfButton.disabled = false;
+                    downloadPdfButton.textContent = originalButtonText;
+                }
+            }, 50);
+        });
+
+        restartButton.addEventListener('click', () => {
+            setupContainer.style.display = 'block';
+            resultsDiv.style.display = 'none';
+            resetGame();
+            checkStartButtonState();
+        });
+
+        function resetGame() {
+            gameActive = false;
+            clearInterval(timerId);
+            const minutes = parseInt(timeLimitInput.value, 10);
+            totalTime = minutes * 60;
+            timeRemaining = totalTime;
+            gameTimeElapsed = 0;
+            currentIndex = 0;
+            isComposing = false;
+            maxIndexReached = 0;
+            updateTimerDisplay(timeRemaining);
+        }
+        
+        startButton.addEventListener('click', () => {
+            setupContainer.style.display = 'none';
+            confirmationContainer.style.display = 'block';
+        });
+
+        confirmStartButton.addEventListener('click', () => {
+            startGame();
+        });
+
+        backToSetupButton.addEventListener('click', () => {
+            confirmationContainer.style.display = 'none';
+            setupContainer.style.display = 'block';
+        });
+        
+        // 初始化計時器顯示，使其與下拉選單的預設值保持一致
+        updateTimerDisplay(parseInt(timeLimitInput.value, 10) * 60);
+    </script>
+</body>
+</html>
