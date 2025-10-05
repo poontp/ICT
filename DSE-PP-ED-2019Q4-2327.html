@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2019 HKDSE ICT II D 問題 3 互動解答</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --text-color: #333;
+            --header-color: #1a237e;
+            --accent-color: #ff6f00;
+            --grid-bg: #fff;
+            --grid-border: #ccc;
+            --highlight-bg: rgba(255, 111, 0, 0.35); /* Orange tint */
+            --highlight-border: #e65100; /* Darker orange */
+            --highlight-invalid-bg: rgba(216, 162, 99, 0.4);
+            --max-highlight-bg: rgba(76, 175, 80, 0.3);
+            --max-highlight-border: #4caf50;
+            --font-family: 'Helvetica Neue', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            
+            /* Colors for (e) visualization */
+            --e-total-bg: rgba(63, 81, 181, 0.2);   /* Indigo */
+            --e-subtract-bg: rgba(244, 67, 54, 0.2); /* Red */
+            --e-addback-bg: rgba(255, 235, 59, 0.5); /* Yellow */
+            --e-target-bg: rgba(76, 175, 80, 0.5);   /* Green */
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 {
+            color: var(--header-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        h1 { text-align: center; }
+        
+        /* Tab System */
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #555;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab-btn:hover { color: var(--header-color); }
+        .tab-btn.active { color: var(--header-color); border-bottom: 3px solid var(--accent-color); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* General Layout */
+        .content-wrapper { display: flex; gap: 2rem; margin-top: 1rem; }
+        .grid-column { flex: 1; min-width: 280px; }
+        .explanation-column { flex: 1.5; }
+        .full-width-column { flex: 1; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 2px;
+            border: 2px solid var(--grid-border);
+            background-color: var(--grid-border);
+            max-width: 100%;
+            transition: grid-template-columns 0.3s ease;
+        }
+
+        .grid-cell {
+            background-color: var(--grid-bg);
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-sizing: border-box; 
+        }
+        
+        .grid-cell.island { background-color: #e8f5e9; }
+        .grid-cell.highlight { background-color: var(--highlight-bg); border: 2px solid var(--highlight-border); }
+        .grid-cell.highlight-invalid { background-color: var(--highlight-invalid-bg); border: 2px solid var(--highlight-border); }
+        .grid-cell.borderless { border: none; background-color: var(--grid-bg); }
+        .grid-cell.max-highlight { background-color: var(--max-highlight-bg); border: 2px solid var(--max-highlight-border); }
+        
+        /* For (d) visualization */
+        .grid-cell.area-r-ij { background-color: rgba(255, 235, 59, 0.7); border: 2px solid #FBC02D; z-index: 30;}
+        .grid-cell.area-s-i-1j { background-color: rgba(244, 67, 54, 0.3); } /* Red */
+        .grid-cell.area-s-ij-1 { background-color: rgba(33, 150, 243, 0.3); } /* Blue */
+        .grid-cell.area-overlap { background-color: rgba(156, 39, 176, 0.4); } /* Purple */
+
+        /* For (e) visualization */
+        .grid-cell.area-total { background-color: var(--e-total-bg); }
+        .grid-cell.area-subtract { background-color: var(--e-subtract-bg); }
+        .grid-cell.area-addback { background-color: var(--e-addback-bg); border: 2px solid #FBC02D; }
+        .grid-cell.area-target { background-color: var(--e-target-bg); border: 2px solid #388E3C; }
+
+        .explanation, .answer {
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 4px;
+        }
+        
+        .answer { background-color: #e8f5e9; border-left-color: #4caf50; }
+        .answer strong { color: #1b5e20; }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        
+        button.secondary { background-color: #607d8b; }
+        button.secondary:hover { background-color: #455a64; }
+        button:hover { background-color: #e65100; }
+        button:disabled { background-color: #9e9e9e; cursor: not-allowed; }
+
+        pre { background-color: #2d2d2d; color: #f8f8f2; padding: 1em; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', Courier, monospace; white-space: pre; }
+        .result-display { font-size: 1.2rem; font-weight: bold; margin-top: 1rem; min-height: 2em; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
+        code { background-color: #eee; padding: 2px 4px; border-radius: 3px; font-family: 'Courier New', Courier, monospace; }
+
+        /* Responsive Design */
+        @media (max-width: 800px) { .content-wrapper { flex-direction: column; } }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .grid-cell { font-size: 0.9rem; }
+            .button-group { flex-direction: column; align-items: flex-start; }
+            .tab-btn { font-size: 1rem; padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>2019 HKDSE ICT II D 問題 3 互動解答</h1>
+        
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="a">問題 (a)</button>
+            <button class="tab-btn" data-tab="b">問題 (b)</button>
+            <button class="tab-btn" data-tab="c">問題 (c)</button>
+            <button class="tab-btn" data-tab="d">問題 (d)</button>
+            <button class="tab-btn" data-tab="e">問題 (e)</button>
+            <button class="tab-btn" data-tab="f">問題 (f)</button>
+        </div>
+
+        <div class="tab-content">
+            <div id="tab-a" class="tab-pane active"></div>
+            <div id="tab-b" class="tab-pane"></div>
+            <div id="tab-c" class="tab-pane"></div>
+            
+            <!-- Tab (d) - UPDATED with manual controls -->
+            <div id="tab-d" class="tab-pane">
+                <h2>(d) S[i, j] 的遞歸公式</h2>
+                <div class="content-wrapper">
+                    <div class="grid-column">
+                        <p><strong>地圖網格 (陣列 R)</strong></p>
+                        <div id="grid-d" class="grid-container"></div>
+                        <div id="result-d" class="result-display"></div>
+                        <div id="legend-d" style="margin-top:1rem; display:none; flex-wrap: wrap; gap: 10px;">
+                            <span style="background-color: rgba(33, 150, 243, 0.3); padding: 5px; border-radius: 3px;">S[5, 5] 區域</span>
+                            <span style="background-color: rgba(244, 67, 54, 0.3); padding: 5px; border-radius: 3px;">S[4, 6] 區域</span>
+                            <span style="background-color: rgba(156, 39, 176, 0.4); padding: 5px; border-radius: 3px;">重疊區域 (S[4, 5])</span>
+                            <span style="background-color: rgba(255, 235, 59, 0.7); padding: 5px; border-radius: 3px;">R[5, 6]</span>
+                        </div>
+                    </div>
+                    <div class="explanation-column">
+                        <p>莉莉利用相鄰的 S 值來計算 S[i, j]。請完成以下公式：</p>
+                        <p><code>S[5, 6] = R[5, 6] + S[5, 5] + S[4, 6] – S[_________, ___________ ]</code></p>
+                        <div class="explanation">
+                            <h4>公式原理（容斥原理）</h4>
+                            <p>通用公式是： <strong>S[i, j] = R[i, j] + S[i-1, j] + S[i, j-1] - S[i-1, j-1]</strong></p>
+                            <p>這是因為 <code>S[i-1, j]</code> 和 <code>S[i, j-1]</code> 的重疊區域 <code>S[i-1, j-1]</code> 被加了兩次，所以需要減去一次。</p>
+                            <div class="button-group">
+                                <button id="btn-d-prev" class="secondary">上一步</button>
+                                <button id="btn-d-next" class="secondary">下一步</button>
+                                <button id="btn-d-play">自動播放</button>
+                                <button id="btn-d-reset" class="secondary">重設</button>
+                            </div>
+                        </div>
+                        <div class="answer">
+                            <p><strong>答案：</strong> 空格中應填入 <strong>S[4, 5]</strong>。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab (e) - UPDATED with manual controls -->
+            <div id="tab-e" class="tab-pane">
+                <h2>(e) 完成 SumS 內計算 z(3,4,2) 的公式</h2>
+                <div class="content-wrapper">
+                    <div class="grid-column">
+                        <p><strong>地圖網格 (陣列 R)</strong></p>
+                        <div id="grid-e" class="grid-container"></div>
+                        <div id="result-e" class="result-display"></div>
+                        <div id="legend-e" style="margin-top:1rem; display:none; flex-wrap: wrap; gap: 10px;">
+                            <span style="background-color: var(--e-total-bg); padding: 5px; border-radius: 3px;">S[4,5]</span>
+                            <span style="background-color: var(--e-subtract-bg); padding: 5px; border-radius: 3px;">減去區域</span>
+                            <span style="background-color: var(--e-addback-bg); padding: 5px; border-radius: 3px;">加回區域</span>
+                            <span style="background-color: var(--e-target-bg); padding: 5px; border-radius: 3px;">目標 z(3,4,2)</span>
+                        </div>
+                    </div>
+                    <div class="explanation-column">
+                        <p>莉莉開發一個子程式 <code>SumS(i,j,K)</code>，利用陣列 <code>S</code> 來傳回住在 WiFi 區域 <code>z(i,j,K)</code> 的人口。</p>
+                        <p><code>z(3,4,2) = S[4,5] - S[4,3] - S[2,5] + S[ 2 , 3 ]</code></p>
+                        <div class="explanation">
+                            <h4>公式原理 (積分圖)</h4>
+                            <p>要計算由 <code>R[3,4]</code> 至 <code>R[4,5]</code> 組成的 2x2 區域總和，我們利用預先算好的 <code>S</code> 陣列進行加減。</p>
+                            <div class="button-group">
+                                <button id="btn-e-prev" class="secondary">上一步</button>
+                                <button id="btn-e-next" class="secondary">下一步</button>
+                                <button id="btn-e-play">自動播放</button>
+                                <button id="btn-e-reset" class="secondary">重設</button>
+                            </div>
+                        </div>
+                        <div class="answer">
+                            <p><strong>答案：</strong> 空格中應填入 <strong>S[2, 3]</strong>。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab (f) -->
+            <div id="tab-f" class="tab-pane"></div>
+        </div>
+    </div>
+
+    <script>
+        const R = [
+            [0, 1, 2, 0, 0, 0], [0, 2, 2, 1, 0, 0], [1, 3, 0, 0, 1, 0],
+            [0, 1, 0, 0, 2, 2], [0, 0, 0, 1, 3, 1]
+        ];
+        const ROWS = 5; const COLS = 6;
+
+        function createGrid(containerId, rows = ROWS, cols = COLS) {
+            const gridContainer = document.getElementById(containerId);
+            if (!gridContainer) return;
+            gridContainer.innerHTML = '';
+            gridContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.id = `${containerId}-cell-${i + 1}-${j + 1}`;
+                    if (i < ROWS && j < COLS) {
+                        const val = R[i][j];
+                        cell.textContent = val;
+                        if (val > 0) cell.classList.add('island');
+                    } else { cell.textContent = ''; }
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        function clearHighlights(containerId) {
+            document.querySelectorAll(`#${containerId} .grid-cell`).forEach(cell => {
+                cell.className = 'grid-cell';
+                const coords = cell.id.split('-').slice(2).map(Number);
+                if (coords.length === 2 && coords[0]-1 < ROWS && coords[1]-1 < COLS && R[coords[0]-1][coords[1]-1] > 0) {
+                    cell.classList.add('island');
+                }
+            });
+        }
+        
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const previousActiveTab = document.querySelector('.tab-btn.active').dataset.tab;
+                const newActiveTab = button.dataset.tab;
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                tabPanes.forEach(pane => pane.classList.remove('active'));
+                document.getElementById(`tab-${newActiveTab}`).classList.add('active');
+                
+                if (previousActiveTab === 'b' && newActiveTab !== 'b') { createGrid('grid-b', ROWS, COLS); }
+                if (previousActiveTab === 'd' && newActiveTab !== 'd') { resetD(); }
+                if (previousActiveTab === 'e' && newActiveTab !== 'e') { resetE(); }
+            });
+        });
+
+        function fillStaticContent() {
+            document.getElementById('tab-a').innerHTML = `<h2>(a) 2x2 WiFi 區域計算</h2><div class="content-wrapper"><div class="grid-column"><p><strong>地圖網格 (陣列 R)</strong></p><div id="grid-a" class="grid-container"></div></div><div class="explanation-column"><h3>(i) 計算 z(1, 2, 2) 的人口</h3><p>z(1, 2, 2) 是指左上角位於 [1, 2] 的 2x2 區域。</p><div class="flex-container"><button id="btn-a1">顯示並計算 z(1, 2, 2)</button><div id="result-a1" class="result-display"></div></div><div class="answer" id="answer-a1" style="display:none;"><p>計算過程：R[1, 2] + R[1, 3] + R[2, 2] + R[2, 3] = 1 + 2 + 2 + 2 = 7。</p><p><strong>答案：z(1, 2, 2) 內有 7 千人。</strong></p></div><h3 style="margin-top: 2rem;">(ii) 尋找可服務最多人口的 2x2 WiFi 區域</h3><p>遍歷所有可能的 2x2 區域，找出人口總和最大的一個。</p><div class="button-group"><button id="btn-a2-prev" class="secondary">上一步</button><button id="btn-a2-next" class="secondary">下一步</button><button id="btn-a2-play">開始動畫搜索</button><button id="btn-a2-reset" class="secondary">重設</button></div><div id="result-a2" class="result-display"></div><div class="answer" id="answer-a2" style="display:none;"><p>(1) WiFi 区域是 <strong>z(4, 5, 2)</strong></p><p>(2) 住在這 WiFi 區域的人口是 <strong>8 千人</strong>。</p><p>計算過程：R[4, 5] + R[4, 6] + R[5, 5] + R[5, 6] = 2 + 2 + 3 + 1 = 8。</p></div></div></div>`;
+            document.getElementById('tab-b').innerHTML = `<h2>(b) 子程式 SumR(i, j, K)</h2><div class="content-wrapper"><div class="grid-column"><p><strong>地圖網格 (陣列 R)</strong></p><div id="grid-b" class="grid-container"></div><button id="btn-b-vis">視覺化 z(1,5,3) 問題</button></div><div class="explanation-column"><h3>(i) 完成 SumR 的偽代碼</h3><p>此偽代碼使用巢狀迴圈走訪整個 KxK 區域。</p><pre>行 20: sum ← 0\n行 30: 設 a 由 1 至 <strong>K</strong> 執行\n行 40:     設 b 由 1 至 <strong>K</strong> 執行\n行 50:         sum ← sum + R[ <strong>i + a - 1</strong> , <strong>j + b - 1</strong> ]\n行 60: 傳回 <strong>sum</strong></pre><h3 style="margin-top: 2rem;">(ii) 修正 SumR 以處理地圖外區域</h3><p>當 WiFi 區域部分位於地圖外時（例如 z(1,5,3)），存取 R[...] 會導致錯誤。</p><div class="explanation"><p>為了解決這個問題，在加總前必須檢查索引是否在有效範圍內（行 1-5，列 1-6）。</p></div><div class="answer"><strong>答案：</strong> 修正後的「行 50」應加入條件判斷：<br><strong>\`如果 i + a - 1 <= 5 AND j + b - 1 <= 6 則 sum ← sum + R[i + a - 1, j + b - 1]\`</strong></div></div></div>`;
+            document.getElementById('tab-c').innerHTML = `<h2>(c) S[i, j] 的數值</h2><div class="content-wrapper"><div class="grid-column"><p><strong>地圖網格 (陣列 R)</strong></p><div id="grid-c" class="grid-container"></div></div><div class="explanation-column"><p>陣列 S[i, j] 儲存由 R[1, 1] 至 R[i, j] 的長方形區域內的人口總和。</p><h3>S[3, 3] 的數值是多少？</h3><button id="btn-c">顯示並計算 S[3, 3]</button><div id="result-c" class="result-display"></div><div class="answer" id="answer-c" style="display:none;"><p>計算過程：(0+1+2) + (0+2+2) + (1+3+0) = 11。</p><p><strong>答案：S[3, 3] 的數值是 11。</strong></p></div></div></div>`;
+            document.getElementById('tab-f').innerHTML = `<h2>(f) 莉莉 (SumS) vs 志明 (SumR) 的方法</h2><div class="content-wrapper"><div class="full-width-column"><p>對於一個包含非常多單元格的網格來說，為什麼莉莉的方法 (<code>SumS</code>) 比志明的方法 (<code>SumR</code>) 較優勝？</p><div class="explanation"><h4>時間複雜度分析</h4><p><strong>志明的方法 (<code>SumR</code>):</strong></p><p>每次計算一個 KxK 區域，都需要一個巢狀迴圈來遍歷 K*K 個單元格。因此，單次查詢的複雜度是 <strong>O(K²)</strong>。如果 K=100，就需要運算 10000 次。每次查詢都一樣慢。</p><p><strong>莉莉的方法 (<code>SumS</code>):</strong></p><ul><li><strong>預處理階段：</strong> 建立總和表 S。這需要遍歷整個網格一次。如果網格大小是 M x N，複雜度是 <strong>O(M*N)</strong>。這是一次性的成本。</li><li><strong>查詢階段：</strong> 建立好 S 表後，每次查詢都只需要 4 次查表和 3 次加減運算。複雜度是 <strong>O(1)</strong>，即常數時間，與 K 的大小完全無關。</li></ul></div><div class="answer"><strong>結論：</strong><p>雖然莉莉的方法需要一次性的預處理時間，但只要完成後，<strong>每次查詢都極其快速 (O(1))</strong>。志明的方法不需要預處理，但<strong>每次查詢都很慢 (O(K²))</strong>，且速度會因 K 的增大而急劇下降。</p><p>因此，在需要進行**多次查詢**或**K值很大**的情況下，莉莉的方法總體效率遠高於志明的方法。</p></div></div></div>`;
+        }
+        
+        function addEventListeners() {
+            // (a) logic
+            document.getElementById('btn-a1').addEventListener('click', () => { clearHighlights('grid-a'); const resultDiv = document.getElementById('result-a1'); const cellsToHighlight = [[1, 2], [1, 3], [2, 2], [2, 3]]; let sum = 0; cellsToHighlight.forEach(([r, c]) => { document.getElementById(`grid-a-cell-${r}-${c}`).classList.add('highlight'); sum += R[r-1][c-1]; }); resultDiv.textContent = `人口總和 = 1 + 2 + 2 + 2 = ${sum} 千人`; document.getElementById('answer-a1').style.display = 'block'; });
+            let allPositionsA2 = [], currentIndexA2 = -1, maxSumA2 = -1, maxPosA2 = { r: -1, c: -1 }; const btnPrevA2 = document.getElementById('btn-a2-prev'), btnNextA2 = document.getElementById('btn-a2-next'), btnPlayA2 = document.getElementById('btn-a2-play'), btnResetA2 = document.getElementById('btn-a2-reset'), resultDivA2 = document.getElementById('result-a2'), answerDivA2 = document.getElementById('answer-a2'); function setupA2() { allPositionsA2 = []; for (let r = 1; r <= ROWS - 1; r++) { for (let c = 1; c <= COLS - 1; c++) { allPositionsA2.push({ r, c }); } } resetA2(); } function resetA2() { currentIndexA2 = -1; maxSumA2 = -1; maxPosA2 = { r: -1, c: -1 }; clearHighlights('grid-a'); resultDivA2.textContent = '請按「下一步」或「開始動畫」進行搜索。'; answerDivA2.style.display = 'none'; btnPrevA2.disabled = true; btnNextA2.disabled = false; btnPlayA2.disabled = false; } function showStepA2(index) { if (index < 0 || index >= allPositionsA2.length) return; currentIndexA2 = index; const { r, c } = allPositionsA2[index]; clearHighlights('grid-a'); let currentSum = 0; for (let dr = 0; dr < 2; dr++) { for (let dc = 0; dc < 2; dc++) { const cr = r + dr, cc = c + dc; document.getElementById(`grid-a-cell-${cr}-${cc}`).classList.add('highlight'); currentSum += R[cr-1][cc-1]; }} if (currentSum > maxSumA2) { maxSumA2 = currentSum; maxPosA2 = { r, c }; } resultDivA2.innerHTML = `正在檢查 z(${r}, ${c}, 2)...<br>當前總和: ${currentSum} | 目前最大總和: ${maxSumA2}`; btnPrevA2.disabled = currentIndexA2 <= 0; btnNextA2.disabled = currentIndexA2 >= allPositionsA2.length - 1; if (btnNextA2.disabled) { showFinalResultA2(); } } function showFinalResultA2() { clearHighlights('grid-a'); resultDivA2.textContent = `搜索完成！最大人口區域在 z(${maxPosA2.r}, ${maxPosA2.c}, 2)，總人口為 ${maxSumA2} 千人。`; for (let dr = 0; dr < 2; dr++) { for (let dc = 0; dc < 2; dc++) { document.getElementById(`grid-a-cell-${maxPosA2.r + dr}-${maxPosA2.c + dc}`).classList.add('max-highlight'); }} answerDivA2.style.display = 'block'; }
+            btnNextA2.addEventListener('click', () => showStepA2(currentIndexA2 + 1)); btnPrevA2.addEventListener('click', () => { if (currentIndexA2 <= 0) return; showStepA2(currentIndexA2 - 1); }); btnPlayA2.addEventListener('click', async function() { resetA2(); btnPrevA2.disabled = true; btnNextA2.disabled = true; this.disabled = true; for (let i = 0; i < allPositionsA2.length; i++) { showStepA2(i); await sleep(300); } this.disabled = false; btnPrevA2.disabled = false; }); btnResetA2.addEventListener('click', resetA2);
+            
+            // (b) logic
+            document.getElementById('btn-b-vis').addEventListener('click', () => { const extendedCols = 7; createGrid('grid-b', ROWS, extendedCols); const startR = 1, startC = 5, K = 3; for (let r_offset = 0; r_offset < K; r_offset++) { for (let c_offset = 0; c_offset < K; c_offset++) { const r = startR + r_offset, c = startC + c_offset; const cell = document.getElementById(`grid-b-cell-${r}-${c}`); if (cell) { if (c <= COLS) cell.classList.add('highlight'); else cell.classList.add('highlight-invalid'); } } } for (let r = K + 1; r <= ROWS; r++) { const c = extendedCols; const cell = document.getElementById(`grid-b-cell-${r}-${c}`); if (cell) cell.classList.add('borderless'); } });
+            
+            // (c) logic
+            document.getElementById('btn-c').addEventListener('click', () => { clearHighlights('grid-c'); const resultDiv = document.getElementById('result-c'); let sum = 0; let sumStr = []; for (let r = 1; r <= 3; r++) { for (let c = 1; c <= 3; c++) { document.getElementById(`grid-c-cell-${r}-${c}`).classList.add('highlight'); sum += R[r-1][c-1]; sumStr.push(R[r-1][c-1]); } } resultDiv.textContent = `總和 = ${sumStr.join(' + ')} = ${sum} 千人`; document.getElementById('answer-c').style.display = 'block'; });
+        }
+        
+        // --- Logic for (d) ---
+        const resultD = document.getElementById('result-d'), legendD = document.getElementById('legend-d');
+        const btnPrevD = document.getElementById('btn-d-prev'), btnNextD = document.getElementById('btn-d-next');
+        const btnPlayD = document.getElementById('btn-d-play'), btnResetD = document.getElementById('btn-d-reset');
+        let currentIndexD = 0;
+        const animationStepsD = [
+            { text: '點擊「下一步」開始視覺化。', action: () => { clearHighlights('grid-d'); legendD.style.display = 'none'; } },
+            { text: '步驟 1: 顯示 S[5, 5] 區域。', action: () => { clearHighlights('grid-d'); legendD.style.display = 'none'; for (let r = 1; r <= 5; r++) for (let c = 1; c <= 5; c++) document.getElementById(`grid-d-cell-${r}-${c}`).classList.add('highlight'); } },
+            { text: '步驟 2: 顯示 S[4, 6] 區域。', action: () => { clearHighlights('grid-d'); for (let r = 1; r <= 4; r++) for (let c = 1; c <= 6; c++) document.getElementById(`grid-d-cell-${r}-${c}`).classList.add('highlight'); } },
+            { text: '步驟 3: 顯示公式關係。紫色重疊區被加了兩次。', action: () => { clearHighlights('grid-d'); legendD.style.display = 'flex'; for (let r = 1; r <= 5; r++) for (let c = 1; c <= 5; c++) document.getElementById(`grid-d-cell-${r}-${c}`).classList.add('area-s-ij-1'); for (let r = 1; r <= 4; r++) for (let c = 1; c <= 6; c++) document.getElementById(`grid-d-cell-${r}-${c}`).classList.add('area-s-i-1j'); for (let r = 1; r <= 4; r++) for (let c = 1; c <= 5; c++) document.getElementById(`grid-d-cell-${r}-${c}`).classList.add('area-overlap'); document.getElementById(`grid-d-cell-5-6`).classList.add('area-r-ij'); } }
+        ];
+        function showStepD(index) {
+            if (index < 0 || index >= animationStepsD.length) return;
+            currentIndexD = index;
+            const step = animationStepsD[index];
+            resultD.innerHTML = step.text;
+            step.action();
+            btnPrevD.disabled = index <= 0;
+            btnNextD.disabled = index >= animationStepsD.length - 1;
+        }
+        function resetD() { showStepD(0); }
+        btnNextD.addEventListener('click', () => showStepD(currentIndexD + 1));
+        btnPrevD.addEventListener('click', () => showStepD(currentIndexD - 1));
+        btnResetD.addEventListener('click', resetD);
+        btnPlayD.addEventListener('click', async function() {
+            resetD();
+            const btns = [btnPrevD, btnNextD, btnPlayD, btnResetD];
+            btns.forEach(b => b.disabled = true);
+            for (let i = 1; i < animationStepsD.length; i++) {
+                showStepD(i);
+                await sleep(1500);
+            }
+            btns.forEach(b => b.disabled = false);
+            showStepD(animationStepsD.length - 1); // Ensure final state is correct
+        });
+
+        // --- Logic for (e) ---
+        const resultE = document.getElementById('result-e'), legendE = document.getElementById('legend-e');
+        const btnPrevE = document.getElementById('btn-e-prev'), btnNextE = document.getElementById('btn-e-next');
+        const btnPlayE = document.getElementById('btn-e-play'), btnResetE = document.getElementById('btn-e-reset');
+        let currentIndexE = 0;
+        const highlightRegion = (maxR, maxC, className) => { for (let r = 1; r <= maxR; r++) for (let c = 1; c <= maxC; c++) document.getElementById(`grid-e-cell-${r}-${c}`).classList.add(className); };
+        const animationStepsE = [
+            { text: '點擊「下一步」開始視覺化。', action: () => { clearHighlights('grid-e'); legendE.style.display = 'none'; } },
+            { text: '1. 從 S[4,5] (整個藍色區域) 開始...', action: () => { clearHighlights('grid-e'); legendE.style.display = 'flex'; highlightRegion(4, 5, 'area-total'); } },
+            { text: '2. 減去上方的 S[2,5] (紅色區域)...', action: () => { animationStepsE[1].action(); highlightRegion(2, 5, 'area-subtract'); } },
+            { text: '3. 再減去左方的 S[4,3] (紅色區域)...', action: () => { animationStepsE[2].action(); highlightRegion(4, 3, 'area-subtract'); } },
+            { text: '4. 注意 S[2,3] 被減了兩次，需加回 (黃色區域)...', action: () => { animationStepsE[3].action(); highlightRegion(2, 3, 'area-addback'); } },
+            { text: '5. 最終得到目標區域 z(3,4,2) (綠色區域)。', action: () => { clearHighlights('grid-e'); legendE.style.display = 'flex'; for (let r = 3; r <= 4; r++) for (let c = 4; c <= 5; c++) document.getElementById(`grid-e-cell-${r}-${c}`).classList.add('area-target'); } }
+        ];
+        function showStepE(index) {
+            if (index < 0 || index >= animationStepsE.length) return;
+            currentIndexE = index;
+            const step = animationStepsE[index];
+            resultE.innerHTML = step.text;
+            step.action();
+            btnPrevE.disabled = index <= 0;
+            btnNextE.disabled = index >= animationStepsE.length - 1;
+        }
+        function resetE() { showStepE(0); }
+        btnNextE.addEventListener('click', () => showStepE(currentIndexE + 1));
+        btnPrevE.addEventListener('click', () => showStepE(currentIndexE - 1));
+        btnResetE.addEventListener('click', resetE);
+        btnPlayE.addEventListener('click', async function() {
+            resetE();
+            const btns = [btnPrevE, btnNextE, btnPlayE, btnResetE];
+            btns.forEach(b => b.disabled = true);
+            for (let i = 1; i < animationStepsE.length; i++) {
+                showStepE(i);
+                await sleep(2000);
+            }
+            btns.forEach(b => b.disabled = false);
+            showStepE(animationStepsE.length - 1); // Ensure final state is correct
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fillStaticContent();
+            ['a', 'b', 'c', 'd', 'e'].forEach(tab => createGrid(`grid-${tab}`));
+            addEventListeners();
+            setupA2(); // Initialize tab (a) part (ii)
+            resetD(); // Initialize tab (d)
+            resetE(); // Initialize tab (e)
+        });
+    </script>
+
+</body>
+</html> 
