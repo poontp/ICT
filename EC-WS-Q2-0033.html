@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動動畫解答</title>
+    <style>
+        :root {
+            --primary-color: #4a5568;
+            --secondary-color: #edf2f7;
+            --highlight-color: #f6e05e;
+            --highlight-bg: #fffbea;
+            --success-color: #48bb78;
+            --success-bg: #f0fff4;
+            --border-color: #cbd5e0;
+            --text-color: #2d3748;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f7fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .problem-description {
+            background-color: var(--secondary-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .solution-container {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .highlight-row {
+            background-color: var(--highlight-bg);
+        }
+        .highlight-cell {
+            background-color: var(--highlight-color);
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .final-answer {
+            background-color: var(--success-bg);
+            color: var(--success-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-weight: bold;
+            border-left: 5px solid var(--success-color);
+        }
+        .explanation {
+            background-color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            min-height: 50px;
+            margin-top: 1rem;
+            transition: background-color 0.3s;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2d3748;
+        }
+        button:disabled {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+        }
+        .animation-area-b {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        .left-panel, .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        #variable-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        .var-box {
+            background-color: var(--secondary-color);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .var-box .name {
+            font-weight: bold;
+            font-size: 0.9em;
+            color: var(--primary-color);
+        }
+        .var-box .value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        pre {
+            background-color: #2d3748;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .code-line {
+            transition: background-color 0.3s;
+            display: block;
+            margin: 0 -1rem;
+            padding: 0 1rem;
+        }
+        .highlight-code {
+            background-color: #4a5568;
+        }
+        .blank {
+            color: var(--highlight-color);
+            font-weight: bold;
+            background-color: #55667d;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>進階控制結構：互動解答</h1>
+
+        <div class="problem-description">
+            <p><b>題目背景：</b>志雄使用二維陣列 score 儲存中六級四個班別 (6A, 6B, 6C, 6D) 在運動會中所得分數。`score[i, j]` 儲存某班別在各項比賽的得分。</p>
+            <p><b>計分規則：</b>一項比賽的冠軍得 10 分，亞軍得 7 分，季軍得 5 分。</p>
+            <p><b>分數表：</b></p>
+            <table id="main-table">
+                <thead>
+                    <tr>
+                        <th>班別 (i) \ 項目 (j)</th>
+                        <th>100米跑 (0)</th>
+                        <th>800米跑 (1)</th>
+                        <th>跳遠 (2)</th>
+                        <th>跳高 (3)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><b>6A</b> (0)</td>
+                        <td>10</td>
+                        <td>10</td>
+                        <td>5</td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td><b>6B</b> (1)</td>
+                        <td>7</td>
+                        <td>7</td>
+                        <td>10</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td><b>6C</b> (2)</td>
+                        <td>5</td>
+                        <td>5</td>
+                        <td>0</td>
+                        <td>7</td>
+                    </tr>
+                    <tr>
+                        <td><b>6D</b> (3)</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>7</td>
+                        <td>10</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="solution-container" id="part-a">
+            <h2>(a) 6A班在多少項比賽中取得冠軍?</h2>
+            <div class="animation-area">
+                <table id="table-a">
+                    <!-- Cloned from main table -->
+                </table>
+                <div id="explanation-a" class="explanation">
+                    點擊按鈕開始動畫。動畫將會掃描 6A 班的分數，並計算冠軍（10分）的數量。
+                </div>
+                <div class="final-answer" style="display: none;" id="answer-a">
+                    6A班共取得 <strong>2</strong> 項冠軍。
+                </div>
+            </div>
+            <button id="start-a">開始動畫 (a)</button>
+        </div>
+
+        <div class="solution-container" id="part-b">
+            <h2>(b) 完成算法以找出總冠軍</h2>
+            <div class="animation-area-b">
+                <div class="left-panel">
+                    <table id="table-b">
+                        <!-- Cloned from main table -->
+                    </table>
+                    <div id="variable-display">
+                        <div class="var-box"><div class="name">max_score</div><div class="value" id="var-max-score">-</div></div>
+                        <div class="var-box"><div class="name">champion</div><div class="value" id="var-champion">-</div></div>
+                        <div class="var-box"><div class="name">i (班別)</div><div class="value" id="var-i">-</div></div>
+                        <div class="var-box"><div class="name">overall_score</div><div class="value" id="var-overall-score">-</div></div>
+                        <div class="var-box"><div class="name">j (項目)</div><div class="value" id="var-j">-</div></div>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <pre><code id="pseudocode"><span class="code-line" data-line="1">max_score ← -1</span>
+<span class="code-line" data-line="2">設 i 由 0 至 3</span>
+<span class="code-line" data-line="3">    overall_score ← 0</span>
+<span class="code-line" data-line="4">    設 j 由 0 至 3</span>
+<span class="code-line" data-line="5">        overall_score ← overall_score + score[i,j]</span>
+<span class="code-line" data-line="6">    如果 <span class="blank" id="blank-1">____________</span> 則</span>
+<span class="code-line" data-line="7">        champion ← <span class="blank" id="blank-2">______</span></span>
+<span class="code-line" data-line="8">        max_score ← <span class="blank" id="blank-3">_________</span></span>
+<span class="code-line" data-line="9">輸出 "The champion is Class", champion</span></code></pre>
+                    <div id="explanation-b" class="explanation">
+                        點擊按鈕開始動畫，逐步執行演算法，並找出需要填入空白處的正確答案。
+                    </div>
+                     <div class="final-answer" style="display: none;" id="answer-b">
+                        <h4>演算法填空答案：</h4>
+                        <ol>
+                            <li><code>overall_score > max_score</code></li>
+                            <li><code>i</code> (或能代表班級的表達式)</li>
+                            <li><code>overall_score</code></li>
+                        </ol>
+                        <p><b>最終冠軍:</b> 6B 班</p>
+                    </div>
+                </div>
+            </div>
+            <button id="start-b">開始動畫 (b)</button>
+            <button id="reset-b">重設</button>
+        </div>
+    </div>
+
+    <script>
+        const score = [
+            [10, 10, 5, 0],
+            [7, 7, 10, 5],
+            [5, 5, 0, 7],
+            [0, 0, 7, 10]
+        ];
+        const classNames = ["6A", "6B", "6C", "6D"];
+        const eventNames = ["100米跑", "800米跑", "跳遠", "跳高"];
+
+        const startA_btn = document.getElementById('start-a');
+        const explanationA = document.getElementById('explanation-a');
+        const answerA = document.getElementById('answer-a');
+        const tableA = document.getElementById('table-a');
+
+        const startB_btn = document.getElementById('start-b');
+        const resetB_btn = document.getElementById('reset-b');
+        const explanationB = document.getElementById('explanation-b');
+        const answerB = document.getElementById('answer-b');
+        const tableB = document.getElementById('table-b');
+        
+        // Clone tables
+        tableA.innerHTML = document.getElementById('main-table').innerHTML;
+        tableB.innerHTML = document.getElementById('main-table').innerHTML;
+
+        const tableARows = tableA.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        const tableBRows = tableB.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        // --- Part A Logic ---
+        startA_btn.addEventListener('click', async () => {
+            startA_btn.disabled = true;
+            answerA.style.display = 'none';
+            
+            // Reset visual state
+            for (let row of tableARows) {
+                row.classList.remove('highlight-row');
+                for (let cell of row.cells) {
+                    cell.classList.remove('highlight-cell');
+                }
+            }
+
+            explanationA.textContent = '題目要求計算 6A 班的冠軍數。冠軍分數為 10 分。';
+            await sleep(2000);
+
+            explanationA.textContent = '首先，我們定位到 6A 班的數據行 (i=0)。';
+            const row6A = tableARows[0];
+            row6A.classList.add('highlight-row');
+            await sleep(2000);
+
+            explanationA.textContent = '現在，我們來檢查 6A 班在每項比賽中的得分...';
+            let championCount = 0;
+            const cells6A = row6A.getElementsByTagName('td');
+
+            for (let j = 1; j < cells6A.length; j++) {
+                const cell = cells6A[j];
+                const currentScore = parseInt(cell.textContent);
+                
+                explanationA.textContent = `檢查 ${eventNames[j-1]} 的分數... 是 ${currentScore} 分。`;
+                cell.classList.add('highlight-cell');
+                await sleep(1500);
+
+                if (currentScore === 10) {
+                    championCount++;
+                    explanationA.innerHTML = `分數是 10 分！這是一個冠軍。 <br>目前冠軍數: <strong>${championCount}</strong>`;
+                    await sleep(2000);
+                } else {
+                    explanationA.textContent = `分數是 ${currentScore} 分，不是冠軍。`;
+                    await sleep(1500);
+                }
+                cell.classList.remove('highlight-cell');
+            }
+            
+            explanationA.textContent = '所有比賽項目都已檢查完畢。';
+            await sleep(1500);
+            
+            row6A.classList.remove('highlight-row');
+            answerA.style.display = 'block';
+            startA_btn.disabled = false;
+        });
+
+        // --- Part B Logic ---
+        const varMaxScore = document.getElementById('var-max-score');
+        const varChampion = document.getElementById('var-champion');
+        const varI = document.getElementById('var-i');
+        const varOverallScore = document.getElementById('var-overall-score');
+        const varJ = document.getElementById('var-j');
+        const codeLines = document.querySelectorAll('#pseudocode .code-line');
+        const blanks = {
+            1: document.getElementById('blank-1'),
+            2: document.getElementById('blank-2'),
+            3: document.getElementById('blank-3')
+        };
+
+        function resetB() {
+            startB_btn.disabled = false;
+            answerB.style.display = 'none';
+            varMaxScore.textContent = '-';
+            varChampion.textContent = '-';
+            varI.textContent = '-';
+            varOverallScore.textContent = '-';
+            varJ.textContent = '-';
+            explanationB.textContent = '點擊按鈕開始動畫，逐步執行演算法，並找出需要填入空白處的正確答案。';
+            codeLines.forEach(line => line.classList.remove('highlight-code'));
+            for (let row of tableBRows) {
+                row.classList.remove('highlight-row');
+                for (let cell of row.cells) {
+                    cell.classList.remove('highlight-cell');
+                }
+            }
+            blanks[1].textContent = '____________';
+            blanks[2].textContent = '______';
+            blanks[3].textContent = '_________';
+        }
+
+        resetB_btn.addEventListener('click', resetB);
+
+        function highlightCode(lineNum, clear=true) {
+            if(clear) codeLines.forEach(line => line.classList.remove('highlight-code'));
+            if(lineNum > 0) document.querySelector(`.code-line[data-line="${lineNum}"]`).classList.add('highlight-code');
+        }
+
+        startB_btn.addEventListener('click', async () => {
+            resetB();
+            startB_btn.disabled = true;
+
+            let max_score = -1;
+            let champion_idx = -1;
+
+            highlightCode(1);
+            explanationB.textContent = '演算法開始。首先，初始化 max_score 為 -1。這是一個比任何可能總分都小的值。';
+            varMaxScore.textContent = -1;
+            varChampion.textContent = 'N/A';
+            await sleep(2500);
+
+            for (let i = 0; i < 4; i++) {
+                highlightCode(2);
+                varI.textContent = `${i} (${classNames[i]})`;
+                tableBRows[i].classList.add('highlight-row');
+                explanationB.textContent = `進入外層迴圈，處理班別 ${classNames[i]} (i=${i})。`;
+                await sleep(2000);
+
+                let overall_score = 0;
+                highlightCode(3);
+                varOverallScore.textContent = 0;
+                explanationB.textContent = `初始化 ${classNames[i]} 的總分 (overall_score) 為 0。`;
+                await sleep(2000);
+
+                highlightCode(4);
+                explanationB.textContent = '進入內層迴圈，累加該班在所有項目的分數。';
+                await sleep(2000);
+
+                for (let j = 0; j < 4; j++) {
+                    varJ.textContent = `${j} (${eventNames[j]})`;
+                    tableBRows[i].cells[j+1].classList.add('highlight-cell');
+                    highlightCode(5);
+                    const current_score = score[i][j];
+                    explanationB.textContent = `將 ${eventNames[j]} 的分數 ${current_score} 加入總分: ${overall_score} + ${current_score} = ${overall_score + current_score}`;
+                    overall_score += current_score;
+                    varOverallScore.textContent = overall_score;
+                    await sleep(2000);
+                    tableBRows[i].cells[j+1].classList.remove('highlight-cell');
+                }
+                varJ.textContent = '-';
+
+                explanationB.textContent = `${classNames[i]} 的總分計算完畢，為 ${overall_score}。`;
+                await sleep(2000);
+                
+                highlightCode(6);
+                explanationB.innerHTML = `現在比較班級總分和目前最高分。<br><b>如果 overall_score > max_score</b>，就更新冠軍。`;
+                await sleep(2500);
+                explanationB.innerHTML = `檢查: ${overall_score} > ${max_score} ? <br>這是第一個需要填空的地方，條件是 <b>overall_score > max_score</b>。`;
+                blanks[1].textContent = 'overall_score > max_score';
+                await sleep(3000);
+
+                if (overall_score > max_score) {
+                    explanationB.textContent = `條件成立 (${overall_score} > ${max_score})。我們找到了新的最高分！`;
+                    await sleep(2000);
+
+                    highlightCode(7, false);
+                    explanationB.innerHTML = `更新冠軍為目前的班級。`
+                    +`<br>我們需要儲存冠軍的標識。最直接的方式是儲存索引 <b>i</b>。`
+                    +`<br>所以第二個空白處是 <b>i</b>。`;
+                    champion_idx = i;
+                    varChampion.textContent = `${i} (${classNames[i]})`;
+                    blanks[2].textContent = 'i';
+                    await sleep(3500);
+
+                    highlightCode(8, false);
+                    explanationB.innerHTML = `更新 max_score 為新的最高分。`
+                    +`<br>所以第三個空白處是 <b>overall_score</b>。`;
+                    max_score = overall_score;
+                    varMaxScore.textContent = max_score;
+                    blanks[3].textContent = 'overall_score';
+                    await sleep(3500);
+
+                } else {
+                    explanationB.textContent = `條件不成立 (${overall_score} <= ${max_score})。冠軍和最高分維持不變。`;
+                    await sleep(3000);
+                }
+                tableBRows[i].classList.remove('highlight-row');
+                varI.textContent = '-';
+                varOverallScore.textContent = '-';
+            }
+
+            highlightCode(9);
+            explanationB.innerHTML = `所有班級都已處理完畢。最終的總冠軍是班別索引為 <b>${champion_idx}</b> 的 <b>${classNames[champion_idx]}</b>，總分為 <b>${max_score}</b>。`
+            + `<br>演算法輸出結果: "The champion is Class ${classNames[champion_idx]}"`;
+            await sleep(3000);
+            
+            highlightCode(0);
+            explanationB.textContent = '動畫結束。請查看下方的最終答案總結。';
+            answerB.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

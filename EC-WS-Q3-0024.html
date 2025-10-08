@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 程式碼互動解答 (含步進控制)</title>
+    <style>
+        :root {
+            --primary-bg: #f0f4f8;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --header-color: #1a253c;
+            --accent-color: #007bff;
+            --accent-hover: #0056b3;
+            --code-bg: #2d2d2d;
+            --code-text: #f8f8f2;
+            --highlight-line: rgba(255, 255, 0, 0.3);
+            --highlight-char: #ff8c00;
+            --error-color: #dc3545;
+            --success-color: #28a745;
+            --border-color: #dee2e6;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: var(--secondary-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: var(--header-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+        .question-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #5a6268;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 14px;
+            width: 80px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .answer-area {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .animation-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .code-block-wrapper {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        pre {
+            flex-grow: 1;
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            margin: 0;
+        }
+        .step-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .line {
+            display: block;
+            transition: background-color 0.3s;
+            padding: 2px 5px;
+            margin: 0 -5px;
+        }
+        .line.highlight {
+            background-color: var(--highlight-line);
+        }
+        .state-block {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+        .state-block h4 {
+            margin-top: 0;
+            color: var(--header-color);
+        }
+        .vars-horizontal {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+            margin: 5px 0 10px 0;
+        }
+        .char { display: inline-block; min-width: 15px; text-align: center; border: 1px solid transparent; border-radius: 3px; }
+        .char.highlight { background-color: var(--highlight-char); color: var(--code-bg); }
+        .char.error { background-color: var(--error-color); color: white; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .output-box { background-color: #e9ecef; border: 1px solid #ced4da; padding: 10px; min-height: 50px; border-radius: 5px; white-space: pre-wrap; font-family: "Courier New", Courier, monospace; word-break: break-all; }
+        .explanation { background-color: #eef; padding: 10px; border-left: 4px solid var(--accent-color); margin-top: 10px; border-radius: 4px; }
+        .error-msg { color: var(--error-color); font-weight: bold; }
+        .final-answer { font-weight: bold; color: var(--success-color); }
+        .controls { margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Python 程式碼分析與除錯</h1>
+    <p><strong>原始資料:</strong> <code>books = ["Little Red Riding Hood", "Three Little Pigs", "Cinderella", "Sleeping Beauty"]</code></p>
+    
+    <div class="question-section">
+        <h3>(a) 如果用戶輸入字詞「Little」，程式會輸出什麼？</h3>
+        <button class="btn" onclick="toggleAnswer('a')">顯示解答與動畫</button>
+        <div id="answer-a" class="answer-area">
+            <p>透過動畫追蹤程式執行流程。您可以使用主控制按鈕自動播放，或使用程式碼右側的按鈕單步執行。</p>
+            <div class="controls">
+                <button class="btn" id="play-a">自動播放</button>
+                <button class="btn btn-secondary" id="pause-a">暫停</button>
+                <button class="btn btn-secondary" id="reset-a">重設</button>
+            </div>
+            <div class="animation-container">
+                <div class="code-block-wrapper">
+                    <pre id="code-a"></pre>
+                    <div class="step-controls">
+                        <button class="btn btn-sm" id="prev-step-a">上一步</button>
+                        <button class="btn btn-sm" id="next-step-a">下一步</button>
+                    </div>
+                </div>
+                <div class="state-block">
+                    <h4>執行狀態</h4>
+                    <div><strong>輸入 (substr):</strong> <span id="substr-a"></span></div><hr>
+                    <div><strong>變數:</strong></div>
+                    <div class="vars-horizontal">
+                        <span>i = <span id="var-i-a"></span></span>
+                        <span>j = <span id="var-j-a"></span></span>
+                        <span>k = <span id="var-k-a"></span></span>
+                    </div>
+                    <div>title = <span id="var-title-a"></span></div><hr>
+                    <h4>輸出 (Output)</h4>
+                    <div id="output-box-a" class="output-box"></div>
+                    <div id="explanation-a" class="explanation" style="display:none; margin-top: 15px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="question-section">
+        <h3>(b) 此程式的目的是什麼？</h3>
+        <button class="btn" onclick="toggleAnswer('b')">顯示解答</button>
+        <div id="answer-b" class="answer-area">
+            <p><strong>推理過程：</strong></p>
+            <ol>
+                <li>程式碼首先接收一個用戶輸入的字串 `substr`。</li>
+                <li>然後它會遍歷 `books` 列表中的每一個 `title` (書名)。</li>
+                <li>對於每一個書名，它會再遍歷書名中的每一個字元 (索引為 `j`)。</li>
+                <li>它檢查書名中 `title[j]` 是否與 `substr` 的第一個字元 `substr[0]` 相同。</li>
+                <li>如果相同，它會繼續遍歷 `substr` 中的每一個字元 (索引為 `k`)，並比較 `title[j+k]` 是否與 `substr[k]` 相同。</li>
+                <li>只有當 `substr` 中的所有字元都連續地在 `title` 中找到對應的匹配時 (即 `k` 迴圈順利完成)，它才會印出該 `title`。</li>
+            </ol>
+            <p><strong>結論：</strong></p>
+            <p class="final-answer">此程式的目的是在 `books` 列表的所有書名中，找出並印出所有包含用戶輸入的關鍵字 (子字串) 的書名。</p>
+        </div>
+    </div>
+
+    <div class="question-section">
+        <h3>(c)(i) 當輸入為「Hoods」時，第10行會發生錯誤。試解釋原因。</h3>
+        <button class="btn" onclick="toggleAnswer('c1')">顯示解答與動畫</button>
+        <div id="answer-c1" class="answer-area">
+            <p>這個動畫將模擬執行過程，並在發生錯誤的確切位置暫停，以顯示問題所在。</p>
+            <div class="controls">
+                <button class="btn" id="play-c1">自動播放</button>
+                <button class="btn btn-secondary" id="pause-c1">暫停</button>
+                <button class="btn btn-secondary" id="reset-c1">重設</button>
+            </div>
+            <div class="animation-container">
+                <div class="code-block-wrapper">
+                    <pre id="code-c1"></pre>
+                    <div class="step-controls">
+                        <button class="btn btn-sm" id="prev-step-c1">上一步</button>
+                        <button class="btn btn-sm" id="next-step-c1">下一步</button>
+                    </div>
+                </div>
+                <div class="state-block">
+                    <h4>執行狀態</h4>
+                    <div><strong>輸入 (substr):</strong> <span id="substr-c1"></span></div><hr>
+                    <div><strong>變數:</strong></div>
+                    <div class="vars-horizontal">
+                        <span>i = <span id="var-i-c1"></span></span>
+                        <span>j = <span id="var-j-c1"></span></span>
+                        <span>k = <span id="var-k-c1"></span></span>
+                    </div>
+                    <div>title = <span id="var-title-c1"></span></div><hr>
+                    <h4>輸出 (Output)</h4>
+                    <div id="output-box-c1" class="output-box"></div><hr>
+                    <h4>錯誤分析</h4>
+                    <div id="explanation-c1" class="explanation" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="question-section">
+        <h3>(c)(ii) 完成第10行的空白部分，以修正此錯誤。</h3>
+        <button class="btn" onclick="toggleAnswer('c2')">顯示解答</button>
+        <div id="answer-c2" class="answer-area">
+            <p><strong>錯誤分析：</strong></p>
+            <p>從上一個問題的動畫中我們看到，錯誤是 `IndexError: string index out of range`。這是因為在比較 `title[j+k]` 時，`j+k` 的值超出了 `title` 字串的最大索引。我們需要在存取 `title[j+k]` 之前，先確保這個索引是有效的。</p>
+            <p><strong>結論：</strong></p>
+            <p class="final-answer">第10行應填入：<code>j + k < len(title)</code></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleAnswer(id) {
+        const el = document.getElementById('answer-' + id);
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    const originalCode = [
+        `substr = input("Enter keywords: ")`, `for i in range(0, len(books)):`, `    title = books[i]`,
+        `    for j in range(0, len(title)):`, `        if title[j] == substr[0]:`, `            if len(substr) == 1:`,
+        `                print(title)`, `            else:`, `                for k in range(0, len(substr)):`,
+        `                    if title[j+k] == substr[k]:`, `                        if k == len(substr) - 1:`, `                            print(title)`
+    ];
+    const books = ["Little Red Riding Hood", "Three Little Pigs", "Cinderella", "Sleeping Beauty"];
+
+    function formatCode(codeLines, prefix) {
+        const codeEl = document.getElementById('code-' + prefix);
+        if (!codeEl) return;
+        codeEl.innerHTML = codeLines.map((line, index) => 
+            `<span class="line" id="line-${prefix}-${index}">${(index + 1).toString().padStart(2, ' ')} ${line.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
+        ).join('');
+    }
+
+    function highlightLine(lineNum, prefix) {
+        document.querySelectorAll(`#code-${prefix} .line`).forEach(line => line.classList.remove('highlight'));
+        if (lineNum !== null && lineNum >= 0) {
+            const lineEl = document.getElementById(`line-${prefix}-${lineNum}`);
+            if(lineEl) lineEl.classList.add('highlight');
+        }
+    }
+    
+    function renderStringWithHighlight(elementId, text, indices) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        if (!text) { el.innerHTML = 'N/A'; return; }
+        el.innerHTML = [...text].map((char, i) => 
+            `<span class="char ${indices && indices.includes(i) ? 'highlight' : ''}">${char === ' ' ? '&nbsp;' : char.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
+        ).join('');
+    }
+
+    let sim = {};
+
+    function getSanitizedState(state) {
+        const { interval, history, ...rest } = state;
+        return JSON.parse(JSON.stringify(rest));
+    }
+
+    function setupSimulation(prefix, inputStr) {
+        if (sim[prefix] && sim[prefix].interval) clearInterval(sim[prefix].interval);
+        
+        const initialState = {
+            pc: 0, i: -1, j: -1, k: -1, title: '', substr: inputStr, output: '',
+            running: false, finished: false, explanation: ''
+        };
+        
+        sim[prefix] = {
+            ...initialState,
+            interval: null,
+            history: []
+        };
+        
+        formatCode(originalCode, prefix);
+        updateUI(prefix);
+    }
+
+    function updateUI(prefix) {
+        const s = sim[prefix];
+        if (!s) return;
+
+        highlightLine(s.pc, prefix);
+        
+        const updateText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        updateText(`substr-${prefix}`, s.substr);
+        updateText(`var-i-${prefix}`, s.i === -1 ? 'N/A' : s.i);
+        updateText(`var-j-${prefix}`, s.j === -1 ? 'N/A' : s.j);
+        updateText(`var-k-${prefix}`, s.k === -1 ? 'N/A' : s.k);
+        
+        renderStringWithHighlight(`var-title-${prefix}`, s.title, s.j !== -1 && s.k !==-1 ? [s.j+s.k] : (s.j !== -1 ? [s.j] : []));
+        
+        const outputBox = document.getElementById(`output-box-${prefix}`);
+        if (outputBox) outputBox.innerHTML = s.output.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        const explanationBox = document.getElementById(`explanation-${prefix}`);
+        if (explanationBox) {
+            explanationBox.innerHTML = s.explanation;
+            explanationBox.style.display = s.explanation ? 'block' : 'none';
+        }
+        updateButtonStates(prefix);
+    }
+
+    function step(prefix) {
+        const s = sim[prefix];
+        if (!s || s.finished) { pauseSim(prefix); return; }
+
+        s.history.push(getSanitizedState(s));
+
+        switch (s.pc) {
+            case 0: s.pc = 1; break;
+            case 1: s.i++; if (s.i < books.length) s.pc = 2; else { s.pc = -1; s.explanation = '所有書名都已檢查完畢。'; s.finished = true; } break;
+            case 2: s.title = books[s.i]; s.j = -1; s.pc = 3; break;
+            case 3: s.j++; if (s.j < s.title.length) s.pc = 4; else s.pc = 1; break;
+            case 4: if (s.title[s.j] === s.substr[0]) s.pc = 5; else s.pc = 3; break;
+            case 5: if (s.substr.length === 1) s.pc = 6; else s.pc = 7; break;
+            case 6: s.output += s.title + '\n'; s.pc = 3; break;
+            case 7: s.k = -1; s.pc = 8; break;
+            case 8: s.k++; if (s.k < s.substr.length) s.pc = 9; else s.pc = 3; break;
+            case 9:
+                if (prefix === 'c1' && s.j + s.k >= s.title.length) {
+                    s.finished = true;
+                    s.explanation = `<span class="error-msg">錯誤發生！</span><br>當 i=${s.i}, j=${s.j}, k=${s.k} 時，程式嘗試存取 <code>title[${s.j+s.k}]</code>，但 <code>title</code> ("${s.title}") 的最大索引是 ${s.title.length - 1}，導致 "index out of range" 錯誤。`;
+                    const titleEl = document.getElementById(`var-title-${prefix}`);
+                    if (titleEl) titleEl.innerHTML += `<span class="char error">?</span>`;
+                    pauseSim(prefix);
+                } else if (s.title[s.j + s.k] === s.substr[s.k]) {
+                    s.pc = 10;
+                } else {
+                    s.pc = 3;
+                }
+                break;
+            case 10: if (s.k === s.substr.length - 1) s.pc = 11; else s.pc = 8; break;
+            case 11: s.output += s.title + '\n'; s.pc = 3; break;
+            default: s.finished = true; pauseSim(prefix); break;
+        }
+        updateUI(prefix);
+    }
+    
+    function prevStep(prefix) {
+        const s = sim[prefix];
+        if (!s || s.history.length === 0) return;
+        pauseSim(prefix);
+        const lastState = s.history.pop();
+        Object.assign(s, lastState);
+        updateUI(prefix);
+    }
+
+    function nextStep(prefix) {
+        const s = sim[prefix];
+        if (!s || s.finished) return;
+        pauseSim(prefix);
+        step(prefix);
+    }
+
+    function playSim(prefix) {
+        const s = sim[prefix];
+        if (!s || s.running || s.finished) return;
+        s.running = true;
+        s.interval = setInterval(() => step(prefix), 700);
+        updateButtonStates(prefix);
+    }
+
+    function pauseSim(prefix) {
+        const s = sim[prefix];
+        if (!s || !s.running) return;
+        clearInterval(s.interval);
+        s.running = false;
+        updateButtonStates(prefix);
+    }
+
+    function updateButtonStates(prefix) {
+        const s = sim[prefix];
+        if (!s) return;
+        const get = (id) => document.getElementById(id);
+        get(`play-${prefix}`).disabled = s.running || s.finished;
+        get(`pause-${prefix}`).disabled = !s.running;
+        get(`prev-step-${prefix}`).disabled = s.running || s.history.length === 0;
+        get(`next-step-${prefix}`).disabled = s.running || s.finished;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        ['a', 'c1'].forEach(prefix => {
+            const input = prefix === 'a' ? 'Little' : 'Hoods';
+            setupSimulation(prefix, input);
+            document.getElementById(`play-${prefix}`).onclick = () => playSim(prefix);
+            document.getElementById(`pause-${prefix}`).onclick = () => pauseSim(prefix);
+            document.getElementById(`reset-${prefix}`).onclick = () => setupSimulation(prefix, input);
+            document.getElementById(`prev-step-${prefix}`).onclick = () => prevStep(prefix);
+            document.getElementById(`next-step-${prefix}`).onclick = () => nextStep(prefix);
+        });
+    });
+</script>
+
+</body>
+</html>
