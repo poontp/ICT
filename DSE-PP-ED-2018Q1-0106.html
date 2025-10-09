@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2018 Q1 互動式解答</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --cell-bg: #ffffff;
+            --cell-border: #dee2e6;
+            --text-color: #212529;
+            --highlight-bg: #fff3cd;
+            --pointer-color: #dc3545;
+            --code-bg: #e9ecef;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--cell-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            border-bottom: 1px solid var(--secondary-color);
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--cell-border);
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .simulation-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .array-display {
+            position: relative;
+            padding-top: 30px; /* Space for pointer */
+        }
+
+        .array-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            border: 1px solid var(--cell-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .array-container.n10 {
+            grid-template-columns: repeat(10, 1fr);
+        }
+
+        .array-cell {
+            text-align: center;
+            border-left: 1px solid var(--cell-border);
+        }
+        .array-cell:first-child {
+            border-left: none;
+        }
+
+        .cell-index {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.25rem;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--cell-border);
+        }
+
+        .cell-value {
+            padding: 0.75rem 0.25rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: var(--cell-bg);
+            transition: background-color 0.3s;
+        }
+        
+        .array-cell.highlight .cell-value {
+            background-color: var(--highlight-bg);
+        }
+
+        .pos-pointer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: var(--pointer-color);
+            font-weight: bold;
+            transition: left 0.3s ease-in-out;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+        }
+        .pos-pointer::after {
+            content: 'pos';
+            font-size: 0.8rem;
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .controls button {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            border: 1px solid var(--primary-color);
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .controls button:hover {
+            background-color: #0056b3;
+        }
+        
+        .controls button:disabled {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            cursor: not-allowed;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .code-panel pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: "Courier New", Courier, monospace;
+            box-sizing: border-box;
+            margin: 0;
+            line-height: 1.8;
+        }
+        
+        .code-panel code {
+            display: block;
+            padding: 0.1rem 0;
+            transition: background-color 0.3s;
+        }
+
+        .code-panel code.current-line {
+            background-color: var(--highlight-bg);
+            border-left: 3px solid var(--primary-color);
+            padding-left: 0.5rem;
+        }
+
+        .explanation-panel {
+            border: 1px solid var(--cell-border);
+            border-radius: 4px;
+            padding: 1rem;
+        }
+        
+        .log-area {
+            min-height: 80px;
+            background-color: #f1f1f1;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        .final-answer {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #e7f3ff;
+            border-left: 5px solid var(--primary-color);
+        }
+        
+        .final-answer .array-container {
+            margin-top: 0.5rem;
+        }
+
+        .boundary-cases {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .case-card {
+            border: 1px solid var(--cell-border);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+        
+        .case-card h4 {
+            margin-top: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>2018 DSE ICT 試卷題目 1 互動式解答</h1>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'partA')">Part (a)</button>
+            <button class="tab-button" onclick="openTab(event, 'partB')">Part (b)</button>
+            <button class="tab-button" onclick="openTab(event, 'partC')">Part (c)</button>
+        </div>
+
+        <!-- Part A Content -->
+        <div id="partA" class="tab-content active">
+            <h2>(a) 追蹤子程式 F1</h2>
+            <p>假設 n = 8。</p>
+            
+            <div class="simulation-container" id="sim-a">
+                <div class="controls">
+                    <button id="run-a">執行</button>
+                    <button id="step-a">步進</button>
+                    <button id="reset-a">重設</button>
+                    <div class="speed-control">
+                        <label for="speed-a">速度:</label>
+                        <input type="range" id="speed-a" min="100" max="1000" value="500" step="50">
+                    </div>
+                </div>
+                <div class="array-display" id="array-display-a">
+                    <!-- Array will be generated here -->
+                </div>
+                <div class="code-panel">
+                    <strong>子程式 F1 偽代碼:</strong>
+                    <pre id="code-f1-a"><code>子程式 F1</code><code>&nbsp;&nbsp;isStop ← FALSE</code><code>&nbsp;&nbsp;pos ← n - 1</code><code>&nbsp;&nbsp;當 isStop <> TRUE 執行</code><code>&nbsp;&nbsp;&nbsp;&nbsp;如果 A[pos] = 1 則</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[pos] ← 0</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pos ← pos - 1</code><code>&nbsp;&nbsp;&nbsp;&nbsp;否則</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[pos] ← 1</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;isStop ← TRUE</code></pre>
+                </div>
+                <div class="explanation-panel">
+                    <strong>變數狀態 & 執行日誌:</strong>
+                    <div id="log-a" class="log-area">請選擇一個子問題並開始執行。</div>
+                </div>
+            </div>
+
+            <hr>
+
+            <h3>(i) 初始內容為十進制數 1 的二進制表示</h3>
+            <p>初始 A: [0, 0, 0, 0, 0, 0, 0, 1]</p>
+            <button onclick="setupSimulation('a', [0,0,0,0,0,0,0,1])">載入此案例</button>
+            <div id="answer-a-i" class="final-answer" style="display: none;">
+                <strong>執行 F1 後 A 的內容是：</strong>
+                <div class="array-container">
+                    <div class="array-cell"><div class="cell-index">0</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">1</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">2</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">3</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">4</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">5</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">6</div><div class="cell-value">1</div></div>
+                    <div class="array-cell"><div class="cell-index">7</div><div class="cell-value">0</div></div>
+                </div>
+            </div>
+
+            <h3>(ii) 初始內容為十進制數 7 的二進制表示</h3>
+            <p>初始 A: [0, 0, 0, 0, 0, 1, 1, 1]</p>
+            <button onclick="setupSimulation('a', [0,0,0,0,0,1,1,1])">載入此案例</button>
+            <div id="answer-a-ii" class="final-answer" style="display: none;">
+                <strong>執行 F1 後 A 的內容是：</strong>
+                <div class="array-container">
+                    <div class="array-cell"><div class="cell-index">0</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">1</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">2</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">3</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">4</div><div class="cell-value">1</div></div>
+                    <div class="array-cell"><div class="cell-index">5</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">6</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">7</div><div class="cell-value">0</div></div>
+                </div>
+            </div>
+
+            <h3>(iii) F1 的目的是什麼？</h3>
+            <div class="final-answer">
+                <p><strong>答案：</strong> 子程式 F1 的目的是將陣列 A 所代表的二進制數**加一** (increment by 1)。</p>
+                <p><strong>推理過程：</strong></p>
+                <ol>
+                    <li>演算法從陣列的最右邊（最低有效位，Least Significant Bit）開始。</li>
+                    <li>如果當前位是 1，它會將其變為 0，然後向左移動一位（`pos ← pos - 1`）。這模擬了二進制加法中的「進位」。</li>
+                    <li>這個過程會一直持續，直到遇到一個 0。</li>
+                    <li>當遇到一個 0 時，它會將其變為 1，然後停止循環 (`isStop ← TRUE`)。這模擬了加法中停止進位的點。</li>
+                    <li>整個過程完全符合對一個二進制數執行加一操作的邏輯。例如，`0111` (7) + 1 = `1000` (8)。</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Part B Content -->
+        <div id="partB" class="tab-content">
+            <h2>(b) 邊際個案 (Boundary Cases)</h2>
+            <h3>(i) 為什麼家健需要測試這些邊際個案？</h3>
+            <div class="final-answer">
+                <p><strong>答案：</strong> 測試邊際個案是為了確保演算法在**極端或特殊情況下**也能正確運作。</p>
+                <p>這些情況往往是演算法最容易出錯的地方。在軟體測試中，「邊際個案」不僅指輸入數據在數值上的最大/最小值，更重要的是指那些能夠**觸發演算法邏輯邊界**的輸入，例如導致演算法走上「最短」或「最長」執行路徑的個案。</p>
+                <p>通過測試這些個案，可以發現潛在的錯誤（例如陣列索引越界），或驗證演算法在極端條件下的正確性，從而提高程式的穩健性 (robustness)。</p>
+            </div>
+
+            <h3>(ii) 下列哪項（些）個案是 F1 的邊際個案？說明你的答案。</h3>
+            <!-- MODIFIED: Removed Case 1 and Case 2 as requested -->
+            <div class="boundary-cases">
+                <div class="case-card">
+                    <h4>個案 3: A = [1, 1, 1, 1, 1, 1, 1, 1]</h4>
+                    <p><strong>✔️ 這是 F1 的一個關鍵邊際個案。</strong></p>
+                    <p><strong>說明：</strong> 這個個案代表了數值的<strong>最大值</strong>，它觸發了演算法的<strong>「最長執行路徑」</strong>。演算法會連續執行 `if` 分支（進位邏輯）直到 `pos` 超出陣列範圍。這個「全進位」的情況之所以關鍵，是因為它會導致**陣列索引越界錯誤**，從而揭示了演算法的一個嚴重設計缺陷。</p>
+                    <button onclick="setupSimulation('b', [1,1,1,1,1,1,1,1])">為個案3執行模擬以觀察錯誤</button>
+                    <div id="sim-b" style="display:none;">
+                         <div class="simulation-container">
+                            <div class="controls">
+                                <button id="run-b">執行</button>
+                                <button id="step-b">步進</button>
+                                <button id="reset-b">重設</button>
+                                <div class="speed-control">
+                                    <label for="speed-b">速度:</label>
+                                    <input type="range" id="speed-b" min="100" max="1000" value="500" step="50">
+                                </div>
+                            </div>
+                            <div class="array-display" id="array-display-b"></div>
+                            <div class="code-panel">
+                                <strong>子程式 F1 偽代碼:</strong>
+                                <pre id="code-f1-b"><code>子程式 F1</code><code>&nbsp;&nbsp;isStop ← FALSE</code><code>&nbsp;&nbsp;pos ← n - 1</code><code>&nbsp;&nbsp;當 isStop <> TRUE 執行</code><code>&nbsp;&nbsp;&nbsp;&nbsp;如果 A[pos] = 1 則</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[pos] ← 0</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pos ← pos - 1</code><code>&nbsp;&nbsp;&nbsp;&nbsp;否則</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[pos] ← 1</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;isStop ← TRUE</code></pre>
+                            </div>
+                            <div class="explanation-panel">
+                                <strong>變數狀態 & 執行日誌:</strong>
+                                <div id="log-b" class="log-area"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part C Content -->
+        <div id="partC" class="tab-content">
+            <h2>(c) 子程式 F2</h2>
+            <p>子程式 F2(m) 的偽代碼是：</p>
+            <pre><code>子程式 F2(m)
+  設 i 由 1 至 m
+    執行 F1</code></pre>
+
+            <h3>(i) 執行 F2(4) 後 A 的內容是什麼？</h3>
+            <p>初始 A: [0, 0, 0, 0, 0, 0, 1, 0] (十進制 2)</p>
+            <button onclick="setupF2Simulation('c', [0,0,0,0,0,0,1,0], 4)">載入並執行 F2(4) 模擬</button>
+            <div id="sim-c" style="display:none;">
+                 <div class="simulation-container">
+                    <h4 id="f2-counter-c"></h4>
+                    <div class="controls">
+                        <button id="run-c">執行</button>
+                        <button id="step-c">步進</button>
+                        <button id="reset-c">重設</button>
+                        <div class="speed-control">
+                            <label for="speed-c">速度:</label>
+                            <input type="range" id="speed-c" min="100" max="1000" value="500" step="50">
+                        </div>
+                    </div>
+                    <div class="array-display" id="array-display-c"></div>
+                    <div class="code-panel">
+                        <strong>子程式 F1 偽代碼:</strong>
+                        <pre id="code-f1-c"><code>子程式 F1</code><code>&nbsp;&nbsp;isStop ← FALSE</code><code>&nbsp;&nbsp;pos ← n - 1</code><code>&nbsp;&nbsp;當 isStop <> TRUE 執行</code><code>&nbsp;&nbsp;&nbsp;&nbsp;如果 A[pos] = 1 則</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[pos] ← 0</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pos ← pos - 1</code><code>&nbsp;&nbsp;&nbsp;&nbsp;否則</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[pos] ← 1</code><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;isStop ← TRUE</code></pre>
+                    </div>
+                    <div class="explanation-panel">
+                        <strong>變數狀態 & 執行日誌:</strong>
+                        <div id="log-c" class="log-area"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="answer-c-i" class="final-answer" style="display: none;">
+                <strong>執行 F2(4) 後 A 的內容是：</strong>
+                <div class="array-container">
+                    <div class="array-cell"><div class="cell-index">0</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">1</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">2</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">3</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">4</div><div class="cell-value">0</div></div>
+                    <div class="array-cell"><div class="cell-index">5</div><div class="cell-value">1</div></div>
+                    <div class="array-cell"><div class="cell-index">6</div><div class="cell-value">1</div></div>
+                    <div class="array-cell"><div class="cell-index">7</div><div class="cell-value">0</div></div>
+                </div>
+                <p><strong>推理過程：</strong> 初始值是 2。F2(4) 會執行 F1 四次。由於 F1 的功能是加一，所以過程如下：<br>
+                2 + 1 → 3 ([...0011])<br>
+                3 + 1 → 4 ([...0100])<br>
+                4 + 1 → 5 ([...0101])<br>
+                5 + 1 → 6 ([...0110])<br>
+                所以最終結果是 6。
+                </p>
+            </div>
+            
+            <h3>(ii) F2 的目的是什麼？</h3>
+            <div class="final-answer">
+                <p><strong>答案：</strong> 子程式 F2(m) 的目的是將陣列 A 所代表的二進制數**加上 m**。</p>
+                <p><strong>推理過程：</strong> F2(m) 的循環結構會執行 F1 子程式 `m` 次。既然我們已經知道 F1 的功能是「加一」，那麼重複執行 `m` 次「加一」操作，其總體效果就是「加上 m」。</p>
+            </div>
+
+            <h3>(iii) 家健執行 F2(1000) 後，發現其結果並不符合他的預期。為什麼？</h3>
+            <div class="final-answer">
+                <p><strong>答案：</strong> 結果不符合預期的原因有兩個，但最根本的是**數據溢位 (Data Overflow)** 和 F1 的**設計缺陷**。</p>
+                <ol>
+                    <li>
+                        <strong>容量不足：</strong> 陣列 A 的大小 n=8，意味著它是一個 8 位元的二進制數。它能表示的最大值是 `11111111` (二進制)，即 `2^8 - 1 = 255` (十進制)。家健試圖執行的 F2(1000) 會使計數器遠遠超過 255。
+                    </li>
+                    <li>
+                        <strong>演算法缺陷：</strong> 正如在 (b)(ii) 中所分析的，當陣列 A 的值達到 255 (`[1,1,1,1,1,1,1,1]`) 時，下一次執行 F1（即第 256 次加一操作）會導致 `pos` 變為 -1，從而引發**陣列索引越界錯誤**，使程式崩潰。因為 1000 遠大於 255，所以在 F2(1000) 的執行過程中，這個錯誤必然會發生。
+                    </li>
+                </ol>
+                <p>因此，程式根本無法完成 F2(1000) 的所有循環，而會在中途出錯停止。</p>
+            </div>
+
+            <h3>(iv) 為了產生 F2(1000) 的正確結果，A 需要有什麼改變？簡略說明你的答案。</h3>
+            <div class="final-answer">
+                <p><strong>答案：</strong> 需要**增加陣列 A 的大小 (n)**。</p>
+                <p><strong>說明：</strong></p>
+                <p>為了能正確存儲 F2(1000) 的結果，陣列 A 必須足夠大以表示至少為 1000 的數值 (甚至更大，取決於初始值)。我們需要計算表示 1000 所需的最小位元數：</p>
+                <ul>
+                    <li>2<sup>9</sup> = 512 (不夠)</li>
+                    <li><strong>2<sup>10</sup> = 1024 (足夠)</strong></li>
+                </ul>
+                <p>因此，陣列 A 的大小 `n` 至少需要是 **10**。例如，可以將 A 改為一個大小為 10 的陣列。同時，也需要修正 F1 演算法以處理溢位情況（例如，當 `pos` 變為 -1 時，應停止或發出溢位信號，而不是存取無效索引），但題目只問 A 需要有什麼改變，所以主要答案是擴大其大小。</p>
+                <p>一個大小為 10 的陣列 A：</p>
+                <div class="array-container n10">
+                    <div class="array-cell"><div class="cell-index">0</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">1</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">2</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">3</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">4</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">5</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">6</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">7</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">8</div><div class="cell-value"></div></div>
+                    <div class="array-cell"><div class="cell-index">9</div><div class="cell-value"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // --- Simulation Logic ---
+        
+        class Simulator {
+            constructor(id, n = 8) {
+                this.id = id;
+                this.n = n;
+                this.initialArray = [];
+                this.currentArray = [];
+                this.pos = 0;
+                this.isStop = false;
+                this.pc = 0; // Program Counter for pseudocode lines
+                this.f2_m = 0;
+                this.f2_i = 0;
+                this.state = 'idle'; // idle, running, paused, finished
+                this.timeoutId = null;
+
+                // DOM elements
+                this.runBtn = document.getElementById(`run-${id}`);
+                this.stepBtn = document.getElementById(`step-${id}`);
+                this.resetBtn = document.getElementById(`reset-${id}`);
+                this.speedSlider = document.getElementById(`speed-${id}`);
+                this.arrayDisplay = document.getElementById(`array-display-${id}`);
+                this.logArea = document.getElementById(`log-${id}`);
+                this.codeLines = document.getElementById(`code-f1-${id}`).getElementsByTagName('code');
+                this.f2counter = document.getElementById(`f2-counter-${id}`);
+
+                this.runBtn.onclick = () => this.run();
+                this.stepBtn.onclick = () => this.step();
+                this.resetBtn.onclick = () => this.reset();
+            }
+            
+            setup(initialArray, m = 0) {
+                this.initialArray = [...initialArray];
+                this.f2_m = m;
+                if(document.getElementById(`sim-${this.id}`)) {
+                    document.getElementById(`sim-${this.id}`).style.display = 'block';
+                }
+                this.reset();
+            }
+
+            reset() {
+                clearTimeout(this.timeoutId);
+                this.currentArray = [...this.initialArray];
+                this.f2_i = this.f2_m > 0 ? 1 : 0;
+                this.resetF1State();
+                this.state = 'idle';
+                this.updateUI();
+                this.log('已重設。請按 "執行" 或 "步進" 開始。');
+                if (this.f2_m > 0) {
+                    this.log(`準備執行 F2(${this.f2_m})。`);
+                }
+                this.updateButtons();
+            }
+            
+            resetF1State() {
+                this.isStop = false;
+                this.pos = this.n - 1;
+                this.pc = 1; // Start at 'isStop <- FALSE'
+            }
+
+            log(message) {
+                this.logArea.innerHTML = message;
+            }
+
+            updateUI() {
+                // Render array
+                let arrayHtml = '<div class="array-container">';
+                for (let i = 0; i < this.n; i++) {
+                    arrayHtml += `<div class="array-cell ${this.pos === i && this.state !== 'idle' && this.state !== 'finished' ? 'highlight' : ''}">
+                                    <div class="cell-index">${i}</div>
+                                    <div class="cell-value">${this.currentArray[i]}</div>
+                                  </div>`;
+                }
+                arrayHtml += '</div>';
+                
+                // Render pointer
+                if (this.pos >= 0 && this.pos < this.n && this.state !== 'idle' && this.state !== 'finished') {
+                    const cellWidth = 100 / this.n;
+                    const pointerLeft = cellWidth * this.pos + cellWidth / 2;
+                    arrayHtml += `<div class="pos-pointer" style="left: ${pointerLeft}%;">▼</div>`;
+                }
+                this.arrayDisplay.innerHTML = arrayHtml;
+
+                // Highlight code
+                for (let i = 0; i < this.codeLines.length; i++) {
+                    this.codeLines[i].classList.remove('current-line');
+                }
+                if (this.pc >= 0 && this.pc < this.codeLines.length) {
+                    this.codeLines[this.pc].classList.add('current-line');
+                }
+            }
+            
+            updateButtons() {
+                this.runBtn.disabled = (this.state === 'running' || this.state === 'finished');
+                this.stepBtn.disabled = (this.state === 'running' || this.state === 'finished');
+            }
+
+            run() {
+                if (this.state === 'running' || this.state === 'finished') return;
+                this.state = 'running';
+                this.updateButtons();
+                const loop = () => {
+                    this.step();
+                    if (this.state === 'running') {
+                        const speed = 1100 - this.speedSlider.value;
+                        this.timeoutId = setTimeout(loop, speed);
+                    }
+                };
+                loop();
+            }
+
+            step() {
+                if (this.state === 'finished') return;
+                if (this.state === 'idle') this.state = 'paused';
+
+                let logMsg = `isStop=${this.isStop}, pos=${this.pos}`;
+                
+                switch (this.pc) {
+                    case 1: // isStop ← FALSE
+                        this.isStop = false;
+                        this.pc = 2;
+                        logMsg = `初始化: isStop ← FALSE`;
+                        break;
+                    case 2: // pos ← n - 1
+                        this.pos = this.n - 1;
+                        this.pc = 3;
+                        logMsg = `初始化: pos ← ${this.pos}`;
+                        break;
+                    case 3: // 當 isStop <> TRUE
+                        if (this.isStop !== true) {
+                            this.pc = 4;
+                            logMsg = `isStop 是 FALSE，進入循環。`;
+                        } else {
+                            this.pc = 10; // Go to end of loop state
+                            logMsg = `isStop 是 TRUE，結束循環。`;
+                        }
+                        break;
+                    case 4: // 如果 A[pos] = 1
+                        if (this.pos < 0) {
+                            this.state = 'finished';
+                            logMsg = `<strong style="color:red;">錯誤：陣列索引越界！pos = -1。程式終止。</strong>`;
+                            this.pc = -1; // No highlight
+                            break;
+                        }
+                        if (this.currentArray[this.pos] === 1) {
+                            this.pc = 5;
+                            logMsg = `A[${this.pos}] 是 1，執行 '則' 的部分。`;
+                        } else {
+                            this.pc = 7; // Jump to the 'else' block
+                            logMsg = `A[${this.pos}] 是 0，執行 '否則' 的部分。`;
+                        }
+                        break;
+                    case 5: // A[pos] ← 0
+                        this.currentArray[this.pos] = 0;
+                        this.pc = 6;
+                        logMsg = `A[${this.pos}] ← 0。 (進位)`;
+                        break;
+                    case 6: // pos ← pos - 1
+                        this.pos--;
+                        this.pc = 3; // Go back to loop condition
+                        logMsg = `pos ← ${this.pos}。 (向左移動)`;
+                        break;
+                    case 7: // 否則
+                        this.pc = 8;
+                        logMsg = `執行 '否則' 的部分。`;
+                        break;
+                    case 8: // A[pos] ← 1
+                        this.currentArray[this.pos] = 1;
+                        this.pc = 9;
+                        logMsg = `A[${this.pos}] ← 1。`;
+                        break;
+                    case 9: // isStop ← TRUE
+                        this.isStop = true;
+                        this.pc = 3; // Go back to loop condition
+                        logMsg = `isStop ← TRUE。循環將在下次檢查時停止。`;
+                        break;
+                    case 10: // End of While loop state
+                        logMsg = `F1 執行完畢。`;
+                        this.pc = -1; // Stop highlighting
+                        if (this.f2_m > 0 && this.f2_i < this.f2_m) {
+                            this.f2_i++;
+                            this.resetF1State();
+                             logMsg += ` 準備執行下一次 F1。`;
+                        } else {
+                            this.state = 'finished';
+                             logMsg += ` 所有執行完成。`;
+                             this.showFinalAnswer();
+                        }
+                        break;
+                }
+                
+                this.updateUI();
+                this.log(logMsg);
+                this.updateButtons();
+            }
+            
+            showFinalAnswer() {
+                if (this.id === 'a') {
+                    if (this.initialArray.join('') === '00000001') {
+                        document.getElementById('answer-a-i').style.display = 'block';
+                    } else if (this.initialArray.join('') === '00000111') {
+                        document.getElementById('answer-a-ii').style.display = 'block';
+                    }
+                } else if (this.id === 'c') {
+                    document.getElementById('answer-c-i').style.display = 'block';
+                }
+            }
+        }
+        
+        // --- Initialization ---
+        const simulators = {
+            a: new Simulator('a'),
+            b: new Simulator('b'),
+            c: new Simulator('c')
+        };
+
+        function setupSimulation(simId, initialArray) {
+            const sim = simulators[simId];
+            if (sim) {
+                sim.setup(initialArray);
+                if (simId === 'b') {
+                    document.getElementById('sim-b').style.display = 'block';
+                }
+            }
+        }
+        
+        function setupF2Simulation(simId, initialArray, m) {
+            const sim = simulators[simId];
+            if (sim) {
+                sim.setup(initialArray, m);
+            }
+        }
+
+        // Set default view on load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.tab-button.active').click();
+            setupSimulation('a', [0,0,0,0,0,0,0,1]); // Default to a(i)
+        });
+
+    </script>
+
+</body>
+</html>
