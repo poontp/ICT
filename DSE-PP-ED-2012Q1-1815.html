@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>演算法互動解答（最終定稿版）</title>
+    <style>
+        :root {
+            --primary-color: #005a9e;
+            --secondary-color: #f0f8ff;
+            --accent-color: #ffc107;
+            --text-color: #333;
+            --border-color: #ccc;
+            --highlight-bg: #fffbe5;
+            --code-bg: #eef;
+        }
+        body {
+            font-family: 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.8;
+            color: var(--text-color);
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .tabs {
+            display: flex;
+            background-color: var(--primary-color);
+        }
+        .tab-button {
+            padding: 15px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            flex-grow: 1;
+            text-align: center;
+        }
+        .tab-button.active, .tab-button:hover {
+            background-color: #004175;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px 25px;
+            border-top: 3px solid var(--accent-color);
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #004175;
+            margin-top: 25px;
+        }
+        .simulation-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+            background: var(--secondary-color);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .code-panel, .state-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .code-panel pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .code-panel code {
+            display: block;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .code-panel code.highlight {
+            background-color: var(--accent-color);
+            color: black;
+        }
+        .state-panel .variables {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .state-panel .variables span {
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--primary-color);
+        }
+        .array-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .array-table th, .array-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+        }
+        .array-table th {
+            background-color: #e9ecef;
+        }
+        .array-table td {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 18px;
+            height: 40px;
+            transition: background-color 0.3s;
+        }
+        .array-table td.updated {
+            background-color: #d4edda;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #004175;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .explanation, .final-answer {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--highlight-bg);
+            border-left: 5px solid var(--accent-color);
+            border-radius: 5px;
+        }
+        hr {
+            border: 0;
+            height: 2px;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0));
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'Tab-ALG1')">ALG1 解答</button>
+        <button class="tab-button" onclick="openTab(event, 'Tab-ALG2')">ALG2 解答</button>
+        <button class="tab-button" onclick="openTab(event, 'Tab-Compare')">比較與總結</button>
+    </div>
+
+    <div id="Tab-ALG1" class="tab-content active">
+        <h2>演算法 ALG1 解答</h2>
+        <h3>(i) 追蹤 ALG1 (N = 29)</h3>
+        <p>此模擬器將逐步執行演算法 ALG1，其迴圈條件為 `N >= 1`。</p>
+        <div class="simulation-container">
+            <div class="code-panel">
+                <h4>ALG1 虛擬碼</h4>
+                <pre><code id="alg1-line1">步驟1： 初始化 X 各元素為 0</code>
+<code id="alg1-line2">步驟2： i ← 0</code>
+<code id="alg1-line3" class="highlight">步驟3： 當 N >= 1 執行步驟 4 至 6</code>
+<code id="alg1-line4">步驟4：   X[6 - i] ← (N / 2) 的餘數</code>
+<code id="alg1-line5">步驟5：   N ← (N / 2) 的整數部分</code>
+<code id="alg1-line6">步驟6：   i ← i + 1</code></pre>
+            </div>
+            <div class="state-panel">
+                <h4>狀態</h4>
+                <div class="variables">
+                    N = <span id="alg1-var-n">29</span><br>
+                    i = <span id="alg1-var-i">0</span><br>
+                    迴圈次數 = <span id="alg1-var-iter">0</span>
+                </div>
+                <h4>陣列 X</h4>
+                <table class="array-table">
+                    <thead><tr><th>X[1]</th><th>X[2]</th><th>X[3]</th><th>X[4]</th><th>X[5]</th><th>X[6]</th></tr></thead>
+                    <tbody><tr>
+                        <td id="alg1-x1">0</td><td id="alg1-x2">0</td><td id="alg1-x3">0</td>
+                        <td id="alg1-x4">0</td><td id="alg1-x5">0</td><td id="alg1-x6">0</td>
+                    </tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="alg1-next" class="btn btn-primary" onclick="step_alg1()">下一步</button>
+            <button class="btn btn-secondary" onclick="reset_alg1()">重設</button>
+        </div>
+        <div id="alg1-final-answer" class="final-answer" style="display:none;">
+            <h4>(i)(1) 最終結果</h4>
+            <p>演算法執行完畢後，陣列 X 的內容為 [0, 1, 1, 1, 0, 1]。</p>
+            <p>因此，題目所問的數值為：<strong>X[4] = 1, X[5] = 0, X[6] = 1</strong></p>
+            <h4>(i)(2) 迴圈迭代次數</h4>
+            <p>迴圈共執行了 <strong>5</strong> 次迭代。</p>
+        </div>
+        <div class="explanation">
+            <h3>(ii) N 的有效值範圍 & (iii) ALG1 的用途</h3>
+            <p><strong>(ii) N 的有效值範圍：</strong>演算法能處理的最大數值，是其 6 位元二進制表示全為 1 的數，即 `111111₂ = 63`。任何大於 63 的數都會導致 `i` 增加到 6，從而嘗試存取 `X[0]` 而產生錯誤。因此，有效範圍是 <strong>0 ≤ N ≤ 63</strong>。</p>
+            <p><strong>(iii) ALG1 的用途：</strong>演算法將一個非負十進制整數 N 轉換為其 <strong>6 位元的二進制表示法</strong>。</p>
+        </div>
+    </div>
+
+    <div id="Tab-ALG2" class="tab-content">
+        <h2>演算法 ALG2 解答</h2>
+        <h3>(i) 追蹤 ALG2 (N = 48)</h3>
+        <p>此模擬器將逐步執行演算法 ALG2，其迴圈條件為 `N > 0`。</p>
+        <div class="simulation-container">
+            <div class="code-panel">
+                <h4>ALG2 虛擬碼</h4>
+                <pre>陣列 Z: [32, 16, 8, 4, 2, 1]
+<code id="alg2-line1">步驟1： 初始化 Y 各元素為 0</code>
+<code id="alg2-line2">步驟2： j ← 1</code>
+<code id="alg2-line3">步驟3： 當 N > 0 執行步驟 4 至 7</code>
+<code id="alg2-line4">步驟4：   如果 N >= Z[j]，則執行步驟 5至6</code>
+<code id="alg2-line5">步驟5：     Y[j] ← 1</code>
+<code id="alg2-line6">步驟6：     N ← N - Z[j]</code>
+<code id="alg2-line7">步驟7：   j ← j + 1</code></pre>
+            </div>
+            <div class="state-panel">
+                <h4>狀態</h4>
+                <div class="variables">
+                    N = <span id="alg2-var-n">48</span><br>
+                    j = <span id="alg2-var-j">1</span><br>
+                    迴圈次數 = <span id="alg2-var-iter">0</span>
+                </div>
+                <h4>陣列 Y</h4>
+                <table class="array-table">
+                    <thead><tr><th>Y[1]</th><th>Y[2]</th><th>Y[3]</th><th>Y[4]</th><th>Y[5]</th><th>Y[6]</th></tr></thead>
+                    <tbody><tr>
+                        <td id="alg2-y1">0</td><td id="alg2-y2">0</td><td id="alg2-y3">0</td>
+                        <td id="alg2-y4">0</td><td id="alg2-y5">0</td><td id="alg2-y6">0</td>
+                    </tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="alg2-next" class="btn btn-primary" onclick="step_alg2()">下一步</button>
+            <button class="btn btn-secondary" onclick="reset_alg2()">重設</button>
+        </div>
+        <div id="alg2-final-answer" class="final-answer" style="display:none;">
+            <h4>(i)(1) 最終結果</h4>
+            <p>演算法執行完畢後，陣列 Y 的內容為 [1, 1, 0, 0, 0, 0]。</p>
+            <h4>(i)(2) 迴圈迭代次數</h4>
+            <p>對於 N=48，迴圈共執行了 <strong>2</strong> 次。第一次迴圈後 N 變為 16，第二次迴圈後 N 變為 0，此時 `N > 0` 條件不成立，迴圈終止。</p>
+        </div>
+        
+        <hr>
+
+        <h3>(ii) 最壞情況分析</h3>
+        <div class="explanation">
+            <h4>問：在最壞的情況下，這個循環的迭代會有多少次?</h4>
+            <p><strong>答案：6 次。</strong></p>
+            <h4>推理過程：</h4>
+            <ol>
+                <li><strong>迴圈終止條件：</strong>修改後的 ALG2 迴圈 (`當 N > 0`) 會一直執行，直到變數 N 的值變為 0。</li>
+                <li><strong>計數器 j 的行為：</strong>無論 `如果 N >= Z[j]` 條件是否成立，計數器 `j` 在每一次迴圈結束時都會加 1 (`j ← j + 1`)。</li>
+                <li><strong>尋找最壞情況：</strong>「最壞情況」就是需要最多迴圈次數的情況。這意味著我們需要找到一個輸入值 N，讓它盡可能晚地變成 0。</li>
+                <li><strong>最晚的終止點：</strong>演算法最多檢查到 `j=6` (對應 `Z[6]=1`)。如果一個數字需要執行到 `j=6` 才能被減至 0，那麼它就會觸發最大次數的迴圈。</li>
+                <li><strong>範例：N = 1</strong>
+                    <ul>
+                        <li>第1次迴圈 (j=1): N=1, 1 < 32。N 不變。</li>
+                        <li>第2次迴圈 (j=2): N=1, 1 < 16。N 不變。</li>
+                        <li>第3次迴圈 (j=3): N=1, 1 < 8。N 不變。</li>
+                        <li>第4次迴圈 (j=4): N=1, 1 < 4。N 不變。</li>
+                        <li>第5次迴圈 (j=5): N=1, 1 < 2。N 不變。</li>
+                        <li>第6次迴圈 (j=6): N=1, 1 >= 1。N 變為 1-1=0。</li>
+                    </ul>
+                    在第 6 次迴圈結束後，N 變為 0。下一次檢查 `N > 0` 時條件為假，迴圈終止。因此，總共執行了 6 次。
+                </li>
+                <li><strong>結論：</strong>任何需要處理到 `Z[6]` (即二進制表示中最低位為1) 的數字，都會導致迴圈執行完整的 6 次。所有奇數（例如 1, 3, 5, ..., 63）都是最壞情況的例子。</li>
+            </ol>
+        </div>
+
+    </div>
+
+    <div id="Tab-Compare" class="tab-content">
+        <h2>比較與總結</h2>
+        <h3>(iii) 比較 ALG2 及 ALG1</h3>
+        <div class="explanation">
+            <h4>1. 共同用途</h4>
+            <p><strong>ALG1 和 ALG2 執行的任務是相同的</strong>：它們都將一個非負十進制整數轉換為其 6 位元的二進制表示。</p>
+            
+            <h4>2. 迴圈執行次數分析</h4>
+            <p>題目要求「說明 ALG2 為何比 ALG1 執行迴圈較少」。根據我們現在使用的演算法版本，我們來分析這個說法。</p>
+            <ul>
+                <li><strong>ALG1 的迴圈次數：</strong>它的迴圈條件是 `N >= 1`。執行次數取決於輸入值 N 的大小，大約為 `log₂(N)` 次。對於 N=29，它執行 <strong>5</strong> 次。</li>
+                <li><strong>ALG2 的迴圈次數：</strong>它的迴圈條件是 `N > 0`。執行次數取決於 N 的二進制表示中 '1' 的個數以及它們的位置。對於 N=48 (二進制為 110000)，它執行 <strong>2</strong> 次後 N 就變為 0，迴圈終止。</li>
+            </ul>
+            <p><strong>結論：</strong>在 N=48 的情況下，ALG2 (2次) 的確比 N=29 的 ALG1 (5次) 執行迴圈較少。更普遍地說，ALG2 的迴圈次數與 `j` 的值有關，當 N 歸零時即停止。而 ALG1 的迴圈次數則固定與 N 的位數相關。因此，在某些情況下（例如 N 是 2 的高次方），ALG2 的迴圈次數確實可能比 ALG1 少。</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        let i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+    // --- ALG1 Final Simulation (N >= 1) ---
+    let alg1_state;
+    function reset_alg1() {
+        alg1_state = { n: 29, i: 0, iter: 0, step: 0, x: [0,0,0,0,0,0], terminated: false };
+        update_alg1_ui();
+        document.getElementById('alg1-next').disabled = false;
+        document.getElementById('alg1-final-answer').style.display = 'none';
+    }
+    function update_alg1_ui() {
+        document.getElementById('alg1-var-n').textContent = alg1_state.n;
+        document.getElementById('alg1-var-i').textContent = alg1_state.i;
+        document.getElementById('alg1-var-iter').textContent = alg1_state.iter;
+        for (let j = 1; j <= 6; j++) {
+            const cell = document.getElementById(`alg1-x${j}`);
+            cell.textContent = alg1_state.x[j-1];
+            cell.classList.remove('updated');
+        }
+        const all_lines = document.querySelectorAll('#Tab-ALG1 .code-panel code');
+        all_lines.forEach(line => line.classList.remove('highlight'));
+        if (alg1_state.step >= 0 && alg1_state.step <= 5) {
+            document.getElementById(`alg1-line${alg1_state.step + 1}`).classList.add('highlight');
+        }
+    }
+    function step_alg1() {
+        if (alg1_state.terminated) return;
+        switch(alg1_state.step) {
+            case 0: alg1_state.step = 1; break;
+            case 1: alg1_state.step = 2; break;
+            case 2:
+                if (alg1_state.n >= 1) { alg1_state.step = 3; alg1_state.iter++; } 
+                else { alg1_state.terminated = true; }
+                break;
+            case 3:
+                const index = 6 - alg1_state.i;
+                alg1_state.x[index - 1] = alg1_state.n % 2;
+                document.getElementById(`alg1-x${index}`).classList.add('updated');
+                alg1_state.step = 4;
+                break;
+            case 4: alg1_state.n = Math.floor(alg1_state.n / 2); alg1_state.step = 5; break;
+            case 5: alg1_state.i++; alg1_state.step = 2; break;
+        }
+        update_alg1_ui();
+        if (alg1_state.terminated) {
+            document.getElementById('alg1-next').disabled = true;
+            document.getElementById('alg1-final-answer').style.display = 'block';
+        }
+    }
+
+    // --- ALG2 Final Simulation (N > 0) ---
+    let alg2_state;
+    const Z = [32, 16, 8, 4, 2, 1];
+    function reset_alg2() {
+        alg2_state = { n: 48, j: 1, iter: 0, step: 0, y: [0,0,0,0,0,0], terminated: false };
+        update_alg2_ui();
+        document.getElementById('alg2-next').disabled = false;
+        document.getElementById('alg2-final-answer').style.display = 'none';
+    }
+    function update_alg2_ui() {
+        document.getElementById('alg2-var-n').textContent = alg2_state.n;
+        document.getElementById('alg2-var-j').textContent = alg2_state.j;
+        document.getElementById('alg2-var-iter').textContent = alg2_state.iter;
+        for (let i = 1; i <= 6; i++) {
+            const cell = document.getElementById(`alg2-y${i}`);
+            cell.textContent = alg2_state.y[i-1];
+            cell.classList.remove('updated');
+        }
+        const all_lines = document.querySelectorAll('#Tab-ALG2 .code-panel code');
+        all_lines.forEach(line => line.classList.remove('highlight'));
+        if (alg2_state.step >= 0 && alg2_state.step <= 6) {
+             document.getElementById(`alg2-line${alg2_state.step + 1}`).classList.add('highlight');
+        }
+    }
+    function step_alg2() {
+        if (alg2_state.terminated) return;
+        switch(alg2_state.step) {
+            case 0: alg2_state.step = 1; break;
+            case 1: alg2_state.step = 2; break;
+            case 2:
+                if (alg2_state.n > 0) {
+                    if (alg2_state.j > 6) {
+                        alg2_state.terminated = true;
+                        break;
+                    }
+                    alg2_state.step = 3; 
+                    alg2_state.iter++; 
+                } else { 
+                    alg2_state.terminated = true; 
+                }
+                break;
+            case 3:
+                if (alg2_state.n >= Z[alg2_state.j - 1]) { alg2_state.step = 4; } 
+                else { alg2_state.step = 6; }
+                break;
+            case 4:
+                alg2_state.y[alg2_state.j - 1] = 1;
+                document.getElementById(`alg2-y${alg2_state.j}`).classList.add('updated');
+                alg2_state.step = 5;
+                break;
+            case 5: alg2_state.n -= Z[alg2_state.j - 1]; alg2_state.step = 6; break;
+            case 6: alg2_state.j++; alg2_state.step = 2; break;
+        }
+        update_alg2_ui();
+        if (alg2_state.terminated) {
+            document.getElementById('alg2-next').disabled = true;
+            document.getElementById('alg2-final-answer').style.display = 'block';
+        }
+    }
+
+    // Initial setup
+    window.onload = () => {
+        reset_alg1();
+        reset_alg2();
+    };
+</script>
+
+</body>
+</html>
