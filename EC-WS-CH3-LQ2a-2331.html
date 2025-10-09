@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>偽代碼執行動畫 - 解說 (a)</title>
+    <style>
+        :root {
+            --primary-bg: #f0f4f8;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #d1d9e6;
+            --accent-color: #0d6efd;
+            --highlight-bg: #ffc107;
+            --code-bg: #e9ecef;
+            --probe-color: rgba(255, 193, 7, 0.5);
+            --current-pos-color: rgba(25, 135, 84, 0.7);
+            --true-color: #198754;
+            --false-color: #dc3545;
+        }
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 1.6;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            background-color: var(--secondary-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        h1 {
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        h1 small {
+            font-size: 0.6em;
+            color: #6c757d;
+        }
+        h2 {
+            color: var(--accent-color);
+            margin: 0;
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            flex-grow: 1;
+        }
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0; /* Prevents grid blowout */
+        }
+        .panel {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        #code-panel {
+            flex-grow: 1;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .header-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .bottom-right-layout {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        #pattern-panel { 
+            justify-content: center;
+            align-items: center;
+        }
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 5px;
+            font-size: 0.9em;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            flex-grow: 1;
+        }
+        .code-line {
+            display: block;
+            padding: 2px 5px;
+            margin: -2px -5px;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+        }
+        .line-number {
+            display: inline-block;
+            width: 2.5em;
+            color: #888;
+            text-align: right;
+            margin-right: 1em;
+            user-select: none;
+        }
+        .highlight {
+            background-color: var(--highlight-bg);
+            font-weight: bold;
+        }
+        .pattern-grid {
+            border-collapse: collapse;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: auto;
+            position: relative;
+        }
+        .pattern-grid td {
+            border: 2px solid #555;
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            vertical-align: middle;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+        }
+        .current-pos {
+            background-color: var(--current-pos-color) !important;
+            color: white;
+        }
+        .probe-pos {
+            background-color: var(--probe-color) !important;
+        }
+        .probe-pos::after {
+            content: '?';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            color: rgba(0,0,0,0.5);
+        }
+        .state-vars {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        .state-var {
+            text-align: center;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .state-var .label {
+            font-size: 0.9em;
+            color: #666;
+            display: block;
+        }
+        .state-var .value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        #explanation {
+            min-height: 80px;
+            background-color: #e3f2fd;
+            border-left: 5px solid var(--accent-color);
+            padding: 1rem;
+            flex-grow: 1;
+            white-space: pre-wrap; /* Important for showing newlines */
+        }
+        #explanation strong.true { color: var(--true-color); }
+        #explanation strong.false { color: var(--false-color); }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s, opacity 0.3s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0b5ed7;
+        }
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .bottom-right-layout {
+                grid-template-columns: 1fr;
+            }
+            .pattern-grid td {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .panel-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            .state-vars {
+                grid-template-columns: 1fr; /* Revert to single column on very small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>互動動畫 <small>解說 (a) 的答案</small></h1>
+    <div class="main-layout">
+        <!-- Left Column -->
+        <div class="left-column">
+            <div class="panel" id="code-panel">
+                <div class="panel-header">
+                    <h2>偽代碼</h2>
+                </div>
+                <pre id="code-block"><code><span class="code-line" id="line-1"><span class="line-number">1</span>將 pattern 中的所有項目初始化為 0</span>
+<span class="code-line" id="line-2"><span class="line-number">2</span>R ← 1</span>
+<span class="code-line" id="line-3"><span class="line-number">3</span>C ← 1</span>
+<span class="code-line" id="line-4"><span class="line-number">4</span>DR ← 1</span>
+<span class="code-line" id="line-5"><span class="line-number">5</span>DC ← 0</span>
+<span class="code-line" id="line-6"><span class="line-number">6</span>dir ← 2</span>
+<span class="code-line" id="line-7"><span class="line-number">7</span>for i 由 9 下至 1</span>
+<span class="code-line" id="line-8"><span class="line-number">8</span>    pattern[R,C] ← i</span>
+<span class="code-line" id="line-9"><span class="line-number">9</span>    如果 R+DR < 1 or R+DR > 3 or C+DC < 1 or C+DC > 3 or pattern[R+DR,C+DC] != 0 則</span>
+<span class="code-line" id="line-10"><span class="line-number">10</span>        dir ← (dir - 1) % 4</span>
+<span class="code-line" id="line-11"><span class="line-number">11</span>        如果 dir = 0 則 (上)</span>
+<span class="code-line" id="line-12"><span class="line-number">12</span>            DR ← -1; DC ← 0</span>
+<span class="code-line" id="line-14"><span class="line-number">14</span>        否則如果 dir = 1 則 (右)</span>
+<span class="code-line" id="line-15"><span class="line-number">15</span>            DR ← 0; DC ← 1</span>
+<span class="code-line" id="line-17"><span class="line-number">17</span>        否則如果 dir = 2 則 (下)</span>
+<span class="code-line" id="line-18"><span class="line-number">18</span>            DR ← 1; DC ← 0</span>
+<span class="code-line" id="line-20"><span class="line-number">20</span>        否則 (左, dir=3)</span>
+<span class="code-line" id="line-21"><span class="line-number">21</span>            DR ← 0; DC ← -1</span>
+<span class="code-line" id="line-23"><span class="line-number">23</span>    R ← R + DR</span>
+<span class="code-line" id="line-24"><span class="line-number">24</span>    C ← C + DC</span></code></pre>
+            </div>
+        </div>
+        <!-- Right Column -->
+        <div class="right-column">
+            <div class="panel" id="explanation-panel">
+                <div class="panel-header">
+                    <h2>執行說明</h2>
+                    <div class="header-controls">
+                        <button id="prev-btn" onclick="prevStep()">上一步</button>
+                        <button id="next-btn" onclick="nextStep()">下一步</button>
+                        <button id="reset-btn" onclick="reset()">重置</button>
+                    </div>
+                </div>
+                <div id="explanation">點擊「下一步」開始執行程式。</div>
+            </div>
+            <div class="bottom-right-layout">
+                <div class="panel" id="pattern-panel">
+                    <div class="panel-header">
+                        <h2>圖案</h2>
+                    </div>
+                    <table class="pattern-grid" id="output-grid">
+                        <tr><td></td><td></td><td></td></tr>
+                        <tr><td></td><td></td><td></td></tr>
+                        <tr><td></td><td></td><td></td></tr>
+                    </table>
+                </div>
+                <div class="panel" id="variables-panel">
+                    <div class="panel-header">
+                        <h2>變數</h2>
+                    </div>
+                    <div class="state-vars">
+                        <div class="state-var"><span class="label">迴圈變數 i</span><span class="value" id="val-i">?</span></div>
+                        <div class="state-var"><span class="label">位置 R</span><span class="value" id="val-r">?</span></div>
+                        <div class="state-var"><span class="label">位置 C</span><span class="value" id="val-c">?</span></div>
+                        <div class="state-var"><span class="label">方向 dir</span><span class="value" id="val-dir">?</span></div>
+                        <div class="state-var"><span class="label">方向增量 DR</span><span class="value" id="val-dr">?</span></div>
+                        <div class="state-var"><span class="label">方向增量 DC</span><span class="value" id="val-dc">?</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- State Management ---
+    let currentState;
+    let historyStack = [];
+
+    const PHASES = {
+        INIT: 'INIT',
+        START_LOOP: 'START_LOOP',
+        PLACE_NUMBER: 'PLACE_NUMBER',
+        DETERMINE_DR_DC: 'DETERMINE_DR_DC',
+        CHECK_MOVE: 'CHECK_MOVE',
+        TURN: 'TURN',
+        MOVE: 'MOVE',
+        END_LOOP: 'END_LOOP',
+        DONE: 'DONE'
+    };
+
+    function getInitialState() {
+        return {
+            phase: PHASES.INIT,
+            i: 9, // MODIFIED: Start i from 9
+            pattern: Array(4).fill(0).map(() => Array(4).fill(0)),
+            R: 0, C: 0,
+            dir: undefined,
+            DR: undefined, DC: undefined,
+            nextR: 0, nextC: 0,
+            highlightedLine: null,
+            explanation: '點擊「下一步」開始執行程式。'
+        };
+    }
+    
+    function getDirName(d) {
+        if (d === undefined) return '?';
+        return ['上', '右', '下', '左'][d];
+    }
+    
+    function reset() {
+        historyStack = [];
+        currentState = getInitialState();
+        updateAllUI();
+        // Manually trigger the first step without saving it to history
+        nextStep(); 
+        historyStack = []; // Clear history after the first step
+        updateAllUI(); // Re-update UI to disable prev button initially
+    }
+
+    function prevStep() {
+        if (historyStack.length > 0) {
+            currentState = historyStack.pop();
+            updateAllUI();
+        }
+    }
+
+    function updateAllUI() {
+        // Highlight line
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (currentState.highlightedLine) {
+            document.getElementById(currentState.highlightedLine).classList.add('highlight');
+        }
+
+        // Update explanation
+        document.getElementById('explanation').innerHTML = currentState.explanation;
+
+        // Update variables
+        // MODIFIED: Check for i < 1 to end
+        document.getElementById('val-i').textContent = currentState.i < 1 ? '結束' : (currentState.i || '?');
+        document.getElementById('val-r').textContent = currentState.R || '?';
+        document.getElementById('val-c').textContent = currentState.C || '?';
+        document.getElementById('val-dir').textContent = `${currentState.dir !== undefined ? currentState.dir : '?'} (${getDirName(currentState.dir)})`;
+        document.getElementById('val-dr').textContent = currentState.DR !== undefined ? currentState.DR : '?';
+        document.getElementById('val-dc').textContent = currentState.DC !== undefined ? currentState.DC : '?';
+        
+        // Update grid
+        const gridCells = document.querySelectorAll('#output-grid td');
+        gridCells.forEach(cell => {
+            cell.textContent = '';
+            cell.className = '';
+        });
+        for (let r = 1; r <= 3; r++) {
+            for (let c = 1; c <= 3; c++) {
+                const cell = document.querySelector(`#output-grid tr:nth-child(${r}) td:nth-child(${c})`);
+                if (currentState.pattern[r][c] !== 0) {
+                    cell.textContent = currentState.pattern[r][c];
+                }
+                if (currentState.R === r && currentState.C === c) {
+                    cell.classList.add('current-pos');
+                }
+                if (currentState.phase === PHASES.CHECK_MOVE && currentState.nextR === r && currentState.nextC === c) {
+                     cell.classList.add('probe-pos');
+                }
+            }
+        }
+
+        // Update buttons
+        document.getElementById('prev-btn').disabled = historyStack.length === 0;
+        document.getElementById('next-btn').disabled = currentState.phase === PHASES.DONE;
+    }
+
+
+    function nextStep() {
+        // Save current state for 'previous' functionality
+        historyStack.push(JSON.parse(JSON.stringify(currentState)));
+
+        const state = currentState; // Use a shorthand
+        
+        switch (state.phase) {
+            case PHASES.INIT:
+                state.highlightedLine = 'line-1';
+                state.explanation = '初始化一個 3x3 的 pattern 陣列，所有值為 0。';
+                state.phase = 'SET_R';
+                break;
+            
+            case 'SET_R':
+                state.highlightedLine = 'line-2';
+                state.R = 1;
+                state.explanation = '設定起始位置的行 R 為 1。';
+                state.phase = 'SET_C';
+                break;
+
+            case 'SET_C':
+                state.highlightedLine = 'line-3';
+                state.C = 1;
+                state.explanation = '設定起始位置的列 C 為 1。目前位置在 (1, 1)。';
+                state.phase = 'SET_DR';
+                break;
+            
+            case 'SET_DR':
+                state.highlightedLine = 'line-4';
+                state.DR = 1;
+                state.explanation = '設定初始垂直移動增量 DR 為 1。';
+                state.phase = 'SET_DC';
+                break;
+
+            case 'SET_DC':
+                state.highlightedLine = 'line-5';
+                state.DC = 0;
+                state.explanation = '設定初始水平移動增量 DC 為 0。';
+                state.phase = 'SET_DIR';
+                break;
+
+            case 'SET_DIR':
+                state.highlightedLine = 'line-6';
+                state.dir = 2;
+                state.explanation = `設定初始方向 dir 為 2 (${getDirName(state.dir)})。`;
+                state.phase = PHASES.START_LOOP;
+                break;
+
+            case PHASES.START_LOOP:
+                // MODIFIED: Check if i is less than 1 to terminate
+                if (state.i < 1) {
+                    state.phase = PHASES.DONE;
+                    nextStep(); // Recurse to enter DONE phase
+                    return;
+                }
+                state.highlightedLine = 'line-7';
+                state.explanation = `進入迴圈，i 從 9 開始遞減。目前 i = ${state.i}。`;
+                state.phase = PHASES.PLACE_NUMBER;
+                break;
+
+            case PHASES.PLACE_NUMBER:
+                state.highlightedLine = 'line-8';
+                state.pattern[state.R][state.C] = state.i;
+                state.explanation = `在目前位置 (${state.R}, ${state.C}) 填入數字 ${state.i}。`;
+                state.phase = PHASES.DETERMINE_DR_DC;
+                break;
+            
+            case PHASES.DETERMINE_DR_DC:
+                 // MODIFIED: Last number to be placed is 1, not 9
+                 if (state.i === 1) { 
+                    state.phase = PHASES.END_LOOP;
+                    nextStep(); // Recurse
+                    return;
+                }
+                
+                if (state.dir === 0) { state.DR = -1; state.DC = 0; state.highlightedLine = 'line-12'; }
+                else if (state.dir === 1) { state.DR = 0; state.DC = 1; state.highlightedLine = 'line-15'; }
+                else if (state.dir === 2) { state.DR = 1; state.DC = 0; state.highlightedLine = 'line-18'; }
+                else { state.DR = 0; state.DC = -1; state.highlightedLine = 'line-21'; }
+                
+                state.explanation = `根據目前方向 dir=${state.dir} (${getDirName(state.dir)})，設定移動向量為 (DR=${state.DR}, DC=${state.DC})。`;
+                state.phase = PHASES.CHECK_MOVE;
+                break;
+
+            case PHASES.CHECK_MOVE:
+                state.highlightedLine = 'line-9';
+                state.nextR = state.R + state.DR;
+                state.nextC = state.C + state.DC;
+                
+                let expl = `檢查下一個位置 (${state.nextR}, ${state.nextC}) 是否有效。\n\n`;
+                let conditionMet = false;
+                let reason = '';
+
+                let res1 = state.nextR < 1;
+                expl += `1. 是否向上越界 (R+DR < 1) ?\n   ${state.nextR} < 1 為 <strong class="${res1}">${res1}</strong>\n`;
+                if (res1) { conditionMet = true; reason = '向上越界'; }
+
+                let res2 = state.nextR > 3;
+                if (!conditionMet) {
+                    expl += `2. 是否向下越界 (R+DR > 3) ?\n   ${state.nextR} > 3 為 <strong class="${res2}">${res2}</strong>\n`;
+                    if (res2) { conditionMet = true; reason = '向下越界'; }
+                }
+
+                let res3 = state.nextC < 1;
+                if (!conditionMet) {
+                    expl += `3. 是否向左越界 (C+DC < 1) ?\n   ${state.nextC} < 1 為 <strong class="${res3}">${res3}</strong>\n`;
+                    if (res3) { conditionMet = true; reason = '向左越界'; }
+                }
+
+                let res4 = state.nextC > 3;
+                if (!conditionMet) {
+                    expl += `4. 是否向右越界 (C+DC > 3) ?\n   ${state.nextC} > 3 為 <strong class="${res4}">${res4}</strong>\n`;
+                    if (res4) { conditionMet = true; reason = '向右越界'; }
+                }
+                
+                let res5 = false;
+                if (!conditionMet) {
+                    const nextVal = state.pattern[state.nextR][state.nextC];
+                    res5 = nextVal !== 0;
+                    expl += `5. 是否已被佔據 (pattern[${state.nextR},${state.nextC}] != 0) ?\n   ${nextVal} != 0 為 <strong class="${res5}">${res5}</strong>\n`;
+                    if (res5) { conditionMet = true; reason = `已被數字 ${nextVal} 佔據`; }
+                }
+
+                if (conditionMet) {
+                    expl += `\n結論：條件成立 (因為 ${reason})，將進行轉向。`;
+                    state.phase = PHASES.TURN;
+                } else {
+                    expl += `\n結論：所有條件均不成立，移動有效，將更新位置。`;
+                    state.phase = PHASES.MOVE;
+                }
+                state.explanation = expl;
+                break;
+
+            case PHASES.TURN:
+                state.highlightedLine = 'line-10';
+                state.dir = (state.dir - 1 + 4) % 4; // JS friendly modulo
+                state.explanation = `進行轉向 (dir-1)，新的方向為 dir=${state.dir} (${getDirName(state.dir)})。\n將重新決定移動向量並檢查。`;
+                state.phase = PHASES.DETERMINE_DR_DC;
+                break;
+
+            case PHASES.MOVE:
+                state.highlightedLine = 'line-23';
+                state.R += state.DR;
+                state.C += state.DC;
+                state.explanation = `移動到新位置 (${state.R}, ${state.C})。`;
+                state.phase = PHASES.END_LOOP;
+                break;
+
+            case PHASES.END_LOOP:
+                state.i--; // MODIFIED: Decrement i
+                state.highlightedLine = null;
+                state.explanation = '完成本次迴圈，i 減 1，準備下一次。';
+                state.phase = PHASES.START_LOOP;
+                break;
+                
+            case PHASES.DONE:
+                state.highlightedLine = null;
+                state.explanation = '程式執行完畢。';
+                break;
+        }
+        updateAllUI();
+    }
+
+    // Initialize on load
+    window.onload = reset;
+</script>
+
+</body>
+</html>
