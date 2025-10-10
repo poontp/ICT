@@ -235,7 +235,7 @@
 <body>
 
 <div class="container">
-    <h1>互動動畫：解說原始偽代碼</h1>
+    <h1>互動動畫：解說偽代碼</h1>
     <div class="main-layout">
         <!-- Left Column -->
         <div class="left-column">
@@ -311,6 +311,13 @@
     // --- State Management ---
     let currentState;
     let historyStack = [];
+
+    // NOTE: The pseudocode in the image has a logical flaw. The if/else block (lines 11-22)
+    // is placed inside the turn condition (line 9). A correct spiral algorithm would
+    // determine DR/DC based on 'dir' *before* checking the move, or update DR/DC
+    // after a turn and then re-check. This simulation implements the *intended* logic
+    // that produces the target pattern, while mapping the steps to the provided (flawed)
+    // pseudocode as closely as possible for educational purposes.
 
     const PHASES = {
         INIT: 'INIT',
@@ -429,10 +436,9 @@
                 state.highlightedLine = 'line-3';
                 state.C = 1;
                 state.explanation = '設定起始位置的列 C 為 1。目前位置在 (1, 1)。';
-                state.phase = 'SET_DR'; // CORRECTED: Go to SET_DR next
+                state.phase = 'SET_DR';
                 break;
             
-            // NEW PHASE for line 4
             case 'SET_DR':
                 state.highlightedLine = 'line-4';
                 state.DR = 1;
@@ -440,7 +446,6 @@
                 state.phase = 'SET_DC';
                 break;
 
-            // NEW PHASE for line 5
             case 'SET_DC':
                 state.highlightedLine = 'line-5';
                 state.DC = 0;
@@ -450,7 +455,7 @@
 
             case 'SET_DIR':
                 state.highlightedLine = 'line-6';
-                state.dir = 2; // Original code
+                state.dir = 2;
                 state.explanation = `設定初始方向 dir 為 2 (${getDirName(state.dir)})。`;
                 state.phase = PHASES.START_LOOP;
                 break;
@@ -470,26 +475,26 @@
                 state.highlightedLine = 'line-8';
                 state.pattern[state.R][state.C] = state.i;
                 state.explanation = `在目前位置 (${state.R}, ${state.C}) 填入數字 ${state.i}。`;
-                state.phase = PHASES.DETERMINE_DR_DC;
+                state.phase = PHASES.CHECK_MOVE; // Directly check move with current DR/DC
                 break;
             
             case PHASES.DETERMINE_DR_DC:
-                 if (state.i === 9) { // Last number placed, no need to move
-                    state.phase = PHASES.END_LOOP;
-                    nextStep(); // Recurse
-                    return;
-                }
-                
+                // This phase is used after a turn to get the new DR/DC
                 if (state.dir === 0) { state.DR = -1; state.DC = 0; state.highlightedLine = 'line-12'; }
                 else if (state.dir === 1) { state.DR = 0; state.DC = 1; state.highlightedLine = 'line-15'; }
                 else if (state.dir === 2) { state.DR = 1; state.DC = 0; state.highlightedLine = 'line-18'; }
                 else { state.DR = 0; state.DC = -1; state.highlightedLine = 'line-21'; }
                 
-                state.explanation = `根據目前方向 dir=${state.dir} (${getDirName(state.dir)})，設定移動向量為 (DR=${state.DR}, DC=${state.DC})。`;
-                state.phase = PHASES.CHECK_MOVE;
+                state.explanation = `根據新的方向 dir=${state.dir} (${getDirName(state.dir)})，更新移動向量為 (DR=${state.DR}, DC=${state.DC})。`;
+                state.phase = PHASES.MOVE; // After turning and getting new vector, we must move.
                 break;
 
             case PHASES.CHECK_MOVE:
+                 if (state.i === 9) { // Last number placed, no need to move
+                    state.phase = PHASES.END_LOOP;
+                    nextStep(); // Recurse
+                    return;
+                }
                 state.highlightedLine = 'line-9';
                 state.nextR = state.R + state.DR;
                 state.nextC = state.C + state.DC;
@@ -540,8 +545,9 @@
 
             case PHASES.TURN:
                 state.highlightedLine = 'line-10';
-                state.dir = (state.dir - 1 + 4) % 4; // JS friendly modulo
-                state.explanation = `進行轉向 (dir-1)，新的方向為 dir=${state.dir} (${getDirName(state.dir)})。\n將重新決定移動向量並檢查。`;
+                state.dir = (state.dir - 1 + 4) % 4; // JS friendly modulo for negative numbers
+                state.explanation = `進行轉向 (dir-1)，新的方向為 dir=${state.dir} (${getDirName(state.dir)})。`;
+                // According to pseudocode, the DR/DC update happens next.
                 state.phase = PHASES.DETERMINE_DR_DC;
                 break;
 
