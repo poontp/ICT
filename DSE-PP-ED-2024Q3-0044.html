@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSE ICT 2024 試卷 2D 互動題解 - 第 3 題</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-color: #dee2e6;
+            --highlight-bg: #fffbe6;
+            --font-family: 'Helvetica Neue', 'Arial', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            --box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--box-shadow);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        h2 {
+            color: var(--dark-color);
+            border-bottom-color: var(--border-color);
+        }
+        
+        h3 {
+            color: var(--secondary-color);
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+        }
+
+        .question-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .step-by-step-container {
+            display: flex;
+            gap: 25px;
+            margin-top: 10px;
+            align-items: flex-start; /* This is the key fix */
+        }
+        .step-by-step-container .left-panel {
+            flex: 0 1 auto; /* Panel width shrinks to content */
+        }
+        .step-by-step-container .right-panel {
+            flex: 1 1 55%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .pseudocode {
+            background-color: #f0f0f0;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            border-radius: 4px;
+            height: 100%;
+        }
+        
+        .pseudocode-line {
+            padding: 0;
+            margin: 0;
+            line-height: 1.0;
+            transition: background-color 0.3s;
+            border-radius: 3px;
+        }
+        
+        .pseudocode .line-num {
+            color: var(--secondary-color);
+            display: inline-block;
+            width: 30px;
+            text-align: right;
+            margin-right: 15px;
+        }
+        
+        .pseudocode-line.highlight-line {
+            background-color: var(--highlight-bg);
+        }
+
+        .pseudocode .filled-blank {
+            background-color: #fff0b3;
+            color: var(--danger-color);
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 3px;
+            border: 1px solid #f0ad4e;
+        }
+
+        .array-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+            align-items: center;
+        }
+        
+        .array-cell {
+            border: 1px solid var(--dark-color);
+            width: 45px;
+            height: 45px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background-color: #fff;
+            position: relative;
+            transition: background-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .array-cell .value { 
+            font-size: 1.1em;
+            font-weight: bold; 
+        }
+        .array-cell .index { font-size: 0.8em; color: var(--secondary-color); }
+        .array-cell.empty { background-color: #e9ecef; border-style: dashed; }
+        .highlight-compare { background-color: var(--warning-color); transform: scale(1.1); }
+        .highlight-swap { background-color: var(--danger-color); color: white; transform: scale(1.1); }
+        .highlight-final { background-color: var(--success-color); color: white; }
+        .highlight-source { background-color: #17a2b8; color: white; }
+
+        .explanation {
+            background-color: #e9f7fd;
+            border: 1px solid #bce8f1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            min-height: 70px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: var(--secondary-color); cursor: not-allowed; }
+
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        #mysort-button-container {
+             margin-top: 0;
+             margin-bottom: 15px;
+        }
+
+        #ms-button-container {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin: 0; }
+        .table-wrapper p { margin-top: 0; margin-bottom: 10px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: center; }
+        th { background-color: #e9ecef; }
+        td.answer-cell { background-color: #d4edda; font-weight: bold; color: #155724; transition: background-color 0.5s; }
+        
+        /* Styles for 3(b) layout */
+        .ms-visual-container {
+            overflow-x: auto;
+            padding: 5px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .ms-scroll-wrapper {
+            display: inline-block;
+            min-width: 100%;
+        }
+        .ms-array-row {
+            display: flex;
+            gap: 5px;
+        }
+        .ms-k-index-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 2px;
+        }
+        .k-index-label {
+            width: 45px;
+            height: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            font-family: 'Courier New', monospace;
+            color: var(--secondary-color);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .ms-pointer-row {
+            position: relative;
+            height: 30px;
+            margin-top: 5px;
+        }
+        .pointer { position: absolute; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; transition: left 0.5s ease-in-out; }
+        .pointer.i-ptr { border-top: 15px solid var(--danger-color); } /* Points up */
+        .pointer.j-ptr { border-top: 15px solid var(--success-color); } /* Points up */
+        .pointer-label { 
+            position: absolute; 
+            top: 18px; /* Positioned below the pointer's tip */
+            font-weight: bold; 
+            transform: translateX(-50%); 
+            transition: left 0.5s ease-in-out; 
+        }
+        .label-i { color: var(--danger-color); }
+        .label-j { color: var(--success-color); }
+
+        #ms-variables-display {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px 10px;
+            background-color: #f0f0f0;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--secondary-color);
+        }
+        .variable-box {
+            background-color: #fff;
+            border: 1px solid var(--secondary-color);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .step-by-step-container { flex-direction: column; }
+            .array-cell { width: 38px; height: 38px; }
+            .array-cell .value { font-size: 0.9em; }
+            .array-cell .index { font-size: 0.7em; }
+            .k-index-label { width: 38px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>DSE ICT 2024 試卷 2D 互動題解 - 第 3 題</h1>
+
+        <!-- Question 3(a) -->
+        <div class="question-section">
+            <h2>第 3(a) 題：排序演算法 MySort</h2>
+            <h3>(i) 以下列 C 的初始內容執行 MySort：</h3>
+            <div class="step-by-step-container">
+                <div class="left-panel">
+                    <div class="pseudocode">
+                        <div class="pseudocode-line" id="ps-line-1"><span class="line-num">1</span>MySort</div>
+                        <div class="pseudocode-line" id="ps-line-2"><span class="line-num">2</span>&nbsp;&nbsp;設 i 由 1 至 n 執行</div>
+                        <div class="pseudocode-line" id="ps-line-3"><span class="line-num">3</span>&nbsp;&nbsp;&nbsp;&nbsp;設 j 由 1 至 n-i 執行</div>
+                        <div class="pseudocode-line" id="ps-line-4"><span class="line-num">4</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;如果 C[j] > C[j+1] 則</div>
+                        <div class="pseudocode-line" id="ps-line-5"><span class="line-num">5</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;temp ← C[j+1]</div>
+                        <div class="pseudocode-line" id="ps-line-6"><span class="line-num">6</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;C[j+1] ← C[j]</div>
+                        <div class="pseudocode-line" id="ps-line-7"><span class="line-num">7</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;C[j] ← temp</div>
+                        <div class="pseudocode-line" id="ps-line-8"><span class="line-num">8</span>&nbsp;&nbsp;&nbsp;&nbsp;輸出 '外循環：', i</div>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <div class="table-wrapper">
+                        <p>填寫首兩次執行第 8 行後 C[1] 和 C[2] 的內容。</p>
+                        <table id="mysort-table">
+                            <thead><tr><th></th><th>i</th><th>C[1]</th><th>C[2]</th></tr></thead>
+                            <tbody>
+                                <tr><td>第一次</td><td class="answer-cell" id="mysort-r1-i"></td><td class="answer-cell" id="mysort-r1-c1"></td><td class="answer-cell" id="mysort-r1-c2"></td></tr>
+                                <tr><td>第二次</td><td class="answer-cell" id="mysort-r2-i"></td><td class="answer-cell" id="mysort-r2-c1"></td><td class="answer-cell" id="mysort-r2-c2"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="button-container" id="mysort-button-container">
+                        <button id="prev-mysort-btn">上一步</button>
+                        <button id="next-mysort-btn">下一步</button>
+                        <button id="reset-mysort-btn">重設</button>
+                    </div>
+                    <p style="margin-top: 0;"><strong>陣列 C 狀態:</strong></p>
+                    <div class="array-container" id="mysort-array-container"></div>
+                    <div class="explanation" id="mysort-explanation"></div>
+                </div>
+            </div>
+            <h3 style="margin-top: 40px;">(ii) MySort 是什麼類型的排序演算法？</h3>
+            <div class="explanation"><p><strong>答案：冒泡排序法 (Bubble Sort)</strong></p><p><strong>解釋：</strong>這個演算法的特徵是重複地遍歷要排序的數列，一次比較兩個相鄰的元素，如果它們的順序錯誤就把它們交換過來。這個過程就像氣泡從水底冒上來一樣，每一輪外循環（變數 `i`）都會將當前未排序部分中最大的元素「冒泡」到其最終位置。這是冒泡排序法的典型實現方式。</p></div>
+        </div>
+
+        <!-- Question 3(b) -->
+        <div class="question-section">
+            <h2>第 3(b) 題：合併演算法 MS</h2>
+            <p>羅珊編寫另一個排序程式 MS，將 A 和 B 這兩個已排序的陣列合併，並將它們儲存在 A 內。m 和 n 分別是 A 和 B 內的元素數目。i 和 j 是整數變量。</p>
+            <h3>推理過程</h3>
+            <div class="explanation">
+                 <p>我們來分析題目給的例子來推導演算法邏輯：</p>
+                <ul>
+                    <li><strong>初始狀態：</strong>`A` 有 `m=6` 個元素，`B` 有 `n=3` 個元素。`i=6`, `j=3`。這表示 `i` 和 `j` 指向各自陣列的最後一個元素。合併後的陣列需要 `m+n = 9` 個空間，儲存在 `A` 中。</li>
+                    <li><strong>循環條件 `當 j > 0`：</strong>這意味著只要陣列 B 中還有未處理的元素，循環就會繼續。</li>
+                    <li><strong>判斷條件 `如果 (i > 0) AND (A[i] > B[j])`：</strong>這個複合條件非常關鍵。
+                        <ul>
+                            <li>它首先檢查 `i > 0`，確保陣列 A 中還有元素可以比較。</li>
+                            <li>如果 A 還有元素，它才比較 `A[i]` 和 `B[j]` 的大小。</li>
+                            <li>如果 A 的元素已經用完 (`i` 變成 0)，這個 `if` 條件就會為假，程式會直接跳到 `else` 部分，將 B 中剩餘的元素逐一填入。</li>
+                        </ul>
+                    </li>
+                    <li><strong>結論：</strong>這是一個「從後往前」的合併演算法。它以陣列 B 是否處理完畢為循環終止條件，並在循環中安全地處理了陣列 A 可能會先被處理完的情況。</li>
+                </ul>
+            </div>
+            
+            <div class="step-by-step-container">
+                <div class="left-panel">
+                    <h3>MS 的偽代碼</h3>
+                    <div class="pseudocode" id="ms-pseudocode-container">
+                        <div class="pseudocode-line" id="ms-ps-line-1"><span class="line-num">1</span>MS</div>
+                        <div class="pseudocode-line" id="ms-ps-line-2"><span class="line-num">2</span>&nbsp;&nbsp;i ← m</div>
+                        <div class="pseudocode-line" id="ms-ps-line-3"><span class="line-num">3</span>&nbsp;&nbsp;j ← n</div>
+                        <div class="pseudocode-line" id="ms-ps-line-4"><span class="line-num">4</span>&nbsp;&nbsp;當 <span class="filled-blank">j > 0</span> 執行</div>
+                        <div class="pseudocode-line" id="ms-ps-line-5"><span class="line-num">5</span>&nbsp;&nbsp;&nbsp;&nbsp;如果 (i > 0) AND (A[i] > B[j]) 則</div>
+                        <div class="pseudocode-line" id="ms-ps-line-6"><span class="line-num">6</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="filled-blank">A[i+j] ← A[i]</span></div>
+                        <div class="pseudocode-line" id="ms-ps-line-7"><span class="line-num">7</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="filled-blank">i ← i - 1</span></div>
+                        <div class="pseudocode-line" id="ms-ps-line-8"><span class="line-num">8</span>&nbsp;&nbsp;&nbsp;&nbsp;否則</div>
+                        <div class="pseudocode-line" id="ms-ps-line-9"><span class="line-num">9</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="filled-blank">A[i+j] ← B[j]</span></div>
+                        <div class="pseudocode-line" id="ms-ps-line-10"><span class="line-num">10</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="filled-blank">j ← j - 1</span></div>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <h3>互動演示</h3>
+                    <p style="margin-top: 10px;"><strong>初始狀態</strong></p>
+                    <div class="button-container" id="ms-button-container">
+                        <button id="prev-ms-btn">上一步</button>
+                        <button id="next-ms-btn">下一步</button>
+                        <button id="reset-ms-btn">重設</button>
+                    </div>
+                    <div id="ms-variables-display"></div>
+                    <div class="ms-visual-container">
+                        <div class="ms-scroll-wrapper">
+                            <p style="margin: 0 0 5px 0;"><strong>陣列 A:</strong></p>
+                            <div class="ms-k-index-row" id="ms-k-indices-a"></div>
+                            <div class="ms-array-row" id="ms-array-a-container"></div>
+                            <div class="ms-pointer-row" id="ms-a-pointers"></div>
+                            <div style="height: 20px;"></div>
+                            <p style="margin: 0 0 5px 0;"><strong>陣列 B:</strong></p>
+                            <div class="ms-k-index-row" id="ms-k-indices-b"></div>
+                            <div class="ms-array-row" id="ms-array-b-container"></div>
+                            <div class="ms-pointer-row" id="ms-b-pointers"></div>
+                        </div>
+                    </div>
+                    <div class="explanation" id="ms-explanation"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Logic for Question 3(a) ---
+        const mysortArrayContainer = document.getElementById('mysort-array-container');
+        const mysortExplanation = document.getElementById('mysort-explanation');
+        const prevMySortBtn = document.getElementById('prev-mysort-btn');
+        const nextMySortBtn = document.getElementById('next-mysort-btn');
+        const resetMySortBtn = document.getElementById('reset-mysort-btn');
+        const initialMySortData = [36, 29, 18, 55];
+        const mysort_n = initialMySortData.length;
+        let mysortSteps = [];
+        let currentMySortStep = 0;
+
+        function generateMySortSteps() {
+            const steps = [];
+            let data = [...initialMySortData];
+            steps.push({ arrayState: [...data], explanation: "這是陣列 C 的初始狀態。點擊「下一步」開始執行。", highlights: [], table: {}, line: null });
+            for (let i = 1; i <= 2; i++) {
+                steps.push({ arrayState: [...data], explanation: `<b>外循環開始：i = ${i}</b>。`, highlights: [], table: {}, line: 2 });
+                for (let j = 1; j <= mysort_n - i; j++) {
+                    steps.push({ arrayState: [...data], explanation: `內循環：j = ${j}。`, highlights: [], table: {}, line: 3 });
+                    steps.push({ arrayState: [...data], explanation: `比較 C[${j}] (${data[j-1]}) 和 C[${j+1}] (${data[j]})。`, highlights: [{ index: j, type: 'compare' }, { index: j + 1, type: 'compare' }], table: {}, line: 4 });
+                    if (data[j - 1] > data[j]) {
+                        const temp = data[j];
+                        steps.push({ arrayState: [...data], explanation: `因為 ${data[j-1]} > ${data[j]}，條件成立。將 C[${j+1}] 的值 (${temp}) 存入 temp 變數。`, highlights: [{ index: j+1, type: 'swap' }], table: {}, line: 5 });
+                        let tempData = [...data];
+                        tempData[j] = tempData[j-1];
+                        steps.push({ arrayState: tempData, explanation: `將 C[${j}] 的值 (${tempData[j]}) 複製到 C[${j+1}]。`, highlights: [{ index: j, type: 'swap' }, { index: j+1, type: 'swap' }], table: {}, line: 6 });
+                        tempData[j-1] = temp;
+                        data = tempData;
+                        steps.push({ arrayState: [...data], explanation: `將 temp 的值 (${temp}) 複製到 C[${j}]。交換完成。`, highlights: [{ index: j, type: 'swap' }, { index: j+1, type: 'swap' }], table: {}, line: 7 });
+                    } else {
+                        steps.push({ arrayState: [...data], explanation: `因為 ${data[j-1]} <= ${data[j]}，條件不成立，無需交換。`, highlights: [], table: {}, line: 4 });
+                    }
+                }
+                const tableData = { [`r${i}`]: { i: i, c1: data[0], c2: data[1] } };
+                steps.push({ arrayState: [...data], explanation: `<b>外循環 i = ${i} 結束。</b><br>執行偽代碼第 8 行，輸出結果並填寫表格。`, highlights: [{ index: mysort_n - i + 1, type: 'final' }], table: tableData, line: 8 });
+            }
+            steps.push({ arrayState: [...steps[steps.length-1].arrayState], explanation: "首兩次外循環已完成。點擊「重設」可重新開始。", highlights: [...steps[steps.length-1].highlights], table: {...steps[steps.length-1].table}, line: null });
+            return steps;
+        }
+        function renderMySortStep(stepIndex) {
+            const step = mysortSteps[stepIndex];
+            mysortArrayContainer.innerHTML = '';
+            step.arrayState.forEach((val, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'array-cell';
+                cell.id = `mysort-cell-${index + 1}`;
+                cell.innerHTML = `<span class="value">${val}</span><span class="index">C[${index + 1}]</span>`;
+                mysortArrayContainer.appendChild(cell);
+            });
+            document.querySelectorAll('#mysort-array-container .array-cell').forEach(c => c.classList.remove('highlight-compare', 'highlight-swap', 'highlight-final'));
+            step.highlights.forEach(h => document.getElementById(`mysort-cell-${h.index}`).classList.add(`highlight-${h.type}`));
+            document.querySelectorAll('.pseudocode-line').forEach(line => line.classList.remove('highlight-line'));
+            if(step.line) { const lineEl = document.getElementById(`ps-line-${step.line}`); if (lineEl) lineEl.classList.add('highlight-line'); }
+            mysortExplanation.innerHTML = step.explanation;
+            clearMySortTable();
+            for (let i = 0; i <= stepIndex; i++) {
+                const pastStep = mysortSteps[i];
+                if (pastStep.table.r1) {
+                    document.getElementById('mysort-r1-i').textContent = pastStep.table.r1.i;
+                    document.getElementById('mysort-r1-c1').textContent = pastStep.table.r1.c1;
+                    document.getElementById('mysort-r1-c2').textContent = pastStep.table.r1.c2;
+                }
+                if (pastStep.table.r2) {
+                    document.getElementById('mysort-r2-i').textContent = pastStep.table.r2.i;
+                    document.getElementById('mysort-r2-c1').textContent = pastStep.table.r2.c1;
+                    document.getElementById('mysort-r2-c2').textContent = pastStep.table.r2.c2;
+                }
+            }
+            prevMySortBtn.disabled = stepIndex === 0;
+            nextMySortBtn.disabled = stepIndex === mysortSteps.length - 1;
+        }
+        function clearMySortTable() { ['r1-i', 'r1-c1', 'r1-c2', 'r2-i', 'r2-c1', 'r2-c2'].forEach(id => document.getElementById(`mysort-${id}`).textContent = ''); }
+        function handleNextMySort() { if (currentMySortStep < mysortSteps.length - 1) { currentMySortStep++; renderMySortStep(currentMySortStep); } }
+        function handlePrevMySort() { if (currentMySortStep > 0) { currentMySortStep--; renderMySortStep(currentMySortStep); } }
+        function resetMySort() { mysortSteps = generateMySortSteps(); currentMySortStep = 0; renderMySortStep(0); }
+        prevMySortBtn.addEventListener('click', handlePrevMySort);
+        nextMySortBtn.addEventListener('click', handleNextMySort);
+        resetMySortBtn.addEventListener('click', resetMySort);
+
+        // --- Logic for Question 3(b) ---
+        const msKIndicesA = document.getElementById('ms-k-indices-a');
+        const msArrayAContainer = document.getElementById('ms-array-a-container');
+        const msAPointers = document.getElementById('ms-a-pointers');
+        const msKIndicesB = document.getElementById('ms-k-indices-b');
+        const msArrayBContainer = document.getElementById('ms-array-b-container');
+        const msBPointers = document.getElementById('ms-b-pointers');
+        const msExplanation = document.getElementById('ms-explanation');
+        const msVariablesDisplay = document.getElementById('ms-variables-display');
+        const prevMsBtn = document.getElementById('prev-ms-btn');
+        const nextMsBtn = document.getElementById('next-ms-btn');
+        const resetMsBtn = document.getElementById('reset-ms-btn');
+        
+        const initialA = [3, 6, 10, 31, 35, 42];
+        const initialB = [2, 4, 40];
+        const ms_m = initialA.length;
+        const ms_n = initialB.length;
+        
+        let msSteps = [];
+        let currentMsStep = 0;
+
+        function generateMsSteps() {
+            const steps = [];
+            let currentA = [...initialA];
+            currentA.length = ms_m + ms_n;
+            let i = ms_m;
+            let j = ms_n;
+
+            steps.push({
+                arrayState: [...currentA], i: i, j: j,
+                explanation: "演算法開始。點擊「下一步」執行。",
+                highlights: [], line: null
+            });
+
+            while (j > 0) {
+                steps.push({
+                    arrayState: [...currentA], i: i, j: j,
+                    explanation: `檢查循環條件 (j > 0)。因為 j=${j}，條件成立。`,
+                    highlights: [], line: 4
+                });
+
+                const compareHighlights = [];
+                if (i > 0) compareHighlights.push({ array: 'a', index: i, type: 'compare' });
+                if (j > 0) compareHighlights.push({ array: 'b', index: j, type: 'compare' });
+                
+                let explanationText = "執行判斷：";
+                if (i > 0) {
+                    explanationText += `比較 A[${i}] (${initialA[i-1]}) 和 B[${j}] (${initialB[j-1]})。`;
+                } else {
+                    explanationText += `陣列 A 已處理完畢 (i=0)。`;
+                }
+
+                steps.push({
+                    arrayState: [...currentA], i: i, j: j,
+                    explanation: explanationText,
+                    highlights: compareHighlights, line: 5
+                });
+
+                const targetIndex = i + j;
+                if (i > 0 && initialA[i - 1] > initialB[j - 1]) {
+                    steps.push({
+                        arrayState: [...currentA], i: i, j: j,
+                        explanation: `因為 A[${i}] > B[${j}]，將 A[${i}] 的值 (${initialA[i-1]}) 複製到 A[${targetIndex}]。`,
+                        highlights: [
+                            { array: 'a', index: i, type: 'source' },
+                            { array: 'a', index: targetIndex, type: 'final' }
+                        ], line: 6
+                    });
+                    currentA[targetIndex - 1] = initialA[i - 1];
+                    i--;
+                    steps.push({
+                        arrayState: [...currentA], i: i, j: j,
+                        explanation: `複製完成。更新 i ← ${i}。`,
+                        highlights: [], line: 7
+                    });
+                } else {
+                    let elseExplanation = `因為 A[${i}] <= B[${j}]，將 B[${j}] 的值 (${initialB[j-1]}) 複製到 A[${targetIndex}]。`;
+                    if (i <= 0) {
+                        elseExplanation = `因為 i=0，直接將 B[${j}] 的值 (${initialB[j-1]}) 複製到 A[${targetIndex}]。`;
+                    }
+                    steps.push({
+                        arrayState: [...currentA], i: i, j: j,
+                        explanation: elseExplanation,
+                        highlights: [
+                            { array: 'b', index: j, type: 'source' },
+                            { array: 'a', index: targetIndex, type: 'final' }
+                        ], line: 9
+                    });
+                    currentA[targetIndex - 1] = initialB[j - 1];
+                    j--;
+                    steps.push({
+                        arrayState: [...currentA], i: i, j: j,
+                        explanation: `複製完成。更新 j ← ${j}。`,
+                        highlights: [], line: 10
+                    });
+                }
+            }
+
+            steps.push({
+                arrayState: [...currentA], i: i, j: j,
+                explanation: `檢查循環條件 (j > 0)。因為 j=${j}，條件不成立。演算法結束。`,
+                highlights: [], line: 4
+            });
+
+            return steps;
+        }
+        
+        function renderMsVariables(i, j) {
+            const targetIndexValue = (j > 0) ? i + j : '-';
+            msVariablesDisplay.innerHTML = `
+                <span>m = <span class="variable-box">${ms_m}</span></span>
+                <span>n = <span class="variable-box">${ms_n}</span></span>
+                <span>i = <span class="variable-box">${i}</span></span>
+                <span>j = <span class="variable-box">${j}</span></span>
+                <span>i+j = <span class="variable-box">${targetIndexValue}</span></span>
+            `;
+        }
+
+        function renderMsStep(stepIndex) {
+            const step = msSteps[stepIndex];
+            
+            // Render variables
+            renderMsVariables(step.i, step.j);
+
+            // Render arrays
+            msKIndicesA.innerHTML = '';
+            msArrayAContainer.innerHTML = '';
+            msKIndicesB.innerHTML = '';
+            msArrayBContainer.innerHTML = '';
+            
+            for(let k=0; k < ms_m + ms_n; k++) {
+                const kLabel = document.createElement('div');
+                kLabel.className = 'k-index-label';
+                kLabel.textContent = k + 1;
+                msKIndicesA.appendChild(kLabel);
+                const cell = document.createElement('div');
+                cell.className = 'array-cell';
+                cell.id = `ms-cell-a-${k + 1}`;
+                if (step.arrayState[k] !== undefined) { 
+                    cell.innerHTML = `<span class="value">${step.arrayState[k]}</span>`; 
+                } else { 
+                    cell.innerHTML = `<span class="value"></span>`; cell.classList.add('empty'); 
+                }
+                msArrayAContainer.appendChild(cell);
+            }
+            initialB.forEach((val, index) => {
+                const kLabel = document.createElement('div');
+                kLabel.className = 'k-index-label';
+                kLabel.textContent = index + 1;
+                msKIndicesB.appendChild(kLabel);
+                const cell = document.createElement('div');
+                cell.className = 'array-cell';
+                cell.id = `ms-cell-b-${index + 1}`;
+                cell.innerHTML = `<span class="value">${val}</span>`;
+                msArrayBContainer.appendChild(cell);
+            });
+
+            // Update pointers
+            msAPointers.innerHTML = '';
+            msBPointers.innerHTML = '';
+            if (step.i > 0) {
+                const cellA = document.getElementById(`ms-cell-a-${step.i}`);
+                if (cellA) {
+                    const relativeLeft = cellA.offsetLeft + cellA.offsetWidth / 2 - msAPointers.offsetLeft;
+                    msAPointers.innerHTML = `<div class="pointer i-ptr" style="left: ${relativeLeft - 10}px;"></div><div class="pointer-label label-i" style="left: ${relativeLeft}px;">i=${step.i}</div>`;
+                }
+            }
+            if (step.j > 0) {
+                const cellB = document.getElementById(`ms-cell-b-${step.j}`);
+                if (cellB) {
+                    const relativeLeft = cellB.offsetLeft + cellB.offsetWidth / 2 - msBPointers.offsetLeft;
+                    msBPointers.innerHTML = `<div class="pointer j-ptr" style="left: ${relativeLeft - 10}px;"></div><div class="pointer-label label-j" style="left: ${relativeLeft}px;">j=${step.j}</div>`;
+                }
+            }
+            
+            // Clear and apply highlights
+            document.querySelectorAll('.ms-visual-container .array-cell').forEach(c => c.classList.remove('highlight-compare', 'highlight-source', 'highlight-final'));
+            step.highlights.forEach(h => {
+                const cell = document.getElementById(`ms-cell-${h.array}-${h.index}`);
+                if (cell) cell.classList.add(`highlight-${h.type}`);
+            });
+
+            // Update text and line highlights
+            msExplanation.innerHTML = step.explanation;
+            document.querySelectorAll('#ms-pseudocode-container .pseudocode-line').forEach(line => line.classList.remove('highlight-line'));
+            if (step.line) {
+                const lineEl = document.getElementById(`ms-ps-line-${step.line}`);
+                if (lineEl) lineEl.classList.add('highlight-line');
+            }
+
+            // Update buttons
+            prevMsBtn.disabled = stepIndex === 0;
+            nextMsBtn.disabled = stepIndex === msSteps.length - 1;
+        }
+
+        function handleNextMs() { if (currentMsStep < msSteps.length - 1) { currentMsStep++; renderMsStep(currentMsStep); } }
+        function handlePrevMs() { if (currentMsStep > 0) { currentMsStep--; renderMsStep(currentMsStep); } }
+        function resetMS() {
+            msSteps = generateMsSteps();
+            currentMsStep = 0;
+            renderMsStep(0);
+        }
+
+        prevMsBtn.addEventListener('click', handlePrevMs);
+        nextMsBtn.addEventListener('click', handleNextMs);
+        resetMsBtn.addEventListener('click', resetMS);
+
+        window.onload = () => { resetMySort(); resetMS(); };
+        window.onresize = () => { if (msSteps.length > 0) { renderMsStep(currentMsStep); } };
+    </script>
+</body>
+</html>
