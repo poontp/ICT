@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSE ICT 試卷互動解答 (整合版)</title>
+    <style>
+        :root {
+            --primary-color: #005a9e;
+            --secondary-color: #f0f8ff;
+            --accent-color: #ffc107;
+            --text-color: #333;
+            --border-color: #ccc;
+            --answer-bg: #fffbe6;
+            --first-ptr-bg: #d9534f;
+            --queue-item-bg: #5cb85c;
+            --insert-pos-bg: #f0ad4e;
+            --unused-bg: #e9ecef;
+            --arrow-color: #e74c3c;
+            --current-node-bg: #3498db;
+            --processed-node-bg: #95a5a6;
+            --highlight-change-bg: #28a745; /* Green for highlight */
+        }
+        body {
+            font-family: 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: var(--primary-color);
+        }
+        .tab-button {
+            padding: 12px 15px;
+            cursor: pointer;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            flex-grow: 1;
+            text-align: center;
+        }
+        .tab-button:hover {
+            background-color: #007acc;
+        }
+        .tab-button.active {
+            background-color: #fff;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+            padding: 25px;
+            border-top: 1px solid var(--border-color);
+            animation: fadeIn 0.5s;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        h4 {
+            color: #333;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: var(--secondary-color);
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        code, pre {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #eee;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        pre {
+            padding: 15px;
+            overflow-x: auto;
+            background-color: var(--secondary-color);
+            border: 1px solid #ddd;
+        }
+        .answer {
+            background-color: var(--answer-bg);
+            border: 1px solid var(--accent-color);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .answer-box {
+            font-weight: bold;
+            color: #d9534f;
+            background-color: var(--answer-bg);
+            padding: 2px 6px;
+            border: 1px solid #d9534f;
+            border-radius: 4px;
+        }
+        
+        /* General Diagram Styles */
+        .step { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9; }
+        .array-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin: 20px 0; font-size: 14px; }
+        .array-cell { border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--unused-bg); transition: all 0.5s ease-in-out; overflow: hidden; }
+        .array-cell .index { background-color: var(--primary-color); color: white; padding: 5px; font-weight: bold; border-bottom: 1px solid var(--border-color); text-align: center; }
+        .array-cell .value { padding: 10px 5px; text-align: center; min-height: 30px; color: #6c757d; font-weight: bold; }
+        .array-cell.in-queue { background-color: var(--queue-item-bg); }
+        .array-cell.first-ptr { background-color: var(--first-ptr-bg); box-shadow: 0 0 10px rgba(217, 83, 79, 0.7); transform: scale(1.05); }
+        .array-cell.insert-pos { background-color: var(--insert-pos-bg); }
+        .array-cell.in-queue .value, .array-cell.first-ptr .value, .array-cell.insert-pos .value { color: white; }
+        .legend { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-color { width: 20px; height: 20px; border: 1px solid #ccc; }
+        
+        /* Linked List Animation Styles */
+        .ll-view-container {
+            position: relative;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .ll-central-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background-color: #f7f7f7;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .ll-central-controls button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .ll-central-controls button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #ll-sequence-display, #b2-status {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: var(--secondary-color);
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            min-height: 1.5em;
+            border: 1px solid var(--border-color);
+            font-weight: bold;
+        }
+        .ll-nodes-wrapper {
+            position: relative;
+            padding-top: 20px;
+            padding-bottom: 20px;
+            min-height: 150px;
+        }
+        .ll-nodes-display-anim { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+        .ll-nodes-display-static { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; padding-top: 60px; }
+        .ll-node-vis {
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            text-align: center;
+            transition: all 0.3s ease;
+            width: 100px;
+            flex-shrink: 0;
+        }
+        .ll-nodes-display-anim .ll-node-vis { animation: popIn 0.4s ease-out; }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .ll-node-vis .index { font-size: 0.8em; color: #666; padding: 2px; }
+        .ll-node-vis .song { font-weight: bold; padding: 10px 5px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .ll-node-vis .next {
+            font-family: 'Courier New', Courier, monospace;
+            padding: 8px 5px;
+            background-color: #f0f0f0;
+            transition: background-color 0.5s;
+            color: #B8860B;
+            font-weight: bold;
+        }
+        .ll-node-vis.current { border-color: var(--current-node-bg); transform: scale(1.05); box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); }
+        .ll-node-vis.processed { background-color: var(--processed-node-bg); color: white; border-color: #7f8c8d; }
+        .ll-node-vis .next.highlight-next { background-color: var(--accent-color); color: black; }
+        .ll-node-vis.highlight-new-node { border-color: var(--highlight-change-bg); box-shadow: 0 0 15px rgba(40, 167, 69, 0.7); }
+        .ll-node-vis .next.highlight-change { background-color: var(--highlight-change-bg); color: white; }
+
+        #ll-anim-svg, #ll-static-svg, #b2-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #ll-anim-svg path, #ll-static-svg path, #b2-svg path { stroke: var(--arrow-color); stroke-width: 2.5; fill: none; }
+        .ft-static-label {
+            position: absolute;
+            background: var(--first-ptr-bg);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.9em;
+            transform: translate(-50%, -150%);
+            z-index: 10;
+        }
+        .ft-static-label::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--first-ptr-bg) transparent transparent transparent;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .tabs { flex-direction: column; }
+            .tab-button { width: 100%; border-bottom: 1px solid #004b8d; }
+            .tab-content { padding: 15px; }
+            .ll-nodes-display-static, .array-container { font-size: 11px; gap: 5px; }
+            .ll-node-vis { width: auto; }
+            .ll-node-vis .song { padding: 8px 2px; font-size: 0.9em; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>DSE ICT 試卷互動解答</h1>
+    <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'q1a_i')">1(a)(i): deq 追蹤動畫</button>
+        <button class="tab-button" onclick="openTab(event, 'q1a_ii')">1(a)(ii): enq 圖文解說</button>
+        <button class="tab-button" onclick="openTab(event, 'q1a_iii')">1(a)(iii): playPL (陣列)</button>
+        <button class="tab-button" onclick="openTab(event, 'q1b_intro')">1(b): 鏈結串列動畫</button>
+        <button class="tab-button" onclick="openTab(event, 'q1b_i')">1(b)(i): playPL (鏈結)</button>
+        <button class="tab-button" onclick="openTab(event, 'q1b_ii')">1(b)(ii): 鏈結更新</button>
+        <button class="tab-button" onclick="openTab(event, 'q1b_iii')">1(b)(iii): insert 偽代碼</button>
+    </div>
+
+    <div id="q1a_i" class="tab-content active">
+        <h2>問題 1(a)(i): `deq` 函數執行追蹤與動畫</h2>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background: var(--first-ptr-bg);"></div><span>隊列首項 (first)</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--queue-item-bg);"></div><span>隊列中項目</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--unused-bg);"></div><span>未採用索引</span></div>
+        </div>
+        <div class="step"><h3>初始狀態: <code>first = 5</code>, <code>size = 4</code></h3><div class="array-container" id="array-initial"></div></div>
+        <div class="step"><h3>第一次 deq 後: <code>first = 6</code>, <code>size = 3</code></h3><div class="array-container" id="array-deq1"></div></div>
+        <div class="step"><h3>第二次 deq 後: <code>first = 0</code>, <code>size = 2</code></h3><div class="array-container" id="array-deq2"></div></div>
+        
+        <div class="answer">
+            <h3>最終答案</h3>
+            <p>根據 `deq` 函數的定義 (<code>first ← (first + 1) MOD 7</code> 和 <code>size ← size - 1</code>)，每次執行後的數值如下：</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>first</th>
+                        <th>size</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>第一次執行 deq 後</td>
+                        <td><span class="answer-box">6</span></td>
+                        <td><span class="answer-box">3</span></td>
+                    </tr>
+                    <tr>
+                        <td>第二次執行 deq 後</td>
+                        <td><span class="answer-box">0</span></td>
+                        <td><span class="answer-box">2</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="q1a_ii" class="tab-content">
+        <h2>問題 1(a)(ii): 完成 `enq` 的偽代碼及圖文解說</h2>
+        <div class="answer">
+            <h3>解答</h3>
+            <pre>
+enq(K)
+  A[ <span class="answer-box">(first + size) MOD 7</span> ] ← K
+
+  如果 size < 7 則
+    size ← <span class="answer-box">size + 1</span>
+  否則
+    first ← <span class="answer-box">(first + 1) MOD 7</span>
+</pre>
+        </div>
+        
+        <h3>例子解說</h3>
+        <p>以下將根據題目提供的兩個例子，詳細解釋 `enq` 偽代碼的執行流程。</p>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background: var(--first-ptr-bg);"></div><span>隊列首項 (first)</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--queue-item-bg);"></div><span>隊列中項目</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--insert-pos-bg);"></div><span>新項目插入/覆蓋位置</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--unused-bg);"></div><span>未採用索引</span></div>
+        </div>
+
+        <div class="step">
+            <h4>範例 1：隊列未滿 (size < 7)</h4>
+            <p><b>初始狀態:</b> <code>first = 4</code>, <code>size = 3</code></p>
+            <div class="array-container" id="enq1-initial"></div>
+            <p><b>執行 <code>enq('小鍋')</code>:</b></p>
+            <ol>
+                <li><b>計算插入位置:</b> <code>(first + size) MOD 7</code> &rarr; <code>(4 + 3) MOD 7</code> &rarr; <code>7 MOD 7</code> &rarr; <code>0</code>。<br>新歌「小鍋」將被放入 <code>A[0]</code>。</li>
+                <li><b>檢查條件:</b> <code>size < 7</code> (即 3 < 7) 為<b>真</b>。</li>
+                <li><b>更新 <code>size</code>:</b> <code>size</code> &larr; <code>size + 1</code> &rarr; <code>3 + 1</code> &rarr; <code>4</code>。</li>
+                <li><code>first</code> 保持不變。</li>
+            </ol>
+            <p><b>最終狀態:</b> <code>first = 4</code>, <code>size = 4</code></p>
+            <div class="array-container" id="enq1-final"></div>
+        </div>
+
+        <div class="step">
+            <h4>範例 2：隊列已滿 (size = 7)</h4>
+            <p><b>初始狀態:</b> <code>first = 4</code>, <code>size = 7</code></p>
+            <div class="array-container" id="enq2-initial"></div>
+            <p><b>執行 <code>enq('小鍋')</code>:</b></p>
+            <ol>
+                <li><b>計算插入位置:</b> <code>(first + size) MOD 7</code> &rarr; <code>(4 + 7) MOD 7</code> &rarr; <code>11 MOD 7</code> &rarr; <code>4</code>。<br>新歌「小鍋」將覆蓋 <code>A[4]</code> 的內容（即最舊的歌曲「小蜜蜂」）。</li>
+                <li><b>檢查條件:</b> <code>size < 7</code> (即 7 < 7) 為<b>假</b>，執行「否則」部分。</li>
+                <li><b>更新 <code>first</code>:</b> <code>first</code> &larr; <code>(first + 1) MOD 7</code> &rarr; <code>(4 + 1) MOD 7</code> &rarr; <code>5</code>。<br>頭指標前進到下一個項目。</li>
+                <li><code>size</code> 保持不變。</li>
+            </ol>
+            <p><b>最終狀態:</b> <code>first = 5</code>, <code>size = 7</code></p>
+            <div class="array-container" id="enq2-final"></div>
+        </div>
+    </div>
+    <div id="q1a_iii" class="tab-content">
+        <h2>問題 1(a)(iii): 完成 `playPL` 偽代碼 (陣列)</h2>
+        <div class="answer"><pre>playPL
+  設 i 由 1 至 <span class="answer-box">size</span> 執行
+    curr ← first + i - 1
+    如果 curr <span class="answer-box">> 6</span> 則
+      curr ← <span class="answer-box">curr - 7</span>
+    playSong(A[curr])</pre></div>
+    </div>
+    <div id="q1b_intro" class="tab-content">
+        <h2>問題 1(b): 鏈結串列同步動畫</h2>
+        <p>下方將同步展示鏈結串列的兩種視圖。請使用中央的控制器來逐步追蹤，觀察「物理存儲」與「邏輯順序」之間的對應關係。</p>
+        <div class="ll-view-container">
+            <h4>陣列視圖 (物理存儲)</h4>
+            <div class="ll-nodes-display-static" id="ll-nodes-static-container"></div>
+            <svg id="ll-static-svg"></svg>
+        </div>
+        <div class="ll-central-controls">
+            <button id="ll-prev-btn" onclick="prevStep()">上一步</button>
+            <div id="ll-sequence-display"></div>
+            <button id="ll-next-btn" onclick="nextStep()">下一步</button>
+        </div>
+        <div class="ll-view-container">
+            <h4>節點視圖 (邏輯順序)</h4>
+            <div class="ll-nodes-wrapper">
+                <div class="ll-nodes-display-anim" id="ll-nodes-anim-container"></div>
+                <svg id="ll-anim-svg"></svg>
+            </div>
+        </div>
+    </div>
+    <div id="q1b_i" class="tab-content">
+        <h2>問題 1(b)(i): 完成 `playPL` 偽代碼 (鏈結)</h2>
+        <div class="answer"><pre>playPL
+  curr ← <span class="answer-box">ft</span>
+
+  當 <span class="answer-box">curr ≠ -1</span> 執行
+    playSong(Song[curr])
+    curr ← <span class="answer-box">Next[curr]</span></pre></div>
+    </div>
+    <div id="q1b_ii" class="tab-content">
+        <h2>問題 1(b)(ii): 更新鏈結串列 (加入末端)</h2>
+        <p>題目要求在播放清單的末端加入新歌「微笑」，並將其存放在索引 4。以下動畫將詳細解說完成此操作的步驟。</p>
+        <div class="ll-view-container">
+            <div class="ll-central-controls">
+                <button id="b2-prev-btn" onclick="prevStep_b2()">上一步</button>
+                <button id="b2-next-btn" onclick="nextStep_b2()">下一步</button>
+            </div>
+            <div id="b2-status">點擊「下一步」開始。</div>
+            <div class="ll-nodes-display-static" id="b2-nodes-display"></div>
+            <svg id="b2-svg"></svg>
+        </div>
+        <div class="answer">
+            <h3>最終答案</h3>
+            <p>完成更新後的 `Next` 陣列如下：</p>
+            <table>
+                <tr><th>i</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+                <tr><th>Song[i]</th><td>字母歌</td><td>巴士</td><td>奔馳</td><td>小星星</td><td>微笑</td><td></td><td></td></tr>
+                <tr><th>Next[i]</th><td><span class="answer-box">4</span></td><td>3</td><td>1</td><td>0</td><td><span class="answer-box">-1</span></td><td></td><td></td></tr>
+            </table>
+        </div>
+    </div>
+    <div id="q1b_iii" class="tab-content">
+        <h2>問題 1(b)(iii): 完成 `insert(sg)` 偽代碼</h2>
+        <div class="answer"><pre>insert(sg)
+  Song[new_pos] ← sg
+  Next[new_pos] ← <span class="answer-box">ft</span>
+  ft ← <span class="answer-box">new_pos</span></pre></div>
+    </div>
+</div>
+
+<script>
+    // --- Data for Animations ---
+    const q1a_data = {
+        deq_songs: ['巴士', '飛翔', '奔馳', '小鹿', '小星星', '字母歌', '小貓'],
+        enq_songs: ['巴士', '微笑', '小眼睛', '汽車', '小蜜蜂', '字母歌', '小貓']
+    };
+    const ll_data = {
+        songs: ['字母歌', '巴士', '奔馳', '小星星', '', '', ''],
+        next: [-1, 3, 1, 0, '', '', ''],
+        ft: 2
+    };
+    const b2_data = {
+        song_before: ['字母歌', '巴士', '奔馳', '小星星', '', '', ''],
+        next_before: [-1, 3, 1, 0, '', '', ''],
+        song_after: ['字母歌', '巴士', '奔馳', '小星星', '微笑', '', ''],
+        next_after: [4, 3, 1, 0, -1, '', ''],
+        ft: 2
+    };
+
+    // --- Global Variable Declarations (as let, not const) ---
+    // For 1(b) animation
+    let prevBtn, nextBtn, sequenceDisplay, staticNodesContainer, staticSvg, animNodesContainer, animSvg;
+    // For 1(b)(ii) animation
+    let b2_statusEl, b2_prevBtn, b2_nextBtn, b2_nodesContainer, b2_svg;
+
+    // --- Tab Switching and Initialization Logic ---
+    function openTab(evt, tabName) {
+        let i, tabcontent, tabbuttons;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tabbuttons = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tabbuttons.length; i++) {
+            tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+        
+        switch(tabName) {
+            case 'q1a_i':
+                setup_q1a_i_animation();
+                break;
+            case 'q1a_ii':
+                setup_q1a_ii_visuals();
+                break;
+            case 'q1b_intro':
+                prevBtn = document.getElementById('ll-prev-btn');
+                nextBtn = document.getElementById('ll-next-btn');
+                sequenceDisplay = document.getElementById('ll-sequence-display');
+                staticNodesContainer = document.getElementById('ll-nodes-static-container');
+                staticSvg = document.getElementById('ll-static-svg');
+                animNodesContainer = document.getElementById('ll-nodes-anim-container');
+                animSvg = document.getElementById('ll-anim-svg');
+                resetAnimation();
+                break;
+            case 'q1b_ii':
+                b2_statusEl = document.getElementById('b2-status');
+                b2_prevBtn = document.getElementById('b2-prev-btn');
+                b2_nextBtn = document.getElementById('b2-next-btn');
+                b2_nodesContainer = document.getElementById('b2-nodes-display');
+                b2_svg = document.getElementById('b2-svg');
+                reset_b2_animation();
+                break;
+        }
+    }
+
+    // --- Visuals Setup for Tab 1(a)(i) and 1(a)(ii) ---
+    function createArrayVisual(containerId, songs, first, size, options = {}) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        const queueIndices = new Set();
+        if (size > 0) for (let i = 0; i < size; i++) queueIndices.add((first + i) % 7);
+        
+        let displaySongs = [...songs];
+        if(options.newSong) {
+            displaySongs[options.insertIndex] = options.newSong;
+        }
+
+        for (let i = 0; i < 7; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('array-cell');
+            if (queueIndices.has(i)) cell.classList.add('in-queue');
+            if (i === first && size > 0) cell.classList.add('first-ptr');
+            if (options.insertIndex === i) cell.classList.add('insert-pos');
+            
+            cell.innerHTML = `<div class="index">${i}</div><div class="value">${displaySongs[i] || '&nbsp;'}</div>`;
+            container.appendChild(cell);
+        }
+    }
+    
+    function setup_q1a_i_animation() {
+        createArrayVisual('array-initial', q1a_data.deq_songs, 5, 4);
+        createArrayVisual('array-deq1', q1a_data.deq_songs, 6, 3);
+        createArrayVisual('array-deq2', q1a_data.deq_songs, 0, 2);
+    }
+
+    function setup_q1a_ii_visuals() {
+        const songs = q1a_data.enq_songs;
+        
+        // Example 1: Not full
+        createArrayVisual('enq1-initial', songs, 4, 3, { insertIndex: 0 });
+        createArrayVisual('enq1-final', songs, 4, 4, { newSong: '小鍋', insertIndex: 0 });
+
+        // Example 2: Full
+        createArrayVisual('enq2-initial', songs, 4, 7, { insertIndex: 4 });
+        createArrayVisual('enq2-final', songs, 5, 7, { newSong: '小鍋', insertIndex: 4 });
+    }
+    
+    // --- Animation Logic for Question 1(b) ---
+    const animationState = { tracePath: [], currentStep: 0, maxSteps: 0 };
+    
+    function resetAnimation() {
+        if (!staticNodesContainer || !animNodesContainer) return;
+        staticNodesContainer.innerHTML = ''; 
+        animNodesContainer.innerHTML = '';
+        initializeAnimation();
+        renderAllViews(0);
+    }
+
+    function initializeAnimation() {
+        animationState.tracePath = [];
+        let curr = ll_data.ft;
+        while (curr !== -1 && curr !== '' && curr != null) {
+            animationState.tracePath.push(curr);
+            curr = ll_data.next[curr];
+        }
+        animationState.maxSteps = animationState.tracePath.length + 1;
+        animationState.currentStep = 0;
+    }
+
+    function renderAllViews(step) {
+        renderStaticView(step);
+        renderAnimatedView(step);
+        const nodesInSequence = animationState.tracePath.slice(0, step);
+        sequenceDisplay.textContent = nodesInSequence.length > 0 ? nodesInSequence.join(' -> ') : '點擊下一步開始';
+        prevBtn.disabled = (step === 0);
+        nextBtn.disabled = (step >= animationState.maxSteps - 1);
+    }
+
+    function renderStaticView(step) {
+        if (staticNodesContainer.children.length === 0) {
+            for (let i = 0; i < 7; i++) {
+                const node = document.createElement('div');
+                node.className = 'll-node-vis';
+                node.id = `ll-static-node-${i}`;
+                staticNodesContainer.appendChild(node);
+            }
+            const ftNode = document.getElementById(`ll-static-node-${ll_data.ft}`);
+            if (ftNode) {
+                const ftLabel = document.createElement('div');
+                ftLabel.className = 'ft-static-label';
+                ftLabel.textContent = 'ft';
+                const nodeRect = ftNode.getBoundingClientRect();
+                const containerRect = staticNodesContainer.getBoundingClientRect();
+                ftLabel.style.left = `${nodeRect.left - containerRect.left + nodeRect.width / 2}px`;
+                ftLabel.style.top = `${nodeRect.top - containerRect.top}px`;
+                staticNodesContainer.appendChild(ftLabel);
+            }
+        }
+        
+        for (let i = 0; i < 7; i++) {
+            const nodeEl = document.getElementById(`ll-static-node-${i}`);
+            nodeEl.innerHTML = `<div class="index">${i}</div><div class="song">${ll_data.songs[i] || '---'}</div><div class="next">${ll_data.next[i]}</div>`;
+        }
+
+        staticSvg.innerHTML = '';
+        document.querySelectorAll('.ll-nodes-display-static .ll-node-vis').forEach(n => {
+            n.classList.remove('current', 'processed');
+            n.querySelector('.next').classList.remove('highlight-next');
+        });
+
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead-static');
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', '8'); marker.setAttribute('refY', '5');
+        marker.setAttribute('markerWidth', '6'); marker.setAttribute('markerHeight', '6');
+        marker.setAttribute('orient', 'auto-start-reverse');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        path.setAttribute('fill', 'var(--arrow-color)');
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        staticSvg.appendChild(defs);
+        
+        requestAnimationFrame(() => {
+            for (let i = 0; i < step; i++) {
+                const sourceIndex = animationState.tracePath[i];
+                const targetIndex = ll_data.next[sourceIndex];
+                const sourceNode = document.getElementById(`ll-static-node-${sourceIndex}`);
+                if (sourceNode) sourceNode.classList.add('processed');
+                if (targetIndex === -1) continue;
+                const targetNode = document.getElementById(`ll-static-node-${targetIndex}`);
+                if (sourceNode && targetNode) {
+                    const containerRect = staticSvg.getBoundingClientRect();
+                    const sourceRect = sourceNode.querySelector('.next').getBoundingClientRect();
+                    const targetRect = targetNode.getBoundingClientRect();
+                    const startX = sourceRect.left - containerRect.left + sourceRect.width / 2;
+                    const startY = sourceRect.bottom - containerRect.top;
+                    const endX = targetRect.left - containerRect.left + targetRect.width / 2;
+                    const endY = targetRect.top - containerRect.top;
+                    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const controlY = Math.min(startY, endY) - 60;
+                    const d = `M ${startX},${startY} C ${startX},${controlY} ${endX},${controlY} ${endX},${endY}`;
+                    pathEl.setAttribute('d', d);
+                    pathEl.setAttribute('marker-end', 'url(#arrowhead-static)');
+                    staticSvg.appendChild(pathEl);
+                }
+            }
+            if (step > 0 && step < animationState.maxSteps) {
+                const currentIndex = animationState.tracePath[step - 1];
+                const currentNodeEl = document.getElementById(`ll-static-node-${currentIndex}`);
+                if (currentNodeEl) {
+                    currentNodeEl.classList.remove('processed');
+                    currentNodeEl.classList.add('current');
+                    currentNodeEl.querySelector('.next').classList.add('highlight-next');
+                }
+            }
+        });
+    }
+
+    function renderAnimatedView(step) {
+        animNodesContainer.innerHTML = '';
+        animSvg.innerHTML = '';
+        const nodesToShow = animationState.tracePath.slice(0, step);
+        nodesToShow.forEach(nodeIndex => {
+            const node = document.createElement('div');
+            node.className = 'll-node-vis';
+            node.id = `ll-anim-node-${nodeIndex}`;
+            node.innerHTML = `<div class="index">${nodeIndex}</div><div class="song">${ll_data.songs[nodeIndex] || '---'}</div><div class="next">${ll_data.next[nodeIndex]}</div>`;
+            animNodesContainer.appendChild(node);
+        });
+        if (step > 0 && step < animationState.maxSteps) {
+            const currentIndex = animationState.tracePath[step - 1];
+            const currentNodeEl = document.getElementById(`ll-anim-node-${currentIndex}`);
+            if (currentNodeEl) {
+                currentNodeEl.classList.add('current');
+                currentNodeEl.querySelector('.next').classList.add('highlight-next');
+            }
+            for (let i = 0; i < step - 1; i++) {
+                document.getElementById(`ll-anim-node-${animationState.tracePath[i]}`).classList.add('processed');
+            }
+        } else if (step >= animationState.maxSteps - 1) {
+            nodesToShow.forEach(nodeIndex => {
+                const nodeEl = document.getElementById(`ll-anim-node-${nodeIndex}`);
+                if (nodeEl) nodeEl.classList.add('processed');
+            });
+        }
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead-anim');
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', '8'); marker.setAttribute('refY', '5');
+        marker.setAttribute('markerWidth', '6'); marker.setAttribute('markerHeight', '6');
+        marker.setAttribute('orient', 'auto-start-reverse');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        path.setAttribute('fill', 'var(--arrow-color)');
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        animSvg.appendChild(defs);
+        requestAnimationFrame(() => {
+            for (let i = 0; i < nodesToShow.length - 1; i++) {
+                const sourceNode = document.getElementById(`ll-anim-node-${nodesToShow[i]}`);
+                const targetNode = document.getElementById(`ll-anim-node-${nodesToShow[i+1]}`);
+                if (sourceNode && targetNode) {
+                    const containerRect = animSvg.getBoundingClientRect();
+                    const sourceRect = sourceNode.getBoundingClientRect();
+                    const targetRect = targetNode.getBoundingClientRect();
+                    const startX = sourceRect.right - containerRect.left;
+                    const startY = sourceRect.top - containerRect.top + sourceRect.height / 2;
+                    const endX = targetRect.left - containerRect.left;
+                    const endY = targetRect.top - containerRect.top + targetRect.height / 2;
+                    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    pathEl.setAttribute('d', `M ${startX},${startY} L ${endX},${endY}`);
+                    pathEl.setAttribute('marker-end', 'url(#arrowhead-anim)');
+                    animSvg.appendChild(pathEl);
+                }
+            }
+        });
+    }
+
+    function nextStep() {
+        if (animationState.currentStep < animationState.maxSteps - 1) {
+            animationState.currentStep++;
+            renderAllViews(animationState.currentStep);
+        }
+    }
+    function prevStep() {
+        if (animationState.currentStep > 0) {
+            animationState.currentStep--;
+            renderAllViews(animationState.currentStep);
+        }
+    }
+
+    // --- Animation Logic for Question 1(b)(ii) ---
+    const b2_animationState = { currentStep: 0, maxSteps: 4 };
+
+    function reset_b2_animation() {
+        if (!b2_nodesContainer) return;
+        b2_animationState.currentStep = 0;
+        b2_nodesContainer.innerHTML = '';
+        render_b2_step(0);
+    }
+
+    function nextStep_b2() {
+        if (b2_animationState.currentStep < b2_animationState.maxSteps) {
+            b2_animationState.currentStep++;
+            render_b2_step(b2_animationState.currentStep);
+        }
+    }
+
+    function prevStep_b2() {
+        if (b2_animationState.currentStep > 0) {
+            b2_animationState.currentStep--;
+            render_b2_step(b2_animationState.currentStep);
+        }
+    }
+
+    function render_b2_step(step) {
+        if (b2_nodesContainer.children.length === 0) {
+            for (let i = 0; i < 7; i++) {
+                const node = document.createElement('div');
+                node.className = 'll-node-vis';
+                node.id = `b2-node-${i}`;
+                b2_nodesContainer.appendChild(node);
+            }
+             const ftNode = document.getElementById(`b2-node-${b2_data.ft}`);
+            if (ftNode) {
+                const ftLabel = document.createElement('div');
+                ftLabel.className = 'ft-static-label';
+                ftLabel.textContent = 'ft';
+                const nodeRect = ftNode.getBoundingClientRect();
+                const containerRect = b2_nodesContainer.getBoundingClientRect();
+                ftLabel.style.left = `${nodeRect.left - containerRect.left + nodeRect.width / 2}px`;
+                ftLabel.style.top = `${nodeRect.top - containerRect.top}px`;
+                b2_nodesContainer.appendChild(ftLabel);
+            }
+        }
+
+        b2_svg.innerHTML = '';
+        document.querySelectorAll('#b2-nodes-display .ll-node-vis').forEach(n => {
+            n.classList.remove('highlight-new-node', 'current');
+            const nextEl = n.querySelector('.next');
+            if(nextEl) nextEl.classList.remove('highlight-change');
+        });
+
+        let songs = (step < 1) ? b2_data.song_before : b2_data.song_after;
+        let nexts = b2_data.next_before.slice();
+        if (step >= 2) nexts[0] = 4;
+        if (step >= 3) nexts[4] = -1;
+
+        for (let i = 0; i < 7; i++) {
+            const nodeEl = document.getElementById(`b2-node-${i}`);
+            nodeEl.innerHTML = `
+                <div class="index">${i}</div>
+                <div class="song">${songs[i] || '---'}</div>
+                <div class="next">${nexts[i]}</div>
+            `;
+        }
+        
+        switch(step) {
+            case 0:
+                b2_statusEl.textContent = "初始狀態：播放清單的結尾是索引 0 (字母歌)，因為 Next[0] 是 -1。";
+                document.getElementById('b2-node-0').classList.add('current');
+                break;
+            case 1:
+                b2_statusEl.textContent = "第一步：將新歌「微笑」放入索引 4。";
+                document.getElementById('b2-node-4').classList.add('highlight-new-node');
+                break;
+            case 2:
+                b2_statusEl.textContent = "第二步：更新原結尾節點的指標。將 Next[0] 的值從 -1 改為 4，使其指向新歌。";
+                document.getElementById('b2-node-0').querySelector('.next').classList.add('highlight-change');
+                break;
+            case 3:
+                b2_statusEl.textContent = "第三步：設定新節點為新的結尾。將 Next[4] 的值設為 -1。";
+                document.getElementById('b2-node-4').querySelector('.next').classList.add('highlight-change');
+                break;
+            case 4:
+                b2_statusEl.textContent = "完成！播放清單已成功更新，形成新路徑：2 -> 1 -> 3 -> 0 -> 4。";
+                break;
+        }
+
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead-b2');
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', '8');
+        marker.setAttribute('refY', '5');
+        marker.setAttribute('markerWidth', '6');
+        marker.setAttribute('markerHeight', '6');
+        marker.setAttribute('orient', 'auto-start-reverse');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        path.setAttribute('fill', 'var(--arrow-color)');
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        b2_svg.appendChild(defs);
+
+        requestAnimationFrame(() => {
+            let trace = [];
+            let curr = b2_data.ft;
+            while(curr != -1 && curr !== '' && !trace.includes(curr)) {
+                trace.push(curr);
+                curr = nexts[curr];
+            }
+
+            for(const sourceIndex of trace) {
+                const targetIndex = nexts[sourceIndex];
+                if (targetIndex === -1 || targetIndex === '') continue;
+
+                const sourceNode = document.getElementById(`b2-node-${sourceIndex}`);
+                const targetNode = document.getElementById(`b2-node-${targetIndex}`);
+                if (sourceNode && targetNode) {
+                    const containerRect = b2_svg.getBoundingClientRect();
+                    const sourceRect = sourceNode.querySelector('.next').getBoundingClientRect();
+                    const targetRect = targetNode.getBoundingClientRect();
+
+                    const startX = sourceRect.left - containerRect.left + sourceRect.width / 2;
+                    const startY = sourceRect.bottom - containerRect.top;
+                    const endX = targetRect.left - containerRect.left + targetRect.width / 2;
+                    const endY = targetRect.top - containerRect.top;
+
+                    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const controlY = Math.min(startY, endY) - 60;
+                    const d = `M ${startX},${startY} C ${startX},${controlY} ${endX},${controlY} ${endX},${endY}`;
+                    pathEl.setAttribute('d', d);
+                    pathEl.setAttribute('marker-end', 'url(#arrowhead-b2)');
+                    b2_svg.appendChild(pathEl);
+                }
+            }
+        });
+
+        b2_prevBtn.disabled = (step === 0);
+        b2_nextBtn.disabled = (step >= b2_animationState.maxSteps);
+    }
+
+    // --- Initial Load ---
+    window.addEventListener('load', function() {
+        const activeButton = document.querySelector('.tab-button.active');
+        if (activeButton) {
+            activeButton.click();
+        }
+    });
+</script>
+
+</body>
+</html>
