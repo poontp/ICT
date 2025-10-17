@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動解說：大數據概念</title>
+    <style>
+        /* --- 全局樣式 --- */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --bg-color: #f8f9fa;
+            --dark-bg-color: #343a40;
+            --text-color: #212529;
+            --light-text-color: #f8f9fa;
+            --border-color: #dee2e6;
+            --green: #28a745;
+            --red: #dc3545;
+            --yellow: #ffc107;
+            --blue: #17a2b8;
+            --disabled-color: #a9b0b6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* --- 主容器 --- */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- 動畫畫布 --- */
+        #animation-canvas {
+            width: 100%;
+            height: 350px;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+            background-color: var(--dark-bg-color);
+            background-image:
+                radial-gradient(circle at center, rgba(0, 123, 255, 0.5) 1px, transparent 2px),
+                linear-gradient(to right, rgba(0, 123, 255, 0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 123, 255, 0.15) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: -1px -1px, 0 0, 0 0;
+        }
+
+        /* --- 解說區域 --- */
+        .explanation { padding: 25px 30px; text-align: center; }
+        .explanation h2 { margin-top: 0; color: var(--primary-color); font-size: 1.8rem; font-weight: 600; }
+        .explanation p { font-size: 1.1rem; line-height: 1.6; color: var(--secondary-color); min-height: 50px; }
+
+        /* --- 控制按鈕 --- */
+        .controls { padding: 20px 30px; background-color: #f1f3f5; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 15px; }
+        .btn { padding: 12px 25px; font-size: 1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; color: white; }
+        #next-btn { background-color: var(--primary-color); }
+        #next-btn:hover { background-color: #0056b3; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3); }
+        #restart-btn, #prev-btn { background-color: var(--secondary-color); }
+        #restart-btn:hover, #prev-btn:hover { background-color: #5a6268; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
+        .btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn:disabled:hover { background-color: var(--disabled-color); }
+
+        /* --- 動畫元素樣式 --- */
+        .binary-digit {
+            position: absolute; color: var(--yellow); font-family: 'Courier New', Courier, monospace;
+            font-weight: bold; top: -30px; user-select: none;
+            animation-name: fall; animation-timing-function: linear; animation-iteration-count: 1;
+        }
+        @keyframes fall { to { transform: translateY(400px); } }
+        .data-flood-level {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0;
+            background-color: var(--primary-color); opacity: 0.6; transition: height 4s linear;
+        }
+        .data-point {
+            position: absolute; width: 8px; height: 8px; background-color: var(--yellow);
+            border-radius: 50%; transition: all 1.5s ease-in-out;
+        }
+        @keyframes move-point { from { transform: translateX(0); opacity: 1; } to { transform: translateX(700px); opacity: 1; } }
+        .velocity-source { position: absolute; left: 30px; font-size: 2.5rem; opacity: 0; animation: fadeIn 1s forwards; transition: transform 0.2s ease-in-out; }
+        .velocity-source.charging { animation: charge-up 0.5s ease-in-out; }
+        @keyframes charge-up { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.2); filter: brightness(3); } 100% { transform: scale(1); filter: brightness(1); } }
+        .data-streak {
+            position: absolute; width: 60px; height: 2px; border-radius: 1px;
+            background: linear-gradient(to right, var(--yellow), transparent); animation: move-streak 0.6s linear 1;
+        }
+        @keyframes move-streak { from { transform: translateX(0) scaleX(0.5); opacity: 0.5; } to { transform: translateX(700px) scaleX(1); opacity: 1; } }
+        .data-center { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 20px; }
+        .velocity-server { width: 50px; height: 70px; opacity: 0; animation: fadeIn 1s forwards 0.5s; }
+        .server-disk { width: 100%; height: 15px; background-color: #9eadba; border: 2px solid #f8f9fa; border-radius: 5px; margin-bottom: 5px; box-sizing: border-box; transition: all 0.2s ease; }
+        .server-disk.pulsing { animation: pulse-normal 0.8s infinite ease-in-out alternate; }
+        .server-disk.pulsing-intense { animation: pulse-intense 0.2s infinite ease-in-out; }
+        @keyframes pulse-normal { to { box-shadow: 0 0 8px 10px rgba(255, 193, 7, 0); } }
+        @keyframes pulse-intense { to { box-shadow: 0 0 10px 15px rgba(255, 193, 7, 0); background-color: var(--yellow); } }
+        .realtime-dashboard { width: 180px; height: 120px; background-color: rgba(0,0,0,0.3); border: 1px solid var(--secondary-color); border-radius: 8px; padding: 10px; box-sizing: border-box; color: white; opacity: 0; animation: fadeIn 1s forwards 1s; }
+        .realtime-dashboard h3 { margin: 0 0 10px; font-size: 1rem; text-align: center; font-weight: 500; }
+        .dashboard-bars { display: flex; align-items: flex-end; justify-content: space-around; height: 70%; width: 100%; }
+        .dashboard-bar { width: 20px; background-color: var(--green); border-radius: 3px 3px 0 0; transition: height 0.3s ease-out; }
+        .data-icon{position:absolute;font-size:20px;opacity:0;transform:scale(0);animation:fadeIn .5s forwards;color:#fff}
+        .veracity-good{background-color:var(--green)!important}.veracity-bad{background-color:var(--red)!important;opacity:.4!important}
+        .validation-gate{position:absolute;left:50%;top:0;width:4px;height:100%;background:repeating-linear-gradient(var(--dark-bg-color),var(--dark-bg-color) 10px,var(--primary-color) 10px,var(--primary-color) 20px);transform:translateX(-50%);opacity:0;animation:fadeInGate 1s forwards}
+        .validation-label{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:var(--light-text-color);background-color:var(--primary-color);padding:5px 15px;border-radius:5px;font-size:.9rem;font-weight:700;opacity:0;animation:fadeInGate 1s forwards}
+        .analysis-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:150px;height:150px;border:3px dashed var(--primary-color);border-radius:10px;display:flex;justify-content:center;align-items:center;color:var(--primary-color);font-size:1.2rem;font-weight:700;z-index:10}
+        .value-chart{position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:10px;height:80%}
+        .bar{width:40px;background-color:var(--green);border-top-left-radius:5px;border-top-right-radius:5px;transform-origin:bottom;animation:grow 1s ease-out forwards}
+        @keyframes fadeIn{to{opacity:1;transform:scale(1)}}@keyframes fadeInGate{to{opacity:1}}@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+        /* 響應式設計 */
+        @media (max-width: 600px) {
+            body { padding: 10px; } #animation-canvas { height: 280px; } .explanation h2 { font-size: 1.5rem; }
+            .explanation p { font-size: 1rem; min-height: 60px; } .controls { flex-wrap: wrap; padding: 15px; }
+            .btn { padding: 10px 20px; } .velocity-source { font-size: 2rem; left: 15px; }
+            .data-center { flex-direction: column; right: 5px; gap: 10px; }
+            .realtime-dashboard { width: 120px; height: 90px; } .realtime-dashboard h3 { font-size: 0.8rem; margin-bottom: 5px; }
+            .dashboard-bar { width: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="animation-canvas"></div>
+        <div class="explanation">
+            <h2 id="step-title"></h2>
+            <p id="step-description"></p>
+        </div>
+        <div class="controls">
+            <button id="restart-btn" class="btn">重新開始</button>
+            <button id="prev-btn" class="btn">上一步</button>
+            <button id="next-btn" class="btn">開始</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('animation-canvas');
+        const titleEl = document.getElementById('step-title');
+        const descriptionEl = document.getElementById('step-description');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        let currentStep = -1;
+        let animationIntervals = [];
+        let isNavigating = false; // 全局導航鎖
+
+        // *** 重構核心: 將每個動畫改為返回 Promise ***
+        const steps = [
+            {
+                title: '什麼是大數據 (Big Data)？',
+                description: '大數據是指規模巨大、類型繁多，無法用傳統軟體在合理時間內處理的資料集合。讓我們一步步來探索它的特性。',
+                animation: () => new Promise(resolve => resolve()) // 無動畫，立即完成
+            },
+            {
+                title: '1. 資料量 (Volume)',
+                description: '資料不僅數量龐大，其累積速度更是驚人，如同數位洪流一般不斷湧入。',
+                animation: () => new Promise(resolve => {
+                    const createBinaryDigit = () => {
+                        const digit = document.createElement('div'); digit.className = 'binary-digit';
+                        digit.textContent = Math.random() > 0.5 ? '1' : '0'; digit.style.left = `${Math.random() * 100}%`;
+                        digit.style.fontSize = `${10 + Math.random() * 15}px`; digit.style.opacity = `${0.3 + Math.random() * 0.5}`;
+                        const duration = 2 + Math.random() * 3; digit.style.animationDuration = `${duration}s`;
+                        canvas.appendChild(digit); setTimeout(() => digit.remove(), duration * 1000);
+                    };
+                    const sparseInterval = setInterval(createBinaryDigit, 150); animationIntervals.push(sparseInterval);
+                    setTimeout(() => {
+                        clearInterval(sparseInterval);
+                        const heavyInterval = setInterval(createBinaryDigit, 30); animationIntervals.push(heavyInterval);
+                    }, 1500);
+                    setTimeout(() => {
+                        const floodLevel = document.createElement('div'); floodLevel.className = 'data-flood-level';
+                        canvas.appendChild(floodLevel);
+                        setTimeout(() => { floodLevel.style.height = '70%'; }, 50);
+                    }, 3000);
+                    // 總動畫時間約為 3s (等待) + 4s (水位上升) = 7s
+                    setTimeout(resolve, 7000);
+                })
+            },
+            {
+                title: '2. 速度 (Velocity)',
+                description: '資料從高速流動到近乎瞬時的傳輸，並被即時處理，展現極致的速度與即時性。',
+                animation: () => new Promise(resolve => {
+                    const sources = [ { icon: '📱', top: '20%' }, { icon: '🛒', top: '48%' }, { icon: '🚗', top: '75%' } ];
+                    sources.forEach((s, i) => {
+                        const sourceEl = document.createElement('div'); sourceEl.className = 'velocity-source'; sourceEl.id = `source-${i}`;
+                        sourceEl.textContent = s.icon; sourceEl.style.top = s.top; canvas.appendChild(sourceEl);
+                    });
+                    const dataCenter = document.createElement('div'); dataCenter.className = 'data-center';
+                    dataCenter.innerHTML = `<div class="velocity-server"><div class="server-disk"></div><div class="server-disk"></div><div class="server-disk"></div></div><div class="realtime-dashboard"><h3>即時儀表板</h3><div class="dashboard-bars"><div class="dashboard-bar"></div><div class="dashboard-bar"></div><div class="dashboard-bar"></div><div class="dashboard-bar"></div></div></div>`;
+                    canvas.appendChild(dataCenter);
+                    const serverDisks = document.querySelectorAll('.server-disk'); const dashboardBars = document.querySelectorAll('.dashboard-bar');
+                    setTimeout(() => {
+                        serverDisks.forEach(d => d.classList.add('pulsing'));
+                        const pointStreamInterval = setInterval(() => {
+                            const source = sources[Math.floor(Math.random() * sources.length)];
+                            const point = document.createElement('div'); point.className = 'data-point'; point.style.left = '60px'; point.style.animation = 'move-point 1.8s linear 1';
+                            const topOffset = parseFloat(source.top) + (Math.random() * 6 - 3); point.style.top = `${topOffset}%`; canvas.appendChild(point);
+                            setTimeout(() => point.remove(), 1800);
+                        }, 50); animationIntervals.push(pointStreamInterval);
+                        const dashboardInterval = setInterval(() => { dashboardBars.forEach(bar => bar.style.height = `${Math.random() * 100}%`); }, 500);
+                        animationIntervals.push(dashboardInterval);
+                    }, 1000);
+                    setTimeout(() => {
+                        animationIntervals.forEach(clearInterval); animationIntervals = [];
+                        document.querySelectorAll('.velocity-source').forEach(s => s.classList.add('charging'));
+                        serverDisks.forEach(d => { d.classList.remove('pulsing'); d.classList.add('pulsing-intense'); });
+                        const streakStreamInterval = setInterval(() => {
+                            const source = sources[Math.floor(Math.random() * sources.length)];
+                            const streak = document.createElement('div'); streak.className = 'data-streak'; streak.style.left = '60px';
+                            const topOffset = parseFloat(source.top) + (Math.random() * 4 - 2); streak.style.top = `${topOffset}%`; canvas.appendChild(streak);
+                            setTimeout(() => streak.remove(), 600);
+                        }, 30); animationIntervals.push(streakStreamInterval);
+                        const intenseDashboardInterval = setInterval(() => { dashboardBars.forEach(bar => bar.style.height = `${Math.random() * 100}%`); }, 200);
+                        animationIntervals.push(intenseDashboardInterval);
+                    }, 3500);
+                    // 總動畫時間約 6s，讓第二階段效果能充分展示
+                    setTimeout(resolve, 6000);
+                })
+            },
+            {
+                title: '3. 多樣性 (Variety)',
+                description: '資料類型五花八門，包括文字、數字、圖片、影片、聲音、感測器數據等，格式非常多樣。',
+                animation: () => new Promise(resolve => {
+                    const icons = ['📝', '🖼️', '▶️', '🎵', '📍', '💬'];
+                    for (let i = 0; i < 50; i++) { const iconEl = document.createElement('div'); iconEl.className = 'data-icon'; iconEl.textContent = icons[Math.floor(Math.random() * icons.length)]; iconEl.style.left = `${Math.random()*90}%`; iconEl.style.top = `${Math.random()*90}%`; iconEl.style.animation = `fadeIn ${0.5 + Math.random()}s forwards`; iconEl.style.animationDelay = `${Math.random() * 2}s`; canvas.appendChild(iconEl); }
+                    // 最晚的動畫在 2s + 0.5s = 2.5s 後結束
+                    setTimeout(resolve, 2500);
+                })
+            },
+            {
+                title: '4. 真實性 (Veracity)',
+                description: '海量資料中難免夾雜著不準確、不完整或矛盾的「髒資料」，需要清洗和驗證。',
+                animation: () => new Promise(resolve => {
+                    for (let i = 0; i < 150; i++) { const point = document.createElement('div'); point.className = 'data-point'; if (Math.random() < 0.8) { point.classList.add('veracity-good'); } else { point.classList.add('veracity-bad'); } point.style.left = `${5+Math.random()*25}%`; point.style.top = `${Math.random()*95}%`; point.style.animation = `fadeIn ${0.5 + Math.random()}s forwards`; canvas.appendChild(point); }
+                    setTimeout(() => { const gate = document.createElement('div'); gate.className = 'validation-gate'; const label = document.createElement('div'); label.className = 'validation-label'; label.textContent = '資料清洗 & 驗證'; canvas.appendChild(gate); canvas.appendChild(label); }, 1500);
+                    setTimeout(() => { document.querySelectorAll('.data-point').forEach(p => { p.style.transitionDelay = `${Math.random()*0.5}s`; if (p.classList.contains('veracity-good')) { p.style.left = `${60+Math.random()*35}%`; p.style.opacity = '0.8'; } else { p.style.opacity = '0'; p.style.transform = 'scale(0)'; } }); }, 2000);
+                    // 最終動畫在 2s + 1.5s = 3.5s 後結束
+                    setTimeout(resolve, 3500);
+                })
+            },
+            {
+                title: '5. 價值 (Value)',
+                description: '大數據的最終目標是從龐大、混亂的資料中，透過分析提煉出有價值的洞察、趨勢和決策依據。',
+                animation: () => new Promise(resolve => {
+                    for (let i = 0; i < 200; i++) { const point = document.createElement('div'); point.className = 'data-point'; point.style.left = `${Math.random()*40}%`; point.style.top = `${Math.random()*95}%`; point.style.transition = 'all 1.5s ease-in-out'; point.style.transitionDelay = `${Math.random()}s`; point.style.animation = `fadeIn ${0.5 + Math.random()}s forwards`; canvas.appendChild(point); }
+                    const box = document.createElement('div'); box.className = 'analysis-box'; box.textContent = '分析引擎'; canvas.appendChild(box);
+                    setTimeout(() => { document.querySelectorAll('.data-point').forEach(p => { p.style.left = '50%'; p.style.top = '50%'; p.style.opacity = '0'; p.style.transform = 'scale(0)'; }); }, 500);
+                    setTimeout(() => { box.style.opacity = 0; const chart = document.createElement('div'); chart.className = 'value-chart'; const heights = [0.4, 0.7, 0.5, 0.8, 0.6]; heights.forEach((h, i) => { const bar = document.createElement('div'); bar.className = 'bar'; bar.style.height = `${h*100}%`; bar.style.animationDelay = `${i*0.2}s`; chart.appendChild(bar); }); canvas.appendChild(chart); }, 2500);
+                    // 最終動畫在 2.5s + 1s(bar動畫) + 0.8s(延遲) = 4.3s 後結束
+                    setTimeout(resolve, 4300);
+                })
+            },
+            {
+                title: '總結與應用',
+                description: '總結來說，大數據就是透過處理海量、高速、多樣的資料，來創造價值。例如：電商的商品推薦、地圖的即時路況預測等。',
+                animation: () => new Promise(resolve => {
+                    canvas.style.backgroundColor = 'var(--primary-color)'; const summaryText = document.createElement('div'); summaryText.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.5rem; text-align: center; line-height: 1.8;`; summaryText.innerHTML = '🛍️ 商品推薦<br>🚗 路況預測<br>🩺 疾病預防<br>📈 金融分析'; canvas.appendChild(summaryText);
+                    setTimeout(resolve, 500);
+                })
+            }
+        ];
+
+        function clearCanvas() {
+            animationIntervals.forEach(clearInterval);
+            animationIntervals = [];
+            canvas.innerHTML = '';
+            canvas.style.backgroundColor = '';
+        }
+
+        function lockControls() {
+            isNavigating = true;
+            nextBtn.disabled = true;
+            prevBtn.disabled = true;
+            restartBtn.disabled = true;
+        }
+
+        function unlockControls() {
+            restartBtn.disabled = false;
+            // 根據當前步驟決定是否解鎖上一步/下一步
+            prevBtn.disabled = (currentStep <= 0);
+            nextBtn.disabled = (currentStep === steps.length - 1);
+            isNavigating = false;
+        }
+
+        async function updateScene() {
+            lockControls();
+            clearCanvas();
+            
+            if (currentStep === -1) {
+                titleEl.textContent = '互動解說：大數據概念';
+                descriptionEl.textContent = '點擊「開始」按鈕，了解什麼是大數據。';
+                nextBtn.textContent = '開始';
+            } else if (currentStep >= 0 && currentStep < steps.length) {
+                const step = steps[currentStep];
+                titleEl.textContent = step.title;
+                descriptionEl.textContent = step.description;
+                nextBtn.textContent = '下一步';
+
+                // *** 核心流程: 等待動畫 Promise 完成 ***
+                await step.animation();
+            }
+
+            // 更新按鈕文字
+            if (currentStep === steps.length - 1) {
+                nextBtn.textContent = '全部完成';
+            }
+            
+            unlockControls();
+        }
+
+        nextBtn.addEventListener('click', async () => {
+            if (isNavigating || currentStep >= steps.length - 1) return;
+            currentStep++;
+            await updateScene();
+        });
+
+        prevBtn.addEventListener('click', async () => {
+            if (isNavigating || currentStep <= 0) return;
+            currentStep--;
+            await updateScene();
+        });
+
+        restartBtn.addEventListener('click', async () => {
+            if (isNavigating) return;
+            currentStep = -1;
+            await updateScene();
+        });
+        
+        // 初始加載
+        updateScene();
+    </script>
+
+</body>
+</html>
