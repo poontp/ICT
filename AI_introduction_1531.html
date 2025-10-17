@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動解釋：人工智能發展</title>
+    <style>
+        /* --- 全局樣式與顏色變數 --- */
+        :root {
+            --ai-bg: #0d1b4c;
+            --ml-bg: #005f9e;
+            --dl-bg: #4a86b7;
+            --text-light: #f0f8ff;
+            --timeline-accent: #e53935;
+            --title-accent: #ff8a65;
+            --box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+            --border-light: rgba(255, 255, 255, 0.3);
+            --btn-disabled: #5a6268;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--ai-bg);
+            color: var(--text-light);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 30px;
+        }
+
+        h1, h2, h3, h4 {
+            font-weight: 600;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+        
+        .main-title-decorator {
+            width: 250px;
+            height: 4px;
+            background: var(--title-accent);
+            margin: 0 auto 40px auto;
+            position: relative;
+        }
+        .main-title-decorator::before, .main-title-decorator::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--title-accent);
+            border-radius: 50%;
+            background: var(--ai-bg);
+        }
+        .main-title-decorator::before { left: -20px; }
+        .main-title-decorator::after { right: -20px; }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.8rem;
+            margin: 60px 0 20px 0;
+            color: var(--text-light);
+        }
+
+        /* --- 發展時序區塊 --- */
+        .presentation-container { display: flex; border-radius: 12px; overflow: hidden; box-shadow: var(--box-shadow); }
+        .timeline-block { padding: 25px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; }
+        #ai-block { background-color: var(--ai-bg); flex: 3; border-right: 2px solid #003c6b; }
+        #ml-block { background-color: var(--ml-bg); flex: 3; border-right: 2px solid #3c7aa8; }
+        #dl-block { background-color: var(--dl-bg); flex: 2; }
+        .block-title h2 { margin: 0 0 5px 0; font-size: 1.5rem; color: white; }
+        .block-title span { font-size: 0.9rem; opacity: 0.8; letter-spacing: 1px; }
+        .icon-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 150px; margin: 20px 0; }
+        .icon-container svg { width: 80%; max-width: 120px; height: auto; }
+        .timeline-axis { width: 100%; height: 30px; position: relative; display: flex; align-items: center; margin-top: auto; }
+        .timeline-line { width: 100%; height: 3px; background-color: rgba(255, 255, 255, 0.5); position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+        .timeline-ticks { width: 100%; display: flex; justify-content: space-around; position: relative; }
+        .tick { display: flex; flex-direction: column; align-items: center; font-size: 0.8rem; color: rgba(255, 255, 255, 0.8); }
+        .tick-marker { width: 12px; height: 12px; background-color: var(--timeline-accent); margin-bottom: 8px; }
+        .tick-label { transform: translateY(15px); }
+
+        /* --- 關係圖區塊 --- */
+        .relationship-diagram { padding: 20px; border-radius: 10px; background: rgba(0,0,0,0.1); border: 1px solid var(--border-light); }
+        .relationship-box { padding: 20px; border-radius: 8px; border: 2px solid var(--border-light); }
+        .relationship-box h4 { margin-top: 0; font-size: 1.4rem; border-bottom: 1px solid var(--border-light); padding-bottom: 10px; margin-bottom: 10px; }
+        .relationship-box p { margin-bottom: 0; font-size: 1rem; opacity: 0.9; }
+        .ai-box { background-color: var(--ai-bg); border-color: #4a86b7; }
+        .ml-box { background-color: var(--ml-bg); border-color: #80b2d7; margin-top: 20px; }
+        .dl-box { background-color: var(--dl-bg); border-color: #b3d1e8; margin-top: 20px; }
+
+        /* --- 互動動畫區塊 --- */
+        .main-content { display: flex; flex-direction: row; gap: 30px; margin-top: 20px; }
+        .column { flex: 1; min-width: 0; border-radius: 8px; padding: 20px; background-color: rgba(0,0,0,0.1); border: 1px solid var(--border-light); }
+        .column h3 { text-align: center; font-size: 1.5rem; margin-top: 0; }
+        #ml-column h3 { color: #64b5f6; }
+        #dl-column h3 { color: var(--title-accent); }
+
+        .animation-area {
+            position: relative;
+            height: 580px;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            margin-top: 20px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.15);
+        }
+        
+        .start-button { display: block; width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease; margin-bottom: 10px; }
+        .start-button:disabled { background-color: var(--btn-disabled); cursor: not-allowed; }
+        #ml-start-btn { background-color: var(--ml-bg); }
+        #ml-start-btn:hover:not(:disabled) { background-color: #007bb5; }
+        #dl-start-btn { background-color: var(--dl-bg); }
+        #dl-start-btn:hover:not(:disabled) { background-color: #5a9ac8; }
+
+        .controls-container { display: none; gap: 10px; margin-bottom: 10px; }
+        .control-btn { flex: 1; padding: 10px; font-size: 1rem; font-weight: bold; color: white; border: 1px solid var(--border-light); border-radius: 5px; cursor: pointer; background-color: transparent; transition: background-color 0.3s ease; }
+        .control-btn:hover:not(:disabled) { background-color: rgba(255,255,255,0.1); }
+        .control-btn:disabled { color: #888; border-color: #555; background-color: rgba(0,0,0,0.2); cursor: not-allowed; }
+        #ml-reset-btn, #dl-reset-btn { color: #ffcdd2; border-color: #ffcdd2; }
+        
+        .explanation { margin-top: 20px; min-height: 100px; /* 增加最小高度以容納更多文字 */ padding: 10px; background-color: rgba(0,0,0,0.2); border-radius: 5px; border-left: 5px solid #6c757d; transition: all 0.3s ease; }
+        .explanation b { color: var(--title-accent); }
+
+        /* --- 動畫元素樣式 --- */
+        .anim-element { position: absolute; opacity: 0; transition: opacity 0.5s ease-in-out; text-align: center; }
+        .centered { transform: translateX(-50%); left: 50%; }
+        .icon { font-size: 32px; }
+        .box { border: 2px solid var(--text-light); padding: 10px; border-radius: 5px; background-color: rgba(0,0,0,0.3); }
+        
+        .input-data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .output-sorted-grid { display: flex; gap: 20px; }
+        .output-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .output-group::before { content: '貓' / '狗'; font-size: 0.9rem; margin-bottom: 5px; padding: 2px 8px; border-radius: 4px; }
+        .output-group.dogs::before { content: '狗'; background-color: #64b5f6; }
+        .output-group.cats::before { content: '貓'; background-color: var(--title-accent); }
+        .output-item { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+
+        /* ML 動畫元素位置 */
+        #ml-input-data { top: 20px; }
+        #ml-arrow1 { top: 110px; }
+        #ml-feature-eng { top: 170px; display: flex; align-items: center; gap: 20px; }
+        #ml-human { position: relative; left: 0; transform: none; opacity: 1; }
+        #ml-features { position: relative; left: 0; transform: none; opacity: 1; font-size: 0.9em; text-align: left; width: 140px; }
+        #ml-arrow2 { top: 270px; }
+        #ml-model { top: 330px; width: 120px; height: 60px; }
+        #ml-model svg { width: 100%; height: 100%; }
+        .tree-node { fill: #80b2d7; stroke: var(--text-light); stroke-width: 2px; }
+        .tree-line { stroke: var(--text-light); stroke-width: 1.5px; }
+        #ml-arrow3 { top: 430px; }
+        #ml-output-sorted { top: 490px; }
+        
+        /* DL 動畫元素位置與樣式 */
+        #dl-input-data { top: 20px; }
+        #dl-arrow1 { top: 110px; }
+        #dl-model { top: 170px; width: 280px; padding-top: 35px; }
+        #dl-model-title { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 100%; font-size: 0.9em; font-weight: bold; }
+        #dl-arrow2 { top: 400px; }
+        #dl-output-sorted { top: 460px; }
+        .neural-network { display: flex; justify-content: space-around; align-items: center; width: 100%; height: 150px; }
+        .nn-layer { display: flex; flex-direction: column; justify-content: space-around; height: 100%; }
+        .nn-node { width: 15px; height: 15px; background-color: #6c757d; border-radius: 50%; transition: background-color 0.3s ease, transform 0.3s ease; }
+        .nn-node.active { background-color: var(--title-accent); transform: scale(1.3); }
+        .feature-label {
+            left: calc(50% + 150px);
+            font-size: 0.9em;
+            background: rgba(0,0,0,0.4);
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        #dl-features-1 { top: 210px; }
+        #dl-features-2 { top: 250px; }
+        #dl-features-3 { top: 290px; }
+        
+        .visible { opacity: 1; }
+        .highlight-ml { border-left-color: var(--ml-bg); }
+        .highlight-dl { border-left-color: var(--dl-bg); }
+
+        /* 響應式設計 */
+        @media (max-width: 992px) {
+            .presentation-container, .main-content { flex-direction: column; }
+            #ai-block, #ml-block { border-right: none; border-bottom: 2px solid #003c6b; }
+            #ml-block { border-bottom: 2px solid #3c7aa8; }
+            .feature-label { left: auto; right: 5px; transform: none; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 10px; }
+            h1 { font-size: 1.8rem; }
+            .main-title-decorator { width: 150px; }
+            .tick-label { font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>人工智能發展</h1>
+        <div class="main-title-decorator"></div>
+
+        <h2 class="section-title">發展時序</h2>
+        <div class="presentation-container">
+            <!-- 時序圖內容不變 -->
+            <div class="timeline-block" id="ai-block"><div class="block-title"><h2>人工智能</h2><span>(ARTIFICIAL INTELLIGENCE)</span></div><div class="icon-container"><svg viewBox="0 0 100 100"><path d="M65,90 V80 H55 V70 H45 V80 H35 V90 Z" fill="#9E9E9E"/><path d="M60,70 L60,20 C60,10 50,0 40,0 C30,0 20,10 20,20 L20,70Z" fill="#E0E0E0"/><path d="M60,20 C70,20 80,30 80,45 C80,60 70,70 60,70 Z" fill="#E0E0E0"/><circle cx="35" cy="35" r="3" fill="#0d1b4c"/><circle cx="45" cy="50" r="3" fill="#0d1b4c"/><path d="M70,45 A5,5 0 0,1 65,50" stroke="#0d1b4c" stroke-width="2" fill="none"/><path d="M20,20 L10,25 M20,45 L5,45 M20,65 L10,60" stroke="#4CAF50" stroke-width="4" stroke-linecap="round"/><circle cx="10" cy="25" r="3" fill="#4CAF50"/><circle cx="5" cy="45" r="3" fill="#4CAF50"/><circle cx="10" cy="60" r="3" fill="#4CAF5A"/><path d="M30,15 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" fill="#4CAF50"/><path d="M40,25 l-5,5 l5,5 l5,-5 z" fill="#0d1b4c"/></svg></div><div class="timeline-axis"><div class="timeline-line"></div><div class="timeline-ticks"><div class="tick"><div class="tick-marker"></div><span class="tick-label">1950'</span></div><div class="tick"><div class="tick-marker"></div><span class="tick-label">1960'</span></div><div class="tick"><div class="tick-marker"></div><span class="tick-label">1970'</span></div></div></div></div>
+            <div class="timeline-block" id="ml-block"><div class="block-title"><h2>機器學習</h2><span>(MACHINE LEARNING)</span></div><div class="icon-container"><svg viewBox="0 0 100 100"><path d="M40,90 h20 v-10 h10 v-10 h-40 v10 h10z M45,60 h10 v10 h-10z" fill="#E0E0E0"/><path d="M30,60 a10,10 0 1,0 -20,0 M90,60 a10,10 0 1,1 -20,0" stroke="#E0E0E0" stroke-width="8" fill="none"/><rect x="5" y="20" width="40" height="30" rx="3" stroke="#4CAF50" stroke-width="3" fill="#005f9e"/><rect x="55" y="10" width="40" height="30" rx="3" stroke="#4CAF50" stroke-width="3" fill="#005f9e"/><path d="M10,25 h10 M10,30 h20 M10,35 h15 M10,40 h25 M60,15 h20 M60,20 h10 M60,25 h30 M60,30 h15" stroke="#FFF" stroke-width="2"/></svg></div><div class="timeline-axis"><div class="timeline-line"></div><div class="timeline-ticks"><div class="tick"><div class="tick-marker"></div><span class="tick-label">1980'</span></div><div class="tick"><div class="tick-marker"></div><span class="tick-label">1990'</span></div><div class="tick"><div class="tick-marker"></div><span class="tick-label">2000'</span></div></div></div></div>
+            <div class="timeline-block" id="dl-block"><div class="block-title"><h2>深度學習</h2><span>(DEEP LEARNING)</span></div><div class="icon-container"><svg viewBox="0 0 100 100"><path d="M50,10 C30,10 20,30 25,50 C20,70 30,90 50,90 C70,90 80,70 75,50 C80,30 70,10 50,10 Z" fill="#ffcc80"/><path d="M50,10 V90 M35,15 C40,40 40,60 35,85 M65,15 C60,40 60,60 65,85 M27,50 H73" stroke="#e65100" stroke-width="2" fill="none"/><path d="M10,80 L30,70 L35,40 L20,35 Z M5,50 V40 H15 V50 H12 v-7 h-4 v7z" fill="#E0E0E0"/><path d="M90,80 L70,70 L65,40 L80,35 Z" fill="#E0E0E0"/></svg></div><div class="timeline-axis"><div class="timeline-line"></div><div class="timeline-ticks"><div class="tick"><div class="tick-marker"></div><span class="tick-label">2010'</span></div><div class="tick"><div class="tick-marker" style="opacity:0.5;"></div><span class="tick-label">...</span></div></div></div></div>
+        </div>
+
+        <h2 class="section-title">它們之間的關係</h2>
+        <div class="relationship-diagram">
+            <div class="relationship-box ai-box"><h4>人工智能 (AI)</h4><p>一個廣義的目標，旨在創造能像人類一樣思考、學習和解決問題的智能機器或系統。</p><div class="relationship-box ml-box"><h4>機器學習 (ML)</h4><p>實現人工智能的一種核心<b>方法</b>。它的一大特點是需要人類專家進行「特徵工程」：先<b>手動定義並提取</b>資料中的關鍵特徵，再讓機器從這些結構化的特徵中<b>學習</b>模式與規律。</p><div class="relationship-box dl-box"><h4>深度學習 (DL)</h4><p>機器學習中的一個<b>更深、更複雜的分支</b>。它使用模仿人腦結構的「深度神經網絡」，特別擅長從複雜的非結構化資料（如圖像、聲音）中自動學習特徵。</p></div></div></div>
+        </div>
+
+        <h2 class="section-title">互動範例：貓狗圖片分類</h2>
+        <div class="main-content">
+            <!-- 機器學習欄位 -->
+            <div class="column" id="ml-column">
+                <h3>機器學習 (Machine Learning)</h3>
+                <button class="start-button" id="ml-start-btn">開始</button>
+                <div class="controls-container" id="ml-controls">
+                    <button class="control-btn" id="ml-reset-btn">重設</button>
+                    <button class="control-btn" id="ml-prev-btn">上一步</button>
+                    <button class="control-btn" id="ml-next-btn">下一步</button>
+                </div>
+                <div class="animation-area" id="ml-anim-area">
+                    <div id="ml-input-data" class="anim-element centered input-data-grid"><div class="icon">🐶</div><div class="icon">🐱</div><div class="icon">🐱</div><div class="icon">🐶</div></div>
+                    <div id="ml-arrow1" class="anim-element centered icon">⬇️</div>
+                    <div id="ml-feature-eng" class="anim-element centered">
+                        <div id="ml-human"><div class="icon">🧑‍💻</div><div>人類專家</div></div>
+                        <div id="ml-features" class="box"><b>特徵辨識:</b><br>- 耳朵形狀<br>- 鼻子長短<br>- 鬍鬚有無</div>
+                    </div>
+                    <div id="ml-arrow2" class="anim-element centered icon">⬇️</div>
+                    <div id="ml-model" class="anim-element centered box">
+                        <svg viewBox="0 0 120 60">
+                            <path class="tree-line" d="M60 5 L30 25 M60 5 L90 25 M30 25 L15 45 M30 25 L45 45 M90 25 L75 45 M90 25 L105 45" />
+                            <rect class="tree-node" x="55" y="0" width="10" height="10" />
+                            <rect class="tree-node" x="25" y="20" width="10" height="10" />
+                            <rect class="tree-node" x="85" y="20" width="10" height="10" />
+                            <rect class="tree-node" x="10" y="40" width="10" height="10" />
+                            <rect class="tree-node" x="40" y="40" width="10" height="10" />
+                            <rect class="tree-node" x="70" y="40" width="10" height="10" />
+                            <rect class="tree-node" x="100" y="40" width="10" height="10" />
+                        </svg>
+                    </div>
+                    <div id="ml-arrow3" class="anim-element centered icon">⬇️</div>
+                    <div id="ml-output-sorted" class="anim-element centered output-sorted-grid">
+                        <div class="output-group dogs"><div class="output-item"><div class="icon">🐶</div><div class="icon">🐶</div></div></div>
+                        <div class="output-group cats"><div class="output-item"><div class="icon">🐱</div><div class="icon">🐱</div></div></div>
+                    </div>
+                </div>
+                <p class="explanation" id="ml-explanation">點擊「開始」按鈕，逐步了解機器學習流程。</p>
+            </div>
+
+            <!-- 深度學習欄位 -->
+            <div class="column" id="dl-column">
+                <h3>深度學習 (Deep Learning)</h3>
+                <button class="start-button" id="dl-start-btn">開始</button>
+                 <div class="controls-container" id="dl-controls">
+                    <button class="control-btn" id="dl-reset-btn">重設</button>
+                    <button class="control-btn" id="dl-prev-btn">上一步</button>
+                    <button class="control-btn" id="dl-next-btn">下一步</button>
+                </div>
+                <div class="animation-area" id="dl-anim-area">
+                    <div id="dl-input-data" class="anim-element centered input-data-grid"><div class="icon">🐶</div><div class="icon">🐱</div><div class="icon">🐱</div><div class="icon">🐶</div></div>
+                    <div id="dl-arrow1" class="anim-element centered icon">⬇️</div>
+                    <div id="dl-model" class="anim-element centered box">
+                        <div id="dl-model-title">自動特徵辨識與分類</div>
+                        <div class="neural-network">
+                            <div class="nn-layer" id="nn-layer-1"><div class="nn-node"></div><div class="nn-node"></div><div class="nn-node"></div><div class="nn-node"></div></div>
+                            <div class="nn-layer" id="nn-layer-2"><div class="nn-node"></div><div class="nn-node"></div><div class="nn-node"></div></div>
+                            <div class="nn-layer" id="nn-layer-3"><div class="nn-node"></div><div class="nn-node"></div></div>
+                        </div>
+                    </div>
+                    <div id="dl-features-1" class="anim-element feature-label">← 學習: 邊緣、顏色</div>
+                    <div id="dl-features-2" class="anim-element feature-label">← 學習: 眼睛、鼻子</div>
+                    <div id="dl-features-3" class="anim-element feature-label">← 學習: 貓臉、狗臉</div>
+                    <div id="dl-arrow2" class="anim-element centered icon">⬇️</div>
+                    <div id="dl-output-sorted" class="anim-element centered output-sorted-grid">
+                        <div class="output-group dogs"><div class="output-item"><div class="icon">🐶</div><div class="icon">🐶</div></div></div>
+                        <div class="output-group cats"><div class="output-item"><div class="icon">🐱</div><div class="icon">🐱</div></div></div>
+                    </div>
+                </div>
+                <p class="explanation" id="dl-explanation">點擊「開始」按鈕，逐步了解深度學習流程。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 元素獲取 ---
+        const mlStartBtn = document.getElementById('ml-start-btn');
+        const mlControls = document.getElementById('ml-controls');
+        const mlResetBtn = document.getElementById('ml-reset-btn');
+        const mlPrevBtn = document.getElementById('ml-prev-btn');
+        const mlNextBtn = document.getElementById('ml-next-btn');
+        const mlExplanation = document.getElementById('ml-explanation');
+        const mlAnimArea = document.getElementById('ml-anim-area');
+
+        const dlStartBtn = document.getElementById('dl-start-btn');
+        const dlControls = document.getElementById('dl-controls');
+        const dlResetBtn = document.getElementById('dl-reset-btn');
+        const dlPrevBtn = document.getElementById('dl-prev-btn');
+        const dlNextBtn = document.getElementById('dl-next-btn');
+        const dlExplanation = document.getElementById('dl-explanation');
+        const dlAnimArea = document.getElementById('dl-anim-area');
+
+        // --- 狀態變數 ---
+        let mlCurrentStep = 0;
+        let dlCurrentStep = 0;
+
+        // --- 步驟定義 ---
+        const mlSteps = [
+            { explanation: '點擊「開始」按鈕，逐步了解機器學習流程。' },
+            { elements: ['ml-input-data'], explanation: '第1步：輸入原始資料 (Input)，包含一組未分類的貓狗圖片。' },
+            { elements: ['ml-arrow1', 'ml-feature-eng'], explanation: '第2步：由人類專家進行「特徵辨識」，手動定義和提取有用的特徵。' },
+            { elements: ['ml-arrow2', 'ml-model'], explanation: '第3步：將提取的特徵送入模型 (如決策樹) 進行分類與識別。' },
+            { elements: ['ml-arrow3', 'ml-output-sorted'], explanation: '第4步：模型輸出結果 (Output)，成功將資料分為「狗」和「貓」兩類。' }
+        ];
+
+        const dlSteps = [
+            { explanation: '點擊「開始」按鈕，逐步了解深度學習流程。' },
+            { elements: ['dl-input-data'], explanation: '第1步：同樣輸入原始資料 (Input)，無需人工干預。' },
+            { elements: ['dl-arrow1', 'dl-model'], explanation: '第2步：資料直接送入深度神經網絡，網絡會「自行進行特徵辨識與分類」。' },
+            { 
+                elements: ['dl-features-1', 'dl-features-2', 'dl-features-3'],
+                // **重大更新：加入更具體的說明文字**
+                explanation: '第3步：網絡自動進行階層式特徵學習，就像堆疊積木：<br>• <b>淺層</b>學習低階特徵 (如：邊緣、顏色)。<br>• <b>中層</b>組合成局部特徵 (如：眼睛、鼻子)。<br>• <b>深層</b>組合成高階概念 (如：「貓臉」)。',
+                action: () => { 
+                    activateLayer('nn-layer-1', 0);
+                    activateLayer('nn-layer-2', 500);
+                    activateLayer('nn-layer-3', 1000);
+                },
+                reverseAction: () => { deactivateAllLayers(); }
+            },
+            { elements: ['dl-arrow2', 'dl-output-sorted'], explanation: '第4步：網絡直接輸出最終結果 (Output)，完成端到端的分類。' }
+        ];
+
+        // --- 通用函數 ---
+        const updateStep = (steps, currentStep, direction) => {
+            const newStep = currentStep + direction;
+            if (newStep < 1 || newStep >= steps.length) return currentStep;
+
+            const stepToShow = steps[newStep];
+            const stepToHide = steps[currentStep];
+            
+            if (direction > 0) { // 前進
+                stepToShow.elements.forEach(id => document.getElementById(id)?.classList.add('visible'));
+                if (stepToShow.action) stepToShow.action();
+            } else { // 後退
+                stepToHide.elements.forEach(id => document.getElementById(id)?.classList.remove('visible'));
+                if (stepToHide.reverseAction) stepToHide.reverseAction();
+            }
+            return newStep;
+        };
+        
+        const updateControls = (step, totalSteps, prevBtn, nextBtn, explanationEl, steps) => {
+            prevBtn.disabled = (step <= 1);
+            nextBtn.disabled = (step >= totalSteps);
+            // 使用 innerHTML 以便解析 <br> 和 <b> 標籤
+            explanationEl.innerHTML = steps[step].explanation;
+        };
+
+        const resetAnimation = (animArea, startBtn, controls, explanationEl, initialText) => {
+            animArea.querySelectorAll('.anim-element').forEach(el => el.classList.remove('visible'));
+            deactivateAllLayers();
+            startBtn.style.display = 'block';
+            controls.style.display = 'none';
+            explanationEl.innerHTML = initialText;
+            explanationEl.classList.remove('highlight-ml', 'highlight-dl');
+        };
+        
+        function activateLayer(layerId, delay) {
+            setTimeout(() => {
+                const layer = document.getElementById(layerId);
+                if (layer) {
+                    const nodes = layer.querySelectorAll('.nn-node');
+                    nodes.forEach((node, index) => {
+                        setTimeout(() => { node.classList.add('active'); }, index * 80);
+                    });
+                }
+            }, delay);
+        }
+
+        function deactivateAllLayers() {
+            dlAnimArea.querySelectorAll('.nn-node').forEach(node => node.classList.remove('active'));
+        }
+
+        // --- 事件監聽器 ---
+
+        // 機器學習 (ML)
+        mlStartBtn.addEventListener('click', () => {
+            if (dlControls.style.display === 'flex') {
+                dlResetBtn.click();
+            }
+
+            mlStartBtn.style.display = 'none';
+            mlControls.style.display = 'flex';
+            mlExplanation.classList.add('highlight-ml');
+            
+            mlCurrentStep = 1;
+            mlSteps[1].elements.forEach(id => document.getElementById(id).classList.add('visible'));
+            updateControls(mlCurrentStep, mlSteps.length - 1, mlPrevBtn, mlNextBtn, mlExplanation, mlSteps);
+        });
+
+        mlNextBtn.addEventListener('click', () => {
+            mlCurrentStep = updateStep(mlSteps, mlCurrentStep, 1);
+            updateControls(mlCurrentStep, mlSteps.length - 1, mlPrevBtn, mlNextBtn, mlExplanation, mlSteps);
+        });
+
+        mlPrevBtn.addEventListener('click', () => {
+            mlCurrentStep = updateStep(mlSteps, mlCurrentStep, -1);
+            updateControls(mlCurrentStep, mlSteps.length - 1, mlPrevBtn, mlNextBtn, mlExplanation, mlSteps);
+        });
+
+        mlResetBtn.addEventListener('click', () => {
+            resetAnimation(mlAnimArea, mlStartBtn, mlControls, mlExplanation, mlSteps[0].explanation);
+            mlCurrentStep = 0;
+        });
+
+        // 深度學習 (DL)
+        dlStartBtn.addEventListener('click', () => {
+            if (mlControls.style.display === 'flex') {
+                mlResetBtn.click();
+            }
+
+            dlStartBtn.style.display = 'none';
+            dlControls.style.display = 'flex';
+            dlExplanation.classList.add('highlight-dl');
+
+            dlCurrentStep = 1;
+            dlSteps[1].elements.forEach(id => document.getElementById(id).classList.add('visible'));
+            updateControls(dlCurrentStep, dlSteps.length - 1, dlPrevBtn, dlNextBtn, dlExplanation, dlSteps);
+        });
+
+        dlNextBtn.addEventListener('click', () => {
+            dlCurrentStep = updateStep(dlSteps, dlCurrentStep, 1);
+            updateControls(dlCurrentStep, dlSteps.length - 1, dlPrevBtn, dlNextBtn, dlExplanation, dlSteps);
+        });
+
+        dlPrevBtn.addEventListener('click', () => {
+            dlCurrentStep = updateStep(dlSteps, dlCurrentStep, -1);
+            updateControls(dlCurrentStep, dlSteps.length - 1, dlPrevBtn, dlNextBtn, dlExplanation, dlSteps);
+        });
+
+        dlResetBtn.addEventListener('click', () => {
+            resetAnimation(dlAnimArea, dlStartBtn, dlControls, dlExplanation, dlSteps[0].explanation);
+            dlCurrentStep = 0;
+        });
+    });
+    </script>
+
+</body>
+</html>
