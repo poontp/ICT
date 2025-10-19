@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動解說：數據科學與數據開採</title>
+    <style>
+        /* --- 基本樣式 --- */
+        :root {
+            --bg-color: #0d1b2a;
+            --primary-text-color: #e0e1dd;
+            --secondary-text-color: #a9b4c2;
+            --accent-color-1: #415a77;
+            --accent-color-2: #778da9;
+            --highlight-color: #fca311;
+            --font-family: 'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--primary-text-color);
+            font-family: var(--font-family);
+        }
+
+        /* --- 容器與場景 --- */
+        #presentation-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scene {
+            position: absolute;
+            width: 90%;
+            max-width: 1000px;
+            height: 90%;
+            max-height: 700px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        .scene.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .scene h1, .scene h2 {
+            color: var(--primary-text-color);
+            margin-bottom: 20px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .scene p {
+            color: var(--secondary-text-color);
+            font-size: 1.2rem;
+            max-width: 80%;
+            line-height: 1.6;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        /* --- 導航與進度條 --- */
+        #navigation {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        #navigation button {
+            background-color: var(--accent-color-1);
+            color: var(--primary-text-color);
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        #navigation button:hover:not(:disabled) {
+            background-color: var(--accent-color-2);
+            transform: translateY(-2px);
+        }
+
+        #navigation button:disabled {
+            background-color: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        #progress-bar-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background-color: var(--accent-color-1);
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--highlight-color);
+            transition: width 0.5s ease-in-out;
+        }
+
+
+        /* --- 動畫關鍵幀 --- */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- 場景 1: 數據海洋 --- */
+        #data-ocean {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .data-point {
+            position: absolute;
+            background-color: var(--accent-color-2);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        @keyframes float {
+            from { transform: translateY(0) translateX(0); opacity: 0.7; }
+            to { transform: translateY(-50px) translateX(20px); opacity: 0.3; }
+        }
+        
+        /* --- 場景 2: 數據科學定義 (Venn圖) --- */
+        #venn-diagram {
+            width: 400px;
+            height: 300px;
+            position: relative;
+            margin-top: 30px;
+        }
+        .venn-circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.7;
+            display: flex;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #fff;
+            animation: zoomIn 1s ease-out forwards;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #circle1 {
+            background-color: #415a77;
+            width: 200px; height: 200px;
+            top: 0; left: 50px;
+            animation-delay: 0.2s;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 45px;
+        }
+        #circle2 {
+            background-color: #778da9;
+            width: 200px; height: 200px;
+            top: 0; right: 50px;
+            animation-delay: 0.4s;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 45px;
+        }
+        #circle3 {
+            background-color: #1b263b;
+            width: 200px; height: 200px;
+            bottom: 0; left: 100px;
+            animation-delay: 0.6s;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 45px;
+        }
+        #venn-center {
+            position: absolute;
+            top: 95px; left: 170px;
+            color: var(--highlight-color);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px black;
+            animation: fadeIn 2s ease-out 1.5s forwards;
+            opacity: 0;
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        
+        /* --- 場景 3: 數據開採 (淘金動畫) --- */
+        #mining-animation {
+            width: 80%;
+            height: 300px;
+            position: relative;
+            border: 2px dashed var(--accent-color-1);
+            border-radius: 10px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        .rock, .gold {
+            position: absolute;
+            border-radius: 50%;
+            animation: fall 1s ease-out forwards;
+        }
+        .rock { background-color: var(--secondary-text-color); }
+        .gold { background-color: var(--highlight-color); box-shadow: 0 0 10px var(--highlight-color); }
+        
+        #miner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #fff;
+            border-radius: 5px;
+            bottom: 10px;
+            left: -50px;
+            animation: mine 10s linear infinite 1.5s;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        @keyframes fall {
+            from { top: -50px; opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes mine {
+            0% { left: -50px; transform: rotate(0deg); }
+            20% { left: 30%; transform: rotate(20deg); }
+            40% { left: 60%; transform: rotate(-15deg); }
+            60% { left: 80%; transform: rotate(10deg); }
+            80% { left: 40%; transform: rotate(-25deg); }
+            100% { left: -50px; transform: rotate(0deg); }
+        }
+
+        /* --- 場景 4: 數據科學流程 --- */
+        #process-flow {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 30px;
+            position: relative;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            transition: background-color 0.3s, transform 0.3s;
+            z-index: 10;
+        }
+        .step:hover, .step.active {
+            background-color: var(--accent-color-1);
+            transform: scale(1.1);
+        }
+        .step-icon {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--accent-color-2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        .step.active .step-icon {
+            border-color: var(--highlight-color);
+            color: var(--highlight-color);
+        }
+        .step-label { font-size: 0.9rem; }
+        
+        #process-line {
+            position: absolute;
+            top: 41px; /* (60px icon + 2*3px border)/2 + 10px padding */
+            left: 10%;
+            width: 80%;
+            height: 3px;
+            background-color: var(--accent-color-2);
+            z-index: 5;
+        }
+
+        #step-explanation {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(27, 38, 59, 0.7);
+            border-radius: 10px;
+            min-height: 100px;
+            width: 80%;
+            border: 1px solid var(--accent-color-1);
+        }
+        #step-explanation h3 { color: var(--highlight-color); }
+        #step-explanation p { font-size: 1rem; margin: 0; }
+        .explanation-content { display: none; }
+        .explanation-content.active { display: block; animation: fadeInUp 0.5s; }
+
+        /* --- 場景 5: 開採技術 --- */
+        #techniques-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 90%;
+            max-width: 700px;
+            margin-top: 20px;
+        }
+        .technique-card {
+            background-color: var(--accent-color-1);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid var(--accent-color-2);
+            transition: transform 0.3s, border-color 0.3s;
+            cursor: default;
+        }
+        .technique-card:hover {
+            transform: translateY(-5px);
+            border-left-color: var(--highlight-color);
+        }
+        .technique-card h3 {
+            margin: 0 0 10px 0;
+            color: var(--primary-text-color);
+        }
+        .technique-card p {
+            font-size: 0.9rem;
+            margin: 0;
+            max-width: 100%;
+            animation: none; /* 覆蓋通用 p 樣式 */
+        }
+
+        /* --- 響應式設計 --- */
+        @media (max-width: 768px) {
+            .scene h1 { font-size: 1.8rem; }
+            .scene h2 { font-size: 1.5rem; }
+            .scene p { font-size: 1rem; max-width: 95%; }
+
+            #venn-diagram { transform: scale(0.7); margin-top: 0; }
+            
+            #process-flow { flex-direction: column; align-items: center; gap: 15px; }
+            #process-line { display: none; }
+            .step { flex-direction: row; width: 80%; justify-content: flex-start; }
+            .step-icon { width: 40px; height: 40px; font-size: 1.5rem; margin-right: 15px; margin-bottom: 0;}
+            
+            #techniques-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="presentation-container">
+        <!-- 場景 1: 歡迎與數據海洋 -->
+        <div class="scene active" id="scene-1">
+            <div id="data-ocean"></div>
+            <h1>歡迎來到數據科學的世界</h1>
+            <p>在這個數位時代，我們被龐大的數據海洋所包圍。<br>從社群媒體的貼文到線上購物的紀錄，無處不產生數據。</p>
+            <p style="margin-top: 20px; color: var(--highlight-color); font-weight: bold;">但我們如何從這片汪洋中找到價值？</p>
+        </div>
+
+        <!-- 場景 2: 什麼是數據科學？ -->
+        <div class="scene" id="scene-2">
+            <h2>什麼是數據科學 (Data Science)？</h2>
+            <p>數據科學是一個跨學科的領域，它結合了多種技術與理論，旨在從數據中提取知識和洞見。</p>
+            <div id="venn-diagram">
+                <div class="venn-circle" id="circle1">電腦科學<br>& 資訊工程</div>
+                <div class="venn-circle" id="circle2">數學 & 統計學</div>
+                <div class="venn-circle" id="circle3">領域專業知識</div>
+                <div id="venn-center">數據<br>科學</div>
+            </div>
+        </div>
+
+        <!-- 場景 3: 什麼是數據開採？ -->
+        <div class="scene" id="scene-3">
+            <h2>什麼是數據開採 (Data Mining)？</h2>
+            <p>數據開採是數據科學中的一個核心環節。<br>它就像在巨大的數據礦山中「淘金」，使用自動化方法來發現大量數據中隱藏的、有價值的模式和關係。</p>
+            <div id="mining-animation">
+                <div id="miner"></div>
+            </div>
+        </div>
+        
+        <!-- 場景 4: 數據科學流程 -->
+        <div class="scene" id="scene-4">
+            <h2>數據科學的典型流程</h2>
+            <p>一個數據科學專案通常遵循以下步驟。點擊每個步驟查看詳情。</p>
+            <div id="process-flow">
+                <div id="process-line"></div>
+                <div class="step active" data-step="1">
+                    <div class="step-icon">🎯</div>
+                    <div class="step-label">商業理解</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-icon">📊</div>
+                    <div class="step-label">數據收集</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-icon">🧹</div>
+                    <div class="step-label">數據準備</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-icon">⛏️</div>
+                    <div class="step-label">數據開採</div>
+                </div>
+                <div class="step" data-step="5">
+                    <div class="step-icon">📈</div>
+                    <div class="step-label">模型評估</div>
+                </div>
+                <div class="step" data-step="6">
+                    <div class="step-icon">🚀</div>
+                    <div class="step-label">部署應用</div>
+                </div>
+            </div>
+            <div id="step-explanation">
+                <div class="explanation-content active" id="explanation-1">
+                    <h3>🎯 商業理解 (Business Understanding)</h3>
+                    <p>定義專案目標和需求。我們想要解決什麼問題？例如：如何提高客戶留存率？如何預測下季度的銷售額？</p>
+                </div>
+                <div class="explanation-content" id="explanation-2">
+                    <h3>📊 數據收集 (Data Collection)</h3>
+                    <p>從各種來源（如資料庫、API、日誌文件）收集原始數據。這是建立分析基礎的第一步。</p>
+                </div>
+                <div class="explanation-content" id="explanation-3">
+                    <h3>🧹 數據準備 (Data Preparation / Cleaning)</h3>
+                    <p>這是最耗時的階段。包括處理缺失值、修正錯誤、統一格式、移除重複項，將原始數據轉換為可用於建模的乾淨數據集。</p>
+                </div>
+                <div class="explanation-content" id="explanation-4">
+                    <h3>⛏️ 數據開採 / 模型建立 (Data Mining / Modeling)</h3>
+                    <p>選擇並應用各種數據開採技術（如分類、分群）來建立預測或描述模型，以發現數據中的模式。</p>
+                </div>
+                <div class="explanation-content" id="explanation-5">
+                    <h3>📈 模型評估 (Evaluation)</h3>
+                    <p>評估模型的性能和準確性，確保它能有效解決商業問題。如果模型不理想，可能需要回到前面的步驟進行調整。</p>
+                </div>
+                <div class="explanation-content" id="explanation-6">
+                    <h3>🚀 部署應用 (Deployment)</h3>
+                    <p>將驗證後的模型整合到實際的業務流程或產品中，例如推薦系統、風險評分卡等，從而產生商業價值。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 場景 5: 常見的數據開採技術 -->
+        <div class="scene" id="scene-5">
+            <h2>常見的數據開採技術</h2>
+            <p>數據開採包含多種強大的演算法，用於解決不同類型的問題。</p>
+            <div id="techniques-container">
+                <div class="technique-card">
+                    <h3>分類 (Classification)</h3>
+                    <p>將數據項目分配到預定義的類別中。例如：判斷一封郵件是否為垃圾郵件，或識別信用卡交易是否為詐欺。</p>
+                </div>
+                <div class="technique-card">
+                    <h3>迴歸 (Regression)</h3>
+                    <p>預測一個連續的數值。例如：根據房屋的特徵（面積、位置）預測其售價，或預測明天的氣溫。</p>
+                </div>
+                <div class="technique-card">
+                    <h3>分群 (Clustering)</h3>
+                    <p>將相似的數據點分組在一起，而無需預先定義類別。例如：根據購買行為將客戶分成不同的市場區隔。</p>
+                </div>
+                <div class="technique-card">
+                    <h3>關聯規則 (Association)</h3>
+                    <p>發現數據項之間共同出現的關係。最經典的例子是「啤酒與尿布」的故事，找出哪些商品經常被一起購買。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 場景 6: 總結 -->
+        <div class="scene" id="scene-6">
+            <h2>總結：從數據到智慧</h2>
+            <p>數據科學是一個完整的框架，它將商業、數據、演算法和技術結合在一起，旨在解決實際問題。</p>
+            <p>數據開採則是這個框架中發現隱藏模式的關鍵技術引擎。</p>
+            <p style="margin-top: 30px; font-size: 1.5rem; color: var(--highlight-color);"><strong>數據 → 資訊 → 知識 → 智慧</strong></p>
+            <p>這就是數據科學與數據開採為我們帶來的強大力量。</p>
+        </div>
+
+    </div>
+
+    <div id="navigation">
+        <button id="prev-btn" disabled>上一頁</button>
+        <button id="next-btn">下一頁</button>
+    </div>
+
+    <div id="progress-bar-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- 全局變數 ---
+            const scenes = document.querySelectorAll('.scene');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const progressBar = document.getElementById('progress-bar');
+            let currentSceneIndex = 0;
+
+            // --- 導航功能 ---
+            function showScene(index) {
+                // 隱藏當前場景
+                if (scenes[currentSceneIndex]) {
+                   scenes[currentSceneIndex].classList.remove('active');
+                }
+                
+                // 顯示新場景
+                currentSceneIndex = index;
+                if (scenes[currentSceneIndex]) {
+                    scenes[currentSceneIndex].classList.add('active');
+                }
+
+                // 更新按鈕狀態
+                prevBtn.disabled = (currentSceneIndex === 0);
+                nextBtn.disabled = (currentSceneIndex === scenes.length - 1);
+
+                // 更新進度條
+                const progressPercentage = (currentSceneIndex / (scenes.length - 1)) * 100;
+                progressBar.style.width = progressPercentage + '%';
+                
+                // 觸發場景特定動畫
+                triggerSceneAnimation(currentSceneIndex);
+            }
+
+            nextBtn.addEventListener('click', () => {
+                if (currentSceneIndex < scenes.length - 1) {
+                    showScene(currentSceneIndex + 1);
+                }
+            });
+
+            // [已修正]
+            prevBtn.addEventListener('click', () => {
+                if (currentSceneIndex > 0) {
+                    // 修正：應該是減 1，而不是加 1
+                    showScene(currentSceneIndex - 1);
+                }
+            });
+
+            // --- 場景特定功能 ---
+            
+            // 場景 1: 數據海洋動畫
+            const dataOcean = document.getElementById('data-ocean');
+            function createDataPoints() {
+                for (let i = 0; i < 100; i++) {
+                    const point = document.createElement('div');
+                    point.className = 'data-point';
+                    const size = Math.random() * 10 + 2;
+                    point.style.width = `${size}px`;
+                    point.style.height = `${size}px`;
+                    point.style.top = `${Math.random() * 100}%`;
+                    point.style.left = `${Math.random() * 100}%`;
+                    point.style.animationDelay = `${Math.random() * 20}s`;
+                    point.style.animationDuration = `${Math.random() * 10 + 15}s`;
+                    dataOcean.appendChild(point);
+                }
+            }
+
+            // 場景 3: 數據開採動畫
+            const miningAnimation = document.getElementById('mining-animation');
+            function createMineObjects() {
+                // 只在第一次生成
+                if (miningAnimation.children.length > 1) return;
+
+                for (let i = 0; i < 50; i++) {
+                    const isGold = Math.random() < 0.1; // 10% 的機率是黃金
+                    const obj = document.createElement('div');
+                    obj.className = isGold ? 'gold' : 'rock';
+                    const size = isGold ? Math.random() * 15 + 8 : Math.random() * 12 + 5;
+                    obj.style.width = `${size}px`;
+                    obj.style.height = `${size}px`;
+                    obj.style.left = `${Math.random() * 95}%`;
+                    obj.style.bottom = `${Math.random() * 50 + 5}%`; // 落在下半部分
+                    obj.style.animationDelay = `${Math.random() * 1}s`;
+                    
+                    if (isGold) {
+                        obj.style.zIndex = '20';
+                        obj.animate([
+                            { transform: 'scale(1)' },
+                            { transform: 'scale(1.5)', background: 'white' },
+                            { transform: 'scale(1)' }
+                        ], {
+                            duration: 500,
+                            delay: Math.random() * 8000 + 2000,
+                            iterations: Infinity
+                        });
+                    }
+                    
+                    miningAnimation.appendChild(obj);
+                }
+            }
+
+            // 場景 4: 流程步驟互動
+            const steps = document.querySelectorAll('.step');
+            const explanations = document.querySelectorAll('.explanation-content');
+            steps.forEach(step => {
+                step.addEventListener('click', () => {
+                    const stepNumber = step.dataset.step;
+                    
+                    steps.forEach(s => s.classList.remove('active'));
+                    step.classList.add('active');
+                    
+                    explanations.forEach(exp => exp.classList.remove('active'));
+                    document.getElementById(`explanation-${stepNumber}`).classList.add('active');
+                });
+            });
+
+            // 觸發場景動畫的總控函數
+            function triggerSceneAnimation(index) {
+                if (index === 2) { // 場景 3
+                    createMineObjects();
+                }
+            }
+
+            // --- 初始化 ---
+            createDataPoints();
+            showScene(0); // 顯示第一個場景
+        });
+    </script>
+</body>
+</html>
