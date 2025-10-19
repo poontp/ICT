@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數據科學與數據開採：互動式解說</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .scene-fade-enter {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .scene-fade-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 300ms ease-out, transform 300ms ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-5xl bg-white rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200">
+        
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">數據科學與數據開採</h1>
+            <p class="text-slate-500 mt-2">一個結構化的互動式分析指南</p>
+        </header>
+
+        <!-- 進度條 -->
+        <div id="progress-bar" class="flex justify-between items-center mb-8 px-2">
+            <!-- 進度節點將由 JS 動態生成 -->
+        </div>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <!-- 動畫視覺區域 -->
+            <div id="animation-stage" class="bg-slate-50 border border-slate-200 rounded-lg h-80 flex items-center justify-center p-4 transition-all duration-300">
+                <!-- 動畫內容將由 JS 動態生成 -->
+            </div>
+
+            <!-- 解說文本區域 -->
+            <div id="explanation-content" class="h-80 flex flex-col">
+                <h2 id="scene-title" class="text-2xl font-bold mb-3 text-sky-700"></h2>
+                <div id="scene-explanation" class="text-slate-600 leading-relaxed overflow-y-auto pr-2">
+                    <!-- 解說內容將由 JS 動態生成 -->
+                </div>
+            </div>
+        </main>
+
+        <!-- 導航控制 -->
+        <footer class="mt-8 flex justify-between items-center border-t border-slate-200 pt-6">
+            <div class="text-sm text-slate-500">
+                步驟 <span id="current-step">1</span> / <span id="total-steps">7</span>
+            </div>
+            <div class="flex space-x-4">
+                <button id="prev-btn" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    上一步
+                </button>
+                <button id="next-btn" class="px-6 py-2 bg-sky-600 text-white rounded-lg font-semibold hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    下一步
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const scenes = [
+                {
+                    title: "步驟 1：業務理解 (Business Understanding)",
+                    explanation: `
+                        <p class="mb-2"><strong>**定義：**</strong> 一切分析的起點。此階段的核心目標是將業務問題轉化為一個可被數據分析解決的明確定義。缺乏清晰的目標，後續所有技術工作都將失去方向。</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><strong>關鍵任務：</strong>確定專案目標、評估現況、定義數據分析目標、制定專案計畫。</li>
+                            <li><strong>核心問題：</strong>我們需要解決的具體業務痛點是什麼？成功的標準如何衡量？</li>
+                        </ul>
+                    `,
+                    visual: () => `
+                        <div class="text-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <p class="mt-4 font-semibold text-lg">定義問題與目標</p>
+                        </div>
+                    `
+                },
+                {
+                    title: "步驟 2：數據採集 (Data Collection)",
+                    explanation: `
+                        <p class="mb-2"><strong>**定義：**</strong> 根據已定義的目標，從各種來源收集原始數據。數據是整個科學流程的燃料，其品質與廣度直接決定了分析結果的上限。</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><strong>數據來源：</strong>內部資料庫 (SQL/NoSQL)、API、日誌檔案、網路爬蟲、公開數據集等。</li>
+                            <li><strong>挑戰：</strong>數據的可得性、權限問題、數據格式不一致。</li>
+                        </ul>
+                    `,
+                    visual: () => `
+                        <div class="w-full text-center">
+                             <div class="flex justify-center items-center space-x-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 7v5c0 2.21 3.582 4 8 4s8-1.79 8-4V7" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h4a2 2 0 002-2V7a2 2 0 00-2-2h-4a2 2 0 00-2 2z" /></svg>
+                             </div>
+                             <p class="mt-4 font-semibold text-lg">從多來源獲取數據</p>
+                        </div>
+                    `
+                },
+                {
+                    title: "步驟 3：數據清理與準備 (Data Preparation)",
+                    explanation: `
+                        <p class="mb-2"><strong>**定義：**</strong> 這是數據科學中最耗時但至關重要的一步。原始數據充滿了錯誤、缺失和不一致，必須進行處理才能用於分析。俗稱「數據ETL」(Extract, Transform, Load)。</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><strong>常見任務：</strong>處理缺失值、修正錯誤、去除重複項、數據類型轉換、特徵工程 (Feature Engineering)。</li>
+                            <li><strong>重要性：</strong>垃圾進，垃圾出 (Garbage In, Garbage Out)。高品質的數據是建立有效模型的基礎。</li>
+                        </ul>
+                    `,
+                    visual: () => `
+                         <div class="w-full text-center">
+                            <div class="flex justify-center items-center space-x-4">
+                               <div class="text-3xl text-red-400 font-mono">[?, 3, X, 5]</div>
+                               <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                               <div class="text-3xl text-green-500 font-mono">[2, 3, 4, 5]</div>
+                            </div>
+                            <p class="mt-4 font-semibold text-lg">清理與轉換原始數據</p>
+                         </div>
+                    `
+                },
+                {
+                    title: "步驟 4：探索性數據分析 (EDA)",
+                    explanation: `
+                        <p class="mb-2"><strong>**定義：**</strong> 在正式建模之前，對數據進行初步的探索性分析。目標是理解數據的內在結構、分佈、異常值和變數之間的關係。</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><strong>常用方法：</strong>描述性統計 (平均值、中位數)、數據可視化 (直方圖、散點圖、箱形圖)。</li>
+                            <li><strong>目的：</strong>形成初步的假設，為後續的特徵工程和模型選擇提供依據。</li>
+                        </ul>
+                    `,
+                    visual: () => `
+                        <div class="w-full h-full flex justify-center items-center space-x-4">
+                            <svg width="80" height="80" viewBox="0 0 100 100">
+                                <rect x="10" y="70" width="20" height="30" fill="#60a5fa"></rect>
+                                <rect x="40" y="40" width="20" height="60" fill="#3b82f6"></rect>
+                                <rect x="70" y="20" width="20" height="80" fill="#2563eb"></rect>
+                            </svg>
+                            <svg width="100" height="100" viewBox="0 0 100 100">
+                                <circle cx="20" cy="80" r="5" fill="#3b82f6"></circle>
+                                <circle cx="35" cy="65" r="5" fill="#3b82f6"></circle>
+                                <circle cx="50" cy="50" r="5" fill="#3b82f6"></circle>
+                                <circle cx="65" cy="35" r="5" fill="#3b82f6"></circle>
+                                <circle cx="80" cy="20" r="5" fill="#3b82f6"></circle>
+                            </svg>
+                            <p class="font-semibold text-lg -ml-2">→ 發現洞見</p>
+                        </div>
+                    `
+                },
+                {
+                    title: "步驟 5：數據開採與建模 (Data Mining & Modeling)",
+                    explanation: `
+                        <p class="mb-2"><strong>**核心定義：**</strong> 在此階段，<strong>**數據開採 (Data Mining)**</strong> 作為一項具體技術被應用。其目標是從大規模、已準備好的數據集中，使用演算法來****自動發現有意義的、先前未知的模式和規則**</strong>。</p>
+                        <p class="mb-2">數據科學家會選擇並應用各種模型來執行數據開採任務。</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><strong>常見模型：</strong>
+                                <strong>**分類 (Classification):**</strong> 預測項目屬於哪個類別 (例如：垃圾郵件檢測)。
+                                <strong>**迴歸 (Regression):**</strong> 預測一個連續的數值 (例如：預測房價)。
+                                <strong>**分群 (Clustering):**</strong> 將相似的數據點分組 (例如：客戶分群)。
+                            </li>
+                        </ul>
+                        <blockquote><strong>**關係釐清：**</strong>數據科學是一個涵蓋從問題定義到模型部署的完整流程。數據開採是這個流程中，專注於「從數據中提取模式」的核心技術步驟。</blockquote>
+                    `,
+                    visual: () => `
+                        <div class="w-full h-full flex flex-col justify-center items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547a2 2 0 00-.547 1.806l.477 2.387a6 6 0 00.517 3.86l.158.318a6 6 0 00.517 3.86l2.387.477a2 2 0 001.806-.547a2 2 0 00.547-1.806l-.477-2.387a6 6 0 00-.517-3.86l-.158-.318a6 6 0 01-.517-3.86l-2.387-.477a2 2 0 01-.547-1.806zM15.182 4.818a2 2 0 00-1.806-.547l-2.387.477a6 6 0 00-3.86-.517l-.318-.158a6 6 0 01-3.86-.517L2.95 3.79a2 2 0 00-1.806.547a2 2 0 00-.547 1.806l.477 2.387a6 6 0 00.517 3.86l.158.318a6 6 0 00.517 3.86l2.387.477a2 2 0 001.806-.547a2 2 0 00.547-1.806l-.477-2.387a6 6 0 00-.517-3.86l-.158-.318a6 6 0 01-.517-3.86l-2.387-.477a2 2 0 01-.547-1.806z" />
+                            </svg>
+                            <p class="mt-4 font-semibold text-lg">應用演算法，發現模式</p>
+                        </div>
+                    `
+                },
+                {
+                    title: "步驟 6：模型評估 (Model Evaluation)",
+                    explanation: `
+                        <p class="mb-2"><strong>**定義：**</strong> 對建立的模型進行效能評估，以確定其預測的準確性和可靠性，並判斷其是否滿足最初的業務目標。</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><strong>評估指標：</strong>
+                                <strong>**分類：**</strong> 準確率 (Accuracy)、精確率 (Precision)、召回率 (Recall)、F1 分數。
+                                <strong>**迴歸：**</strong> 均方誤差 (MSE)、R 平方值。
+                            </li>
+                            <li><strong>流程：**</strong> 可能需要回到建模步驟，調整參數或更換模型，進行多次迭代以達到最佳效果。</li>
+                        </ul>
+                    `,
+                    visual: () => `
+                        <div class="w-full text-center">
+                            <div class="bg-slate-200 p-4 rounded-lg inline-block">
+                                <p class="text-lg font-mono">Accuracy: <strong class="text-green-600">97.5%</strong></p>
+                                <p class="text-lg font-mono">Precision: <strong class="text-green-600">96.8%</strong></p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mt-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p class="mt-4 font-semibold text-lg">驗證模型效能</p>
+                        </div>
+                    `
+                },
+                {
+                    title: "步驟 7：部署與監控 (Deployment & Monitoring)",
+                    explanation: `
+                        <p class="mb-2"><strong>**定義：**</strong> 將最終評估通過的模型整合到現有的業務系統或產品中，使其能夠真正產生價值。部署後，還需要持續監控其表現，防止因數據變化導致的「模型漂移」。</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><strong>部署方式：</strong>作為 API 服務、整合到儀表板、嵌入到應用程式中。</li>
+                            <li><strong>監控：**</strong> 定期使用新生產數據重新評估模型，必要時進行再訓練 (Re-training)。</li>
+                        </ul>
+                        <blockquote><strong>**結論：**</strong>數據科學是一個不斷循環、迭代的過程，而非線性的終點。從業務中來，到業務中去，持續創造價值。</blockquote>
+                    `,
+                    visual: () => `
+                        <div class="w-full text-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <p class="mt-4 font-semibold text-lg">模型上線，持續監控</p>
+                        </div>
+                    `
+                },
+            ];
+
+            let currentSceneIndex = 0;
+            const totalSteps = scenes.length;
+
+            const animationStage = document.getElementById('animation-stage');
+            const sceneTitle = document.getElementById('scene-title');
+            const sceneExplanation = document.getElementById('scene-explanation');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const currentStepEl = document.getElementById('current-step');
+            const totalStepsEl = document.getElementById('total-steps');
+            const progressBar = document.getElementById('progress-bar');
+
+            function createProgressBar() {
+                scenes.forEach((scene, index) => {
+                    const nodeContainer = document.createElement('div');
+                    nodeContainer.className = 'flex-1 flex items-center';
+                    
+                    const node = document.createElement('div');
+                    node.className = 'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300';
+                    node.dataset.step = index;
+                    node.textContent = index + 1;
+                    
+                    nodeContainer.appendChild(node);
+
+                    if (index < scenes.length - 1) {
+                        const line = document.createElement('div');
+                        line.className = 'flex-1 h-1 bg-slate-200 transition-all duration-300';
+                        line.dataset.line = index;
+                        nodeContainer.appendChild(line);
+                    }
+                    
+                    progressBar.appendChild(nodeContainer);
+                });
+            }
+
+            function updateProgressBar() {
+                const nodes = progressBar.querySelectorAll('[data-step]');
+                const lines = progressBar.querySelectorAll('[data-line]');
+                
+                nodes.forEach((node, index) => {
+                    if (index < currentSceneIndex) {
+                        node.classList.add('bg-sky-600', 'border-sky-600', 'text-white');
+                        node.classList.remove('bg-white', 'border-slate-300', 'text-slate-500');
+                    } else if (index === currentSceneIndex) {
+                        node.classList.add('bg-white', 'border-sky-600', 'text-sky-600', 'scale-125');
+                        node.classList.remove('bg-sky-600', 'border-slate-300', 'text-white', 'text-slate-500');
+                    } else {
+                        node.classList.add('bg-white', 'border-slate-300', 'text-slate-500');
+                        node.classList.remove('bg-sky-600', 'border-sky-600', 'text-white', 'scale-125');
+                    }
+                });
+                
+                lines.forEach((line, index) => {
+                    if (index < currentSceneIndex) {
+                        line.classList.add('bg-sky-600');
+                        line.classList.remove('bg-slate-200');
+                    } else {
+                        line.classList.add('bg-slate-200');
+                        line.classList.remove('bg-sky-600');
+                    }
+                });
+            }
+            
+            function renderScene() {
+                const scene = scenes[currentSceneIndex];
+
+                // Add fade-in animation effect
+                const contentContainer = document.getElementById('explanation-content');
+                const animationContainer = document.getElementById('animation-stage');
+                
+                contentContainer.classList.remove('scene-fade-enter-active');
+                animationContainer.classList.remove('scene-fade-enter-active');
+                contentContainer.classList.add('scene-fade-enter');
+                animationContainer.classList.add('scene-fade-enter');
+
+                setTimeout(() => {
+                    sceneTitle.textContent = scene.title;
+                    sceneExplanation.innerHTML = scene.explanation;
+                    animationStage.innerHTML = scene.visual();
+                    
+                    contentContainer.classList.add('scene-fade-enter-active');
+                    animationContainer.classList.add('scene-fade-enter-active');
+                }, 50);
+
+                currentStepEl.textContent = currentSceneIndex + 1;
+
+                prevBtn.disabled = currentSceneIndex === 0;
+                nextBtn.disabled = currentSceneIndex === totalSteps - 1;
+                
+                updateProgressBar();
+            }
+
+            prevBtn.addEventListener('click', () => {
+                if (currentSceneIndex > 0) {
+                    currentSceneIndex--;
+                    renderScene();
+                }
+            });
+
+            nextBtn.addEventListener('click', () => {
+                if (currentSceneIndex < totalSteps - 1) {
+                    currentSceneIndex++;
+                    renderScene();
+                }
+            });
+
+            // Initial setup
+            totalStepsEl.textContent = totalSteps;
+            createProgressBar();
+            renderScene();
+        });
+    </script>
+</body>
+</html>
