@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動解說：數據科學中的圖形識別</title>
+    <style>
+        /* --- 基礎頁面樣式 --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* --- 主要容器 --- */
+        .container {
+            text-align: center;
+            background: #ffffff;
+            padding: 25px 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 95vw;
+            width: 900px;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            color: #0056b3;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        #data-science-context {
+            color: #6c757d;
+            font-style: italic;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        /* --- 解說與控制項 --- */
+        .explanation-box { background-color: #e9ecef; border-radius: 8px; padding: 15px; margin: 20px 0; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s; }
+        .explanation-box p { margin: 0; font-size: 1.1em; color: #495057; line-height: 1.6; }
+        .controls { margin-top: 20px; }
+        .controls button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 1em; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
+        .controls button:hover:not(:disabled) { background-color: #0056b3; transform: translateY(-2px); }
+        .controls button:disabled { background-color: #cccccc; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* --- 新增：訓練動畫區塊 --- */
+        #training-animation-container {
+            display: none; /* 預設隱藏 */
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        #training-animation-container.visible {
+            display: flex;
+        }
+        .training-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        #data-stream {
+            display: flex;
+            gap: 10px;
+            height: 40px;
+            align-items: center;
+        }
+        .data-icon {
+            width: 30px;
+            height: 30px;
+            opacity: 0;
+            animation: fadeInMove 0.5s forwards;
+        }
+        .data-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: #6c757d;
+        }
+        @keyframes fadeInMove {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .progress-bar-container {
+            width: 80%;
+            height: 15px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #training-progress {
+            width: 0%;
+            height: 100%;
+            background-color: #28a745;
+            border-radius: 10px;
+            transition: width 3s ease-in-out;
+        }
+
+        /* --- 主內容區塊 (貓咪圖 + 神經網絡圖) --- */
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin: 15px auto;
+            align-items: center;
+        }
+        
+        .svg-container { flex: 2; position: relative; }
+        .nn-diagram-container { flex: 1; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 1px solid #dee2e6; align-self: stretch; display: flex; flex-direction: column; justify-content: space-around; }
+
+        /* --- SVG 核心樣式 --- */
+        svg#cat-svg { width: 100%; height: auto; font-family: "Microsoft JhengHei", "PingFang TC", "Heiti TC", sans-serif; transition: opacity 0.5s ease; }
+        .cat-body, .cat-ear-inner, .cat-nose, .cat-tail { stroke: #2c3e50; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+        .cat-body { fill: #e9eaec; } .cat-ear-inner { fill: #fce4e4; } .cat-eye { fill: #2c3e50; } .cat-eye-highlight { fill: #fff; } .cat-nose { fill: #ffc0cb; } .cat-mouth-lines, .cat-whiskers, .cat-paws { fill: none; stroke: #2c3e50; stroke-width: 6; stroke-linecap: round; } .cat-tail { fill: #f9d2b8; } .cat-tail-stripe { fill: #fff; }
+        .feature-group { pointer-events: none; } .feature-group.interactive { pointer-events: all; cursor: pointer; } .feature-group .bounding-box { fill: none; stroke-width: 10; stroke-opacity: 0; transition: stroke-opacity 0.3s ease-in-out; } 
+        .feature-group .label { font-size: 28px; font-weight: bold; fill: #000; opacity: 0; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; transform-origin: center; pointer-events: none; }
+        .feature-group.interactive:hover .bounding-box { stroke-opacity: 1; } .feature-group.interactive:hover .label { opacity: 1; font-weight: 900; transform: scale(1.1); }
+        .box-blue { stroke: #3498db; } .box-orange { stroke: #f39c12; } .box-green { stroke: #2ecc71; } .box-brown { stroke: #a26b49; } .box-pink { stroke: #e91e63; }
+        #low-level-features { stroke: #00c4ff; stroke-width: 4; fill: none; stroke-dasharray: 8 4; opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none; }
+        #low-level-features.visible { opacity: 0.8; }
+        #prediction-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; border-radius: 15px; }
+        #prediction-overlay.visible { opacity: 1; pointer-events: all; }
+        .prediction-box { background: #0056b3; color: white; padding: 20px 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); text-align: left; font-size: 1.1em; transform: scale(0.8); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #prediction-overlay.visible .prediction-box { transform: scale(1); }
+        .prediction-box h3 { margin-top: 0; border-bottom: 2px solid #3498db; padding-bottom: 10px; } .prediction-box ul { list-style: '✓ '; padding-left: 20px; } .prediction-box .confidence { margin-top: 15px; font-weight: bold; font-size: 1.2em; text-align: center; color: #2ecc71; }
+
+        /* --- 神經網絡圖樣式 --- */
+        .nn-layer { text-align: center; transition: all 0.3s ease; }
+        .nn-layer .layer-label { font-size: 0.9em; font-weight: bold; color: #6c757d; margin-bottom: 8px; transition: color 0.3s ease; }
+        .nn-nodes { display: flex; justify-content: center; gap: 10px; }
+        .nn-node { width: 20px; height: 20px; background-color: #ced4da; border-radius: 50%; transition: background-color 0.3s ease, transform 0.3s ease; }
+        .nn-layer.active .layer-label { color: #0056b3; }
+        .nn-layer.active .nn-node { background-color: #007bff; transform: scale(1.2); }
+        .nn-layer.output.active .nn-node { background-color: #28a745; }
+        
+        /* --- 響應式設計 --- */
+        @media (max-width: 768px) {
+            .main-content { flex-direction: column; }
+            .container { padding: 20px; }
+            h1 { font-size: 1.5em; }
+            .explanation-box p { font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>互動解說：數據科學中的圖形識別</h1>
+        <p id="data-science-context">這個互動動畫展示的是一個「經過訓練」的神經網絡如何進行預測（或稱「推論」）。</p>
+        
+        <div class="explanation-box">
+            <p id="explanation-text">點擊按鈕，了解神經網絡如何一步步「看懂」這張貓咪圖。</p>
+        </div>
+
+        <!-- 新增：訓練動畫區塊 -->
+        <div id="training-animation-container">
+            <div class="training-label">正在用大量標記數據進行訓練...</div>
+            <div id="data-stream"></div>
+            <div class="progress-bar-container">
+                <div id="training-progress"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="svg-container">
+                <svg id="cat-svg" viewBox="0 0 650 610" xmlns="http://www.w3.org/2000/svg">
+                    <!-- SVG 貓咪圖形代碼 (與之前相同，為求完整性而保留) -->
+                    <ellipse cx="325" cy="525" rx="200" ry="18" fill="#000" opacity="0.1"/>
+                    <g id="cat-drawing">
+                        <g class="feature-group" id="feature-tail">
+                            <g><defs><clipPath id="tail-clip"><path d="M470,350 C 560,330 580,430 530,490 S 500,500 490,470 C 490,430 470,380 470,350 Z"/></clipPath></defs><path class="cat-tail" d="M470,350 C 560,330 580,430 530,490 S 500,500 490,470 C 490,430 470,380 470,350 Z"/><g clip-path="url(#tail-clip)"><path class="cat-tail-stripe" d="M480,380 Q 530,390 550,370 L 560,400 Q 520,420 480,410 Z"/><path class="cat-tail-stripe" d="M495,430 Q 540,440 550,420 L 560,450 Q 530,470 495,460 Z"/></g></g>
+                            <rect class="bounding-box box-pink" x="460" y="340" width="130" height="160" rx="15"/>
+                            <text class="label" x="535" y="530" text-anchor="middle">尾巴</text>
+                        </g>
+                        <g><path class="cat-body" d="M150,520 C 130,380 180,290 325,290 C 470,290 520,380 500,520 Z"/><path class="cat-paws" d="M270,520 C 270,490 290,490 290,520 M360,520 C 360,490 380,490 380,520 M315,490 C 325,505 335,490 345,490"/></g>
+                        <path class="cat-body" d="M 190,310 C 150,220 150,200 160,130 L 260,170 C 300,165 350,165 390,170 L 490,130 C 500,200 500,220 460,310 Q 325,350 190,310 Z"/>
+                        <g>
+                            <g class="feature-group" id="feature-ear-left"><path class="cat-ear-inner" d="M195,200 L 178,145 L 245,175 Z"/><rect class="bounding-box box-blue" x="150" y="120" width="120" height="100" rx="15"/><text class="label" x="100" y="175" text-anchor="middle">耳朵</text></g>
+                            <g class="feature-group" id="feature-ear-right"><path class="cat-ear-inner" d="M455,200 L 472,145 L 405,175 Z"/><rect class="bounding-box box-blue" x="380" y="120" width="120" height="100" rx="15"/><text class="label" x="550" y="175" text-anchor="middle">耳朵</text></g>
+                            <g class="feature-group" id="feature-eye-left"><g><circle class="cat-eye" cx="275" cy="260" r="32"/><circle class="cat-eye-highlight" cx="285" cy="250" r="8"/></g><rect class="bounding-box box-orange" x="235" y="220" width="80" height="80" rx="15"/><text class="label" x="275" y="330" text-anchor="middle">眼睛</text></g>
+                            <g class="feature-group" id="feature-eye-right"><g><circle class="cat-eye" cx="375" cy="260" r="32"/><circle class="cat-eye-highlight" cx="385" cy="250" r="8"/></g><rect class="bounding-box box-orange" x="335" y="220" width="80" height="80" rx="15"/><text class="label" x="375" y="330" text-anchor="middle">眼睛</text></g>
+                            <g class="feature-group" id="feature-nose"><g><path class="cat-nose" d="M325,270 L 310,285 Q 325,295 340,285 Z"/><path class="cat-mouth-lines" d="M325,290 L 325,305 M 310,305 C 320,315 330,315 340,305"/></g><rect class="bounding-box box-green" x="300" y="265" width="50" height="55" rx="10"/><text class="label" x="325" y="245" text-anchor="middle">口鼻</text></g>
+                            <g class="feature-group" id="feature-whiskers-left"><path class="cat-whiskers" d="M200,270 H 240 M200,285 H 240"/><rect class="bounding-box box-brown" x="190" y="260" width="60" height="40" rx="10"/><text class="label" x="150" y="285" text-anchor="end">鬍鬚</text></g>
+                            <g class="feature-group" id="feature-whiskers-right"><path class="cat-whiskers" d="M410,270 H 450 M410,285 H 450"/><rect class="bounding-box box-brown" x="400" y="260" width="60" height="40" rx="10"/><text class="label" x="500" y="285" text-anchor="start">鬍鬚</text></g>
+                        </g>
+                    </g>
+                    <g id="low-level-features"><path d="M 160,130 L 260,170"/><path d="M 490,130 L 390,170"/><path d="M 190,310 C 150,220 150,200 160,130"/><path d="M 460,310 C 500,220 500,200 490,130"/><circle cx="275" cy="260" r="32"/><circle cx="375" cy="260" r="32"/><path d="M325,270 L 310,285 Q 325,295 340,285 Z"/><path d="M 310,305 C 320,315 330,315 340,305"/><path d="M200,270 H 240 M200,285 H 240"/><path d="M410,270 H 450 M410,285 H 450"/><path d="M150,520 C 130,380 180,290 325,290"/><path d="M325,290 C 470,290 520,380 500,520"/></g>
+                </svg>
+                <div id="prediction-overlay"><div class="prediction-box"><h3>綜合分析與預測</h3><ul><li>偵測到三角形耳朵特徵</li><li>偵測到圓形眼睛特徵</li><li>偵測到口鼻與鬍鬚組合</li><li>偵測到身體與尾巴輪廓</li></ul><div class="confidence">預測結果：貓 (信賴度: 98%)</div></div></div>
+            </div>
+
+            <div class="nn-diagram-container">
+                <div class="nn-layer" id="nn-input"><div class="layer-label">輸入層</div><div class="nn-nodes"><div class="nn-node"></div><div class="nn-node"></div><div class="nn-node"></div><div class="nn-node"></div></div></div>
+                <div class="nn-layer" id="nn-early"><div class="layer-label">淺層卷積層</div><div class="nn-nodes"><div class="nn-node"></div><div class="nn-node"></div><div class="nn-node"></div></div></div>
+                <div class="nn-layer" id="nn-deep"><div class="layer-label">深層卷積層</div><div class="nn-nodes"><div class="nn-node"></div><div class="nn-node"></div></div></div>
+                <div class="nn-layer output" id="nn-output"><div class="layer-label">輸出層</div><div class="nn-nodes"><div class="nn-node"></div></div></div>
+            </div>
+        </div>
+
+        <div class="controls"><button id="step-button">開始學習</button></div>
+    </div>
+
+    <script>
+        // --- DOM 元素獲取 ---
+        const stepButton = document.getElementById('step-button');
+        const explanationText = document.getElementById('explanation-text');
+        const lowLevelLayer = document.getElementById('low-level-features');
+        const predictionOverlay = document.getElementById('prediction-overlay');
+        const featureGroups = document.querySelectorAll('.feature-group');
+        const nnLayers = document.querySelectorAll('.nn-layer');
+        const trainingContainer = document.getElementById('training-animation-container');
+        const dataStream = document.getElementById('data-stream');
+        const trainingProgress = document.getElementById('training-progress');
+
+        // --- 狀態管理與說明文字 ---
+        let currentStep = 0;
+        const steps = [
+            { // 步驟 0: 數據科學與模型訓練
+                text: "一切始於<strong>數據</strong>。數據科學家會收集數百萬張標記圖片來<strong>訓練</strong>模型。現在，我們來模擬這個過程。",
+                buttonText: "開始學習",
+                activeLayerId: null
+            },
+            { // 步驟 1: 輸入層
+                text: "現在，我們將一張<strong>新圖片</strong>（從未見過的貓）輸入到<strong>已經訓練好</strong>的模型中。<strong>輸入層</strong>接收圖像的原始像素數據。",
+                buttonText: "開始分析",
+                activeLayerId: 'nn-input'
+            },
+            { // 步驟 2: 淺層卷積層
+                text: "訓練好的<strong>淺層卷積層</strong>開始工作。它從海量訓練數據中學會了如何識別基礎模式，如邊緣、線條和顏色塊。",
+                buttonText: "下一步：組合特徵",
+                activeLayerId: 'nn-early'
+            },
+            { // 步驟 3: 深層卷積層
+                text: "接著，<strong>深層卷積層</strong>利用從訓練中學到的知識，將這些簡單線索組合成更複雜、有意義的特徵，例如「眼睛」和「耳朵」。",
+                buttonText: "下一步：進行預測",
+                activeLayerId: 'nn-deep'
+            },
+            { // 步驟 4: 輸出層
+                text: "最後，<strong>輸出層</strong>匯總所有特徵，並根據訓練時學到的權重進行評分。這是一個<strong>數據驅動的決策</strong>，最終給出「貓」的預測及信賴度。",
+                buttonText: "重新開始",
+                activeLayerId: 'nn-output'
+            }
+        ];
+
+        // --- 訓練動畫相關函式 ---
+        const catIconSvg = `<svg viewBox="0 0 100 100"><path d="M50 10 C 20 10, 20 40, 20 50 S 25 90, 50 90 S 80 80, 80 50 S 80 10, 50 10 Z M 20 30 L 30 15 M 80 30 L 70 15" stroke="currentColor" fill="none" stroke-width="8" stroke-linecap="round"/></svg>`;
+        const dogIconSvg = `<svg viewBox="0 0 100 100"><path d="M50 20 C 30 20, 20 40, 20 60 S 30 100, 50 100 S 70 100, 80 60 S 70 20, 50 20 Z M 20 50 C 10 30, 10 10, 25 10 M 80 50 C 90 30, 90 10, 75 10" stroke="currentColor" fill="none" stroke-width="8" stroke-linecap="round"/></svg>`;
+        let animationInterval;
+
+        function runTrainingAnimation() {
+            // 1. 顯示動畫容器並重設
+            trainingContainer.classList.add('visible');
+            dataStream.innerHTML = '';
+            trainingProgress.style.width = '0%';
+            
+            // 2. 禁用按鈕，更新文字
+            stepButton.disabled = true;
+            explanationText.innerHTML = "模型正在從數據中學習...請稍候...";
+
+            // 3. 模擬數據流
+            let iconCount = 0;
+            animationInterval = setInterval(() => {
+                if (iconCount >= 10) {
+                    clearInterval(animationInterval);
+                    return;
+                }
+                const iconWrapper = document.createElement('div');
+                iconWrapper.className = 'data-icon';
+                iconWrapper.innerHTML = Math.random() > 0.4 ? catIconSvg : dogIconSvg;
+                dataStream.appendChild(iconWrapper);
+                if (dataStream.children.length > 5) {
+                    dataStream.removeChild(dataStream.firstChild);
+                }
+                iconCount++;
+            }, 300);
+
+            // 4. 啟動進度條
+            setTimeout(() => {
+                trainingProgress.style.width = '100%';
+            }, 100);
+
+            // 5. 動畫結束後的操作
+            setTimeout(() => {
+                clearInterval(animationInterval);
+                explanationText.innerHTML = "<strong>訓練完成！</strong>模型現在學會了識別貓的基本特徵。點擊按鈕，看看它如何應用這些知識。";
+                stepButton.textContent = "開始推論";
+                stepButton.disabled = false;
+            }, 3500);
+        }
+
+        // --- 更新畫面的核心函式 ---
+        function updateUI(step) {
+            // 更新說明文字和按鈕
+            explanationText.innerHTML = steps[step].text;
+            stepButton.textContent = steps[step].buttonText;
+            stepButton.disabled = false;
+
+            // 重設所有視覺狀態
+            lowLevelLayer.classList.remove('visible');
+            predictionOverlay.classList.remove('visible');
+            featureGroups.forEach(group => group.classList.remove('interactive'));
+            nnLayers.forEach(layer => layer.classList.remove('active'));
+            trainingContainer.classList.remove('visible');
+            clearInterval(animationInterval); // 確保動畫計時器被清除
+
+            // 高亮當前步驟對應的神經網絡層
+            const activeLayerId = steps[step].activeLayerId;
+            if (activeLayerId) {
+                document.getElementById(activeLayerId).classList.add('active');
+            }
+
+            // 根據目前步驟設定畫面
+            switch (step) {
+                case 0:
+                    // 初始狀態，等待用戶點擊 "開始學習"
+                    break;
+                case 1:
+                    lowLevelLayer.classList.remove('visible');
+                    break;
+                case 2:
+                    lowLevelLayer.classList.add('visible');
+                    break;
+                case 3:
+                    featureGroups.forEach(group => group.classList.add('interactive'));
+                    break;
+                case 4:
+                    predictionOverlay.classList.add('visible');
+                    break;
+            }
+        }
+
+        // --- 事件監聽 ---
+        stepButton.addEventListener('click', () => {
+            if (currentStep === 0 && stepButton.textContent === "開始學習") {
+                runTrainingAnimation();
+                return; // 停在第0步，直到動畫完成
+            }
+            
+            currentStep = (currentStep + 1) % steps.length;
+            updateUI(currentStep);
+        });
+
+        // --- 初始設定 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUI(0); // 從第0步開始
+        });
+    </script>
+
+</body>
+</html>
