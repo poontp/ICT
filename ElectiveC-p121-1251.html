@@ -1,312 +1,562 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>所有動畫 - (g) 以 tri 子程式完成</title>
+    <title>沙盒遊戲程式解題（互動版）</title>
     <style>
-        :root {
-            --cube-size: 10px;
-            --n-size: 10;
-            --perspective: 1200px;
-            --rotate-x: -30deg;
-            --rotate-y: -45deg;
-            --base-hue: 210;
-            --color-face-1: hsl(var(--base-hue), 70%, 75%);
-            --color-face-2: hsl(var(--base-hue), 60%, 65%);
-            --color-face-3: hsl(var(--base-hue), 50%, 55%);
-            --bg-color: #f0f2f5;
-            --text-color: #333;
-            --container-bg: #ffffff;
-            --container-border: #e0e0e0;
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            line-height: 1.6;
+            background-color: #f0f2f5;
+            color: #333;
             margin: 0;
             padding: 20px;
-            box-sizing: border-box;
-            background-color: var(--bg-color);
-            color: var(--text-color);
         }
-
-        .main-title {
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+            border-bottom: 2px solid #eef;
+            padding-bottom: 10px;
+        }
+        /* New styles for speed control */
+        .speed-control-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .speed-control-container label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .speed-control-container input[type="range"] {
+            flex-grow: 1;
+            cursor: pointer;
+            max-width: 300px;
+        }
+        .speed-control-container span {
+            font-family: "Courier New", Courier, monospace;
+            font-weight: bold;
+            background-color: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 4px;
+            min-width: 25px;
             text-align: center;
-            margin-bottom: 30px;
         }
 
+        .question-card {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
             width: 100%;
-            max-width: 1400px;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+            border: 1px solid #ccc;
+            margin-top: 15px;
+            background-color: #fff;
         }
-
-        .model-container {
-            background: var(--container-bg);
-            border: 1px solid var(--container-border);
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .model-container h3 {
-            margin: 0 0 15px 0;
-            font-weight: 600;
-            color: #444;
-        }
-
-        .scene {
-            width: calc(var(--cube-size) * var(--n-size) * 2.5);
-            height: calc(var(--cube-size) * var(--n-size) * 2.5);
-            perspective: var(--perspective);
-        }
-
-        .model {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y));
-            transition: transform 0.5s ease-out;
-        }
-
-        .model-container:hover .model {
-            transform: rotateX(-25deg) rotateY(-35deg) scale(1.1);
-        }
-
-        .cube {
-            width: var(--cube-size);
-            height: var(--cube-size);
-            position: absolute;
-            transform-style: preserve-3d;
-            opacity: 0;
-            animation: buildEffect 0.6s forwards;
-        }
-        
-        @keyframes buildEffect {
-            0% { opacity: 0; transform: scale(0.2); }
-            70% { opacity: 1; transform: scale(1.1); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        .face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 1px solid rgba(0, 0, 0, 0.1);
+        .grid-cell {
+            border: 1px solid #eee;
             box-sizing: border-box;
+            transition: background-color 0.3s ease;
         }
-
-        .front  { background: var(--color-face-1); transform: translateZ(calc(var(--cube-size) / 2)); }
-        .back   { background: var(--color-face-1); transform: rotateY(180deg) translateZ(calc(var(--cube-size) / 2)); }
-        .right  { background: var(--color-face-2); transform: rotateY(90deg) translateZ(calc(var(--cube-size) / 2)); }
-        .left   { background: var(--color-face-2); transform: rotateY(-90deg) translateZ(calc(var(--cube-size) / 2)); }
-        .top    { background: var(--color-face-3); transform: rotateX(90deg) translateZ(calc(var(--cube-size) / 2)); }
-        .bottom { background: var(--color-face-3); transform: rotateX(-90deg) translateZ(calc(var(--cube-size) / 2)); }
-
+        .grid-cell.filled {
+            background-color: #8dbbd2; /* Shaded color */
+            border: 1px solid #7cacbf;
+        }
+        .grid-cell.removed {
+            background-color: #fff; /* White for removed */
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+        .button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        .button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        .code-block {
+            background-color: #eef;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 15px;
+        }
+        .highlight {
+            background-color: #fff799; /* Soft yellow */
+            border-radius: 3px;
+            display: inline-block;
+            width: calc(100% - 10px);
+            padding: 2px 5px;
+            box-sizing: border-box;
+            transition: background-color 0.1s ease-in-out;
+        }
+        .answer-box {
+            display: none;
+            margin-top: 15px;
+        }
+        .flex-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .flex-item {
+            flex: 1;
+            min-width: 300px;
+        }
+        .variable-tracker {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: "Courier New", Courier, monospace;
+            min-height: 20px;
+        }
+        .variable-tracker strong {
+            color: #495057;
+        }
+        .variable-tracker code {
+            background-color: #d6eaff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #004085;
+        }
     </style>
 </head>
 <body>
 
-    <div class="main-title">
-        <h1>所有模型的動畫</h1>
-        <p>還原所有動畫，其中 (g) 的建構方式已按要求修改。</p>
-    </div>
+    <div class="container">
+        <h1>沙盒遊戲程式解題（互動版）</h1>
+        <p>這是一個互動式解答頁面。點擊「執行動畫」觀看自動播放，或使用「上一步」、「下一步」按鈕來逐一檢視程式碼的執行過程。</p>
+        
+        <!-- New Speed Control Section -->
+        <div class="speed-control-container">
+            <label for="speed-slider">動畫速度:</label>
+            <span>慢</span>
+            <input type="range" id="speed-slider" min="1" max="100" value="90">
+            <span>快</span>
+            <label>當前值: <span id="speed-value">90</span></label>
+        </div>
 
-    <div class="grid-container">
-        <!-- (a) CUBE -->
-        <div class="model-container">
-            <h3>(a) cube</h3>
-            <div class="scene">
-                <div class="model" id="model-a"></div>
+        <!-- Question (a) -->
+        <div class="question-card">
+            <h2>(a) 建造等邊三角形物件</h2>
+            <p>試完成建構出此物件的偽代碼。</p>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div id="grid-a" class="grid-container"></div>
+                </div>
+                <div class="flex-item">
+                    <div class="controls">
+                        <button class="button" id="run-a" onclick="runFullAnimation('a')">執行動畫</button>
+                        <button class="button" id="prev-a" onclick="stepBackward('a')">上一步</button>
+                        <button class="button" id="next-a" onclick="stepForward('a')">下一步</button>
+                        <button class="button" onclick="resetAnimation('a')">重置</button>
+                    </div>
+                    <div id="answer-a" class="answer-box">
+                        <h3>解答</h3>
+                        <div class="code-block" id="code-container-a">
+                           <div id="code-a-1">設 x 由 1 至 10</div>
+                           <div id="code-a-2" style="padding-left: 1em;">設 y 由 x 至 <strong>10</strong></div>
+                           <div id="code-a-3" style="padding-left: 2em;">在 (x, y) 加入一個方塊</div>
+                        </div>
+                        <div class="variable-tracker" id="variable-tracker-a">變數追蹤...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- (b) TRI -->
-        <div class="model-container">
-            <h3>(b) tri(10)</h3>
-            <div class="scene">
-                <div class="model" id="model-b"></div>
+        <!-- Question (b) -->
+        <div class="question-card">
+            <h2>(b) 編寫子程式 tri(n)</h2>
+            <p>試編寫子程式 `tri(n)` 的偽代碼，以建構一個 `n x n` 的三角形物件。下圖是由 `tri(4)` 建構出來的：</p>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div id="grid-b" class="grid-container"></div>
+                </div>
+                <div class="flex-item">
+                    <div class="controls">
+                        <button class="button" id="run-b" onclick="runFullAnimation('b')">執行 tri(4) 動畫</button>
+                        <button class="button" id="prev-b" onclick="stepBackward('b')">上一步</button>
+                        <button class="button" id="next-b" onclick="stepForward('b')">下一步</button>
+                        <button class="button" onclick="resetAnimation('b')">重置</button>
+                    </div>
+                    <div id="answer-b" class="answer-box">
+                        <h3>解答</h3>
+                        <div class="code-block" id="code-container-b">
+                            <div id="code-b-1">子程式 tri(n)</div>
+                            <div id="code-b-2" style="padding-left: 1em;">設 x 由 <strong>1</strong> 至 <strong>n</strong></div>
+                            <div id="code-b-3" style="padding-left: 2em;">設 y 由 <strong>10 - n + x</strong> 至 <strong>10</strong></div>
+                            <div id="code-b-4" style="padding-left: 3em;">在 (x, y) 加入一個方塊</div>
+                        </div>
+                        <div class="variable-tracker" id="variable-tracker-b">變數追蹤...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- (c) LINE -->
-        <div class="model-container">
-            <h3>(c) line(10)</h3>
-            <div class="scene">
-                <div class="model" id="model-c"></div>
+        <!-- Question (c) & (d) -->
+        <div class="question-card">
+            <h2>(c) 填出 `hole(3)` 的物件 & (d) 編寫 `hole(t)`</h2>
+            <p>子程式 `hole(t)` 在一個 `10x10x1` 的正方形物件中間移去 `n x n x 1` 的空間，以建構一個厚度為 `t` 的空心正方形物件。</p>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <h4>(c) `hole(3)` 建構的物件</h4>
+                    <div id="grid-c" class="grid-container"></div>
+                </div>
+                <div class="flex-item">
+                    <div class="controls">
+                        <button class="button" id="run-c" onclick="runFullAnimation('c')">執行 hole(3) 動畫</button>
+                        <button class="button" id="prev-c" onclick="stepBackward('c')">上一步</button>
+                        <button class="button" id="next-c" onclick="stepForward('c')">下一步</button>
+                        <button class="button" onclick="resetAnimation('c')">重置</button>
+                    </div>
+                    <div id="answer-c" class="answer-box">
+                        <h3>(d) 解答</h3>
+                        <div class="code-block" id="code-container-c">
+                            <div id="code-c-1">子程式 hole(t)</div>
+                            <div id="code-c-2" style="padding-left: 1em;">square(10)</div>
+                            <div id="code-c-3" style="padding-left: 1em;">設 x 由 <strong>t + 1</strong> 至 <strong>10 - t</strong></div>
+                            <div id="code-c-4" style="padding-left: 2em;">設 y 由 <strong>t + 1</strong> 至 <strong>10 - t</strong></div>
+                            <div id="code-c-5" style="padding-left: 3em;">在 (x, y) 移除一個方塊</div>
+                        </div>
+                        <div class="variable-tracker" id="variable-tracker-c">變數追蹤...</div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <!-- (d) SQUARE -->
-        <div class="model-container">
-            <h3>(d) square(10)</h3>
-            <div class="scene">
-                <div class="model" id="model-d"></div>
-            </div>
-        </div>
-
-        <!-- (e) FRAME -->
-        <div class="model-container">
-            <h3>(e) frame(10)</h3>
-            <div class="scene">
-                <div class="model" id="model-e"></div>
-            </div>
-        </div>
-
-        <!-- (f) PYRAMID -->
-        <div class="model-container">
-            <h3>(f) pyramid(10)</h3>
-            <div class="scene">
-                <div class="model" id="model-f"></div>
-            </div>
-        </div>
-
-        <!-- (g) PRISM (MODIFIED) -->
-        <div class="model-container">
-            <h3>(g) prism(10) [修改版]</h3>
-            <div class="scene">
-                <div class="model" id="model-g"></div>
-            </div>
-        </div>
+        
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const N = 10;
-        const CUBE_SIZE = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cube-size'));
-        const ANIMATION_DELAY_MS = 15;
+        const grid_size = 10;
+        let highlightedCodeLineId = null;
+        let currentAnimationDelay = 50; // Will be updated by slider
 
-        // --- 輔助函式 ---
-        function createCubeElement(x, y, z) {
-            const cube = document.createElement('div');
-            cube.className = 'cube';
-            const offsetX = (x - N / 2 - 0.5) * CUBE_SIZE;
-            const offsetY = (y - N / 2 - 0.5) * CUBE_SIZE;
-            const offsetZ = (-z + N / 2 + 0.5) * CUBE_SIZE;
-            cube.style.transform = `translateX(${offsetX}px) translateY(${offsetY}px) translateZ(${offsetZ}px)`;
-            ['front', 'back', 'right', 'left', 'top', 'bottom'].forEach(faceClass => {
-                const face = document.createElement('div');
-                face.className = `face ${faceClass}`;
-                cube.appendChild(face);
-            });
-            return cube;
+        // --- State Management ---
+        const animationStates = {
+            a: { steps: [], currentIndex: -1, isAutoRunning: false },
+            b: { steps: [], currentIndex: -1, isAutoRunning: false },
+            c: { steps: [], currentIndex: -1, isAutoRunning: false }
+        };
+
+        // --- Helper Functions ---
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        function highlightLine(id) {
+            if (highlightedCodeLineId) {
+                const prevEl = document.getElementById(highlightedCodeLineId);
+                if (prevEl) prevEl.classList.remove('highlight');
+            }
+            if (id) {
+                const currentEl = document.getElementById(id);
+                if (currentEl) {
+                    currentEl.classList.add('highlight');
+                    highlightedCodeLineId = id;
+                }
+            } else {
+                highlightedCodeLineId = null;
+            }
         }
 
-        function placeCube(x, y, z, container, delayCounter) {
-            const cube = createCubeElement(x, y, z);
-            cube.style.animationDelay = `${delayCounter.value * ANIMATION_DELAY_MS}ms`;
-            delayCounter.value++;
-            container.appendChild(cube);
+        function clearAllHighlights() {
+            if (highlightedCodeLineId) {
+                const el = document.getElementById(highlightedCodeLineId);
+                if (el) el.classList.remove('highlight');
+                highlightedCodeLineId = null;
+            }
+        }
+        
+        function updateVariableDisplay(type, variables) {
+            const container = document.getElementById(`variable-tracker-${type}`);
+            if (!container) return;
+
+            if (!variables || Object.keys(variables).length === 0) {
+                container.innerHTML = '變數追蹤...';
+                return;
+            }
+
+            let html = '';
+            for (const [key, value] of Object.entries(variables)) {
+                html += `<strong>${key}:</strong> <code>${value}</code>&nbsp;&nbsp;&nbsp;`;
+            }
+            container.innerHTML = html.trim();
         }
 
-        // --- 子程式定義 ---
-
-        // (b) tri 子程式
-        function tri(n, z, container, delayCounter) {
-            for (let y = 1; y <= n; y++) {
-                for (let x = 1; x <= (n + 1 - y); x++) {
-                    placeCube(x, y, z, container, delayCounter);
+        function createGrid(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            for (let r = grid_size; r >= 1; r--) {
+                for (let c = 1; c <= grid_size; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.id = `${containerId}-cell-${c}-${r}`;
+                    container.appendChild(cell);
                 }
             }
         }
-
-        // --- 模型建構函式 ---
-
-        // (a) cube
-        function buildCube_a() {
-            const container = document.getElementById('model-a');
-            let delayCounter = { value: 0 };
-            placeCube(1, 1, 1, container, delayCounter);
+        
+        function fillCell(prefix, x, y) {
+            const cell = document.getElementById(`grid-${prefix}-cell-${x}-${y}`);
+            if (cell) {
+                cell.classList.remove('removed');
+                cell.classList.add('filled');
+            }
         }
-
-        // (b) tri(10)
-        function buildTri_b() {
-            const container = document.getElementById('model-b');
-            let delayCounter = { value: 0 };
-            tri(N, 1, container, delayCounter);
-        }
-
-        // (c) line(10)
-        function buildLine_c() {
-            const container = document.getElementById('model-c');
-            let delayCounter = { value: 0 };
-            for (let i = 1; i <= N; i++) {
-                placeCube(i, 1, 1, container, delayCounter);
+        
+        function clearCell(prefix, x, y) {
+            const cell = document.getElementById(`grid-${prefix}-cell-${x}-${y}`);
+            if (cell) {
+                cell.classList.remove('filled');
+                cell.classList.add('removed');
             }
         }
 
-        // (d) square(10)
-        function buildSquare_d() {
-            const container = document.getElementById('model-d');
-            let delayCounter = { value: 0 };
-            for (let y = 1; y <= N; y++) {
-                for (let x = 1; x <= N; x++) {
-                    placeCube(x, y, 1, container, delayCounter);
+        // --- Animation Step Generation ---
+        function generateSteps(type) {
+            const steps = [];
+            if (type === 'a') {
+                for (let x = 1; x <= 10; x++) {
+                    steps.push({ action: 'highlight_only', codeLineId: 'code-a-1', variables: { x } });
+                    for (let y = x; y <= 10; y++) {
+                        steps.push({ action: 'highlight_only', codeLineId: 'code-a-2', variables: { x, y } });
+                        steps.push({ action: 'add', x: x, y: y, codeLineId: 'code-a-3', variables: { x, y } });
+                    }
                 }
-            }
-        }
-
-        // (e) frame(10)
-        function buildFrame_e() {
-            const container = document.getElementById('model-e');
-            let delayCounter = { value: 0 };
-            for (let y = 1; y <= N; y++) {
-                for (let x = 1; x <= N; x++) {
-                    if (x === 1 || x === N || y === 1 || y === N) {
-                        placeCube(x, y, 1, container, delayCounter);
+            } else if (type === 'b') {
+                const n = 4;
+                steps.push({ action: 'highlight_only', codeLineId: 'code-b-1', variables: { n } });
+                for (let x = 1; x <= n; x++) {
+                    steps.push({ action: 'highlight_only', codeLineId: 'code-b-2', variables: { n, x } });
+                    const startY = 10 - n + x;
+                    for (let y = startY; y <= 10; y++) {
+                        steps.push({ action: 'highlight_only', codeLineId: 'code-b-3', variables: { n, x, y, '10-n+x': startY } });
+                        steps.push({ action: 'add', x: x, y: y, codeLineId: 'code-b-4', variables: { n, x, y } });
+                    }
+                }
+            } else if (type === 'c') {
+                const t = 3;
+                steps.push({ action: 'highlight_only', codeLineId: 'code-c-1', variables: { t } });
+                steps.push({ action: 'fill_all', codeLineId: 'code-c-2', variables: { t } });
+                const startRange = t + 1;
+                const endRange = 10 - t;
+                for (let x = startRange; x <= endRange; x++) {
+                    steps.push({ action: 'highlight_only', codeLineId: 'code-c-3', variables: { t, x, 't+1': startRange, '10-t': endRange } });
+                    for (let y = startRange; y <= endRange; y++) {
+                        steps.push({ action: 'highlight_only', codeLineId: 'code-c-4', variables: { t, x, y, 't+1': startRange, '10-t': endRange } });
+                        steps.push({ action: 'remove', x: x, y: y, codeLineId: 'code-c-5', variables: { t, x, y } });
                     }
                 }
             }
+            return steps;
+        }
+        
+        // --- Control Functions ---
+        function updateButtonStates(type) {
+            const state = animationStates[type];
+            document.getElementById(`prev-${type}`).disabled = state.currentIndex < 0 || state.isAutoRunning;
+            const isAtEnd = state.steps.length > 0 && state.currentIndex >= state.steps.length - 1;
+            document.getElementById(`next-${type}`).disabled = isAtEnd || state.isAutoRunning;
+            document.getElementById(`run-${type}`).disabled = state.isAutoRunning;
         }
 
-        // (f) pyramid(10)
-        function buildPyramid_f() {
-            const container = document.getElementById('model-f');
-            let delayCounter = { value: 0 };
-            for (let z = 1; z <= N; z++) {
-                const size = N + 1 - z;
-                for (let y = 1; y <= size; y++) {
-                    for (let x = 1; x <= size; x++) {
-                        if (x === 1 || x === size || y === 1 || y === size) {
-                            placeCube(x + (z - 1) / 2, y + (z - 1) / 2, z, container, delayCounter);
+        function initAnimation(type) {
+            const state = animationStates[type];
+            if (state.isAutoRunning) return;
+
+            if (state.steps.length === 0) {
+                resetAnimation(type); 
+                state.steps = generateSteps(type);
+            }
+            document.getElementById(`answer-${type}`).style.display = 'block';
+
+            updateButtonStates(type);
+        }
+
+        function resetAnimation(type) {
+            const state = animationStates[type];
+            state.isAutoRunning = false; 
+            state.currentIndex = -1;
+            state.steps = []; 
+            
+            const cells = document.querySelectorAll(`#grid-${type} .grid-cell`);
+            cells.forEach(cell => cell.classList.remove('filled', 'removed'));
+            
+            document.getElementById(`answer-${type}`).style.display = 'none';
+            clearAllHighlights();
+            updateVariableDisplay(type, null);
+            updateButtonStates(type);
+        }
+
+        function stepForward(type) {
+            const state = animationStates[type];
+            
+            if (state.steps.length === 0) {
+                initAnimation(type);
+            }
+            
+            if (state.currentIndex >= state.steps.length - 1) return;
+
+            if (state.currentIndex === -1) {
+                document.getElementById(`answer-${type}`).style.display = 'block';
+            }
+
+            state.currentIndex++;
+            const step = state.steps[state.currentIndex];
+            
+            highlightLine(step.codeLineId);
+            updateVariableDisplay(type, step.variables);
+
+            switch(step.action) {
+                case 'add':
+                    fillCell(type, step.x, step.y);
+                    break;
+                case 'remove':
+                    clearCell(type, step.x, step.y);
+                    break;
+                case 'fill_all':
+                    for (let i = 1; i <= 10; i++) {
+                        for (let j = 1; j <= 10; j++) {
+                            fillCell(type, i, j);
                         }
                     }
-                }
+                    break;
+                case 'highlight_only':
+                    break;
             }
+            updateButtonStates(type);
         }
 
-        // (g) prism(10) - 使用 tri 子程式的修改版
-        function buildPrism_g() {
-            const container = document.getElementById('model-g');
-            let delayCounter = { value: 0 };
-            // 迴圈模擬 "設 i 由 1 至 10"
-            for (let i = 1; i <= N; i++) {
-                // 在迴圈中呼叫 tri 子程式來建立一層。
-                // 變數 'i' 作為 Z 座標傳入，模擬了 "UP" 指令的效果。
-                tri(N, i, container, delayCounter);
+        function stepBackward(type) {
+            const state = animationStates[type];
+            if (state.currentIndex < 0) return;
+
+            const currentStep = state.steps[state.currentIndex];
+            
+            switch(currentStep.action) {
+                case 'add':
+                    clearCell(type, currentStep.x, currentStep.y);
+                    break;
+                case 'remove':
+                    fillCell(type, currentStep.x, currentStep.y);
+                    break;
+                case 'fill_all':
+                     const cells = document.querySelectorAll(`#grid-${type} .grid-cell`);
+                     cells.forEach(cell => cell.classList.remove('filled', 'removed'));
+                    break;
             }
+
+            state.currentIndex--;
+
+            if (state.currentIndex >= 0) {
+                const prevStep = state.steps[state.currentIndex];
+                highlightLine(prevStep.codeLineId);
+                updateVariableDisplay(type, prevStep.variables);
+            } else {
+                clearAllHighlights();
+                updateVariableDisplay(type, null);
+                document.getElementById(`answer-${type}`).style.display = 'none';
+            }
+            
+            updateButtonStates(type);
         }
 
+        async function runFullAnimation(type) {
+            const state = animationStates[type];
+            if (state.isAutoRunning) return;
 
-        // --- 執行所有建構函式 ---
-        buildCube_a();
-        buildTri_b();
-        buildLine_c();
-        buildSquare_d();
-        buildFrame_e();
-        buildPyramid_f();
-        buildPrism_g();
-    });
+            resetAnimation(type);
+            initAnimation(type);
+            
+            state.isAutoRunning = true;
+            updateButtonStates(type);
+
+            while(state.currentIndex < state.steps.length - 1) {
+                if (!state.isAutoRunning) break; 
+                stepForward(type);
+                // Use the dynamically updated delay
+                await sleep(currentAnimationDelay);
+            }
+            
+            state.isAutoRunning = false;
+            updateButtonStates(type);
+        }
+
+        // --- Speed Control Logic ---
+        function calculateDelay(sliderValue) {
+            // sliderValue is from 1 (slow) to 100 (fast)
+            // We map this to a delay time.
+            // Let's map it from 500ms (slowest) to 1ms (fastest)
+            const MAX_DELAY = 500;
+            const MIN_DELAY = 1;
+            // Linear interpolation: as sliderValue goes from 1 to 100, delay goes from MAX to MIN
+            const delay = MAX_DELAY - ((sliderValue - 1) / 99) * (MAX_DELAY - MIN_DELAY);
+            return delay;
+        }
+
+        window.onload = () => {
+            // Initialize grids
+            ['a', 'b', 'c'].forEach(type => {
+                createGrid(`grid-${type}`);
+                resetAnimation(type); 
+            });
+
+            // Initialize speed controller
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValueDisplay = document.getElementById('speed-value');
+
+            // Set initial delay from default slider value
+            const initialSliderValue = speedSlider.value;
+            speedValueDisplay.textContent = initialSliderValue;
+            currentAnimationDelay = calculateDelay(initialSliderValue);
+
+            // Add event listener to update delay when slider changes
+            speedSlider.addEventListener('input', (event) => {
+                const sliderValue = event.target.value;
+                speedValueDisplay.textContent = sliderValue;
+                currentAnimationDelay = calculateDelay(sliderValue);
+            });
+        };
     </script>
 
 </body>
