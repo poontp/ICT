@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無人機程式設計進階教學 (e) & (f) - 分步執行版</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --compass-bg: #fff;
+            --drone-color: #d0021b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #e9ecef;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 12px 15px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #495057;
+            transition: background-color 0.3s, color 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-button:hover:not(.active) {
+            background-color: #dee2e6;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .compass-container {
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+            aspect-ratio: 1 / 1;
+            margin: 10px auto;
+        }
+
+        .compass-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .drone-arrow {
+            fill: var(--drone-color);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        .controls-and-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .panel h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: var(--secondary-color);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .radio-group input[type="radio"] {
+            display: none;
+        }
+
+        .radio-group label {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9em;
+        }
+        
+        .radio-group input[type="radio"]:checked + label {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .step-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid var(--primary-color);
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+        
+        .control-btn:disabled {
+            background-color: #ccc;
+            border-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .control-btn.prev-btn {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .code-block {
+            font-family: "Courier New", Courier, monospace;
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .code-line {
+            padding: 2px 5px;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+        }
+        
+        .code-line.highlight {
+            background-color: var(--warning-color);
+        }
+
+        .code-fill {
+            font-weight: bold;
+            color: var(--danger-color);
+            border-bottom: 2px solid var(--danger-color);
+            padding: 0 4px;
+        }
+        
+        .explanation-steps {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .explanation-steps p {
+            margin: 0 0 8px 0;
+            padding: 8px;
+            border-left: 3px solid var(--border-color);
+            transition: all 0.3s;
+        }
+        
+        .explanation-steps p.current-step-exp {
+            border-left-color: var(--success-color);
+            background-color: #eaf6ec;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .styled-table th, .styled-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .styled-table th {
+            background-color: #e9ecef;
+        }
+        
+        .styled-table tr.highlight-row {
+            background-color: #fff3cd;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .compass-container {
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-button active" onclick="showPart('e')">問題 (e)</button>
+        <button class="tab-button" onclick="showPart('f')">問題 (f)</button>
+    </div>
+
+    <!-- Part (e) -->
+    <div id="part-e" class="tab-content active">
+        <h2>(e) 完成子程式 MN (轉向北方)</h2>
+        <div class="main-layout">
+            <div class="compass-container" id="compass-e"></div>
+            <div class="controls-and-info">
+                <div class="panel">
+                    <div class="control-group">
+                        <fieldset>
+                            <legend style="font-weight: 600;">選擇初始方向 (direction)</legend>
+                            <div class="radio-group" id="radio-group-e">
+                                <!-- Radio buttons will be generated by JS -->
+                            </div>
+                        </fieldset>
+                        <div class="step-controls">
+                           <button id="prev-btn-e" class="control-btn prev-btn">上一步</button>
+                           <button id="next-btn-e" class="control-btn">下一步</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>程式碼分析</h3>
+                    <div class="code-block" id="code-block-e">
+                        <p class="code-line" data-line-id="e-0">子程式 MN</p>
+                        <p class="code-line" data-line-id="e-1">設 i 由 1 至 <span class="code-fill">direction - 1</span></p>
+                        <p class="code-line" data-line-id="e-2" style="padding-left: 20px;">TL</p>
+                        <p class="code-line" data-line-id="e-3">FW</p>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>轉向次數分析表 (目標：北方=1)</h3>
+                    <table class="styled-table" id="table-e">
+                        <thead><tr><th>當前方向 (d)</th><th>目標方向</th><th>需要次數 (TL)</th><th>公式 (d - 1)</th></tr></thead>
+                        <tbody>
+                            <tr id="row-e-1"><td>1 (北)</td><td>1</td><td>0</td><td>1 - 1 = 0</td></tr>
+                            <tr id="row-e-2"><td>2 (東)</td><td>1</td><td>1</td><td>2 - 1 = 1</td></tr>
+                            <tr id="row-e-3"><td>3 (南)</td><td>1</td><td>2</td><td>3 - 1 = 2</td></tr>
+                            <tr id="row-e-4"><td>4 (西)</td><td>1</td><td>3</td><td>4 - 1 = 3</td></tr>
+                        </tbody>
+                    </table>
+                    <p style="font-size:0.9em; margin-top:10px;">註：根據公式 <code>direction - 1</code> 推斷，<code>TL</code> 為**逆時針**轉 90 度 (數字減 1)。</p>
+                </div>
+                 <div class="panel">
+                    <h3>執行步驟解說</h3>
+                    <div id="explanation-e" class="explanation-steps">
+                        <p>請選擇一個初始方向開始。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Part (f) -->
+    <div id="part-f" class="tab-content">
+        <h2>(f) 優化子程式 ME (轉向東方)</h2>
+        <div class="main-layout">
+            <div class="compass-container" id="compass-f"></div>
+            <div class="controls-and-info">
+                <div class="panel">
+                    <div class="control-group">
+                        <fieldset>
+                            <legend style="font-weight: 600;">選擇初始方向 (direction)</legend>
+                            <div class="radio-group" id="radio-group-f">
+                                <!-- Radio buttons will be generated by JS -->
+                            </div>
+                        </fieldset>
+                        <div class="step-controls">
+                           <button id="prev-btn-f" class="control-btn prev-btn">上一步</button>
+                           <button id="next-btn-f" class="control-btn">下一步</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>程式碼分析 (優化版)</h3>
+                    <div class="code-block" id="code-block-f">
+                        <p class="code-line" data-line-id="f-0">如果 direction > 2 則</p>
+                        <p class="code-line" data-line-id="f-1" style="padding-left: 20px;">設 i 由 1 至 <span class="code-fill">direction - 2</span></p>
+                        <p class="code-line" data-line-id="f-2" style="padding-left: 40px;">TL</p>
+                        <p class="code-line" data-line-id="f-3">否則 如果 <span class="code-fill">direction < 2</span> 則</p>
+                        <p class="code-line" data-line-id="f-4" style="padding-left: 20px;">設 i 由 1 至 <span class="code-fill">direction + 2</span></p>
+                        <p class="code-line" data-line-id="f-5" style="padding-left: 40px;">TL</p>
+                        <p class="code-line" data-line-id="f-6">FW</p>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>轉向次數分析表 (目標：東方=2)</h3>
+                    <table class="styled-table" id="table-f">
+                         <thead><tr><th>當前方向 (d)</th><th>目標方向</th><th>最少轉向次數</th><th>最佳路徑</th></tr></thead>
+                        <tbody>
+                            <tr id="row-f-1"><td>1 (北)</td><td>2</td><td>1</td><td>1 次 TR (順時針)</td></tr>
+                            <tr id="row-f-2"><td>2 (東)</td><td>2</td><td>0</td><td>不需轉動</td></tr>
+                            <tr id="row-f-3"><td>3 (南)</td><td>2</td><td>1</td><td>1 次 TL (逆時針)</td></tr>
+                            <tr id="row-f-4"><td>4 (西)</td><td>2</td><td>2</td><td>2 次 TL (逆時針)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                 <div class="panel">
+                    <h3>執行步驟解說</h3>
+                    <div id="explanation-f" class="explanation-steps">
+                        <p>請選擇一個初始方向開始。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const directions = { 1: '北', 2: '東', 3: '南', 4: '西' };
+    const angles = { 1: 0, 2: 90, 3: 180, 4: 270 };
+    
+    // State management for each part
+    const state = {
+        e: { steps: [], currentStep: -1, startDir: 1 },
+        f: { steps: [], currentStep: -1, startDir: 1 }
+    };
+
+    function createCompass(containerId, partId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "-100 -100 200 200");
+        
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", 0); circle.setAttribute("cy", 0);
+        circle.setAttribute("r", 95);
+        circle.setAttribute("fill", "var(--compass-bg)");
+        circle.setAttribute("stroke", "var(--border-color)");
+        circle.setAttribute("stroke-width", "2");
+        svg.appendChild(circle);
+
+        const labels = [
+            { dir: '北', num: '1', angle: 0, y: -75 }, { dir: '東', num: '2', angle: 90, y: -75 },
+            { dir: '南', num: '3', angle: 180, y: -75 }, { dir: '西', num: '4', angle: 270, y: -75 },
+        ];
+        labels.forEach(l => {
+            const g = document.createElementNS(svgNS, "g");
+            g.setAttribute("transform", `rotate(${l.angle})`);
+            const textDir = document.createElementNS(svgNS, "text");
+            textDir.setAttribute("x", 0); textDir.setAttribute("y", l.y);
+            textDir.setAttribute("text-anchor", "middle"); textDir.setAttribute("font-size", "14");
+            textDir.setAttribute("font-weight", "bold");
+            textDir.setAttribute("transform", `rotate(${-l.angle}, 0, ${l.y})`);
+            textDir.textContent = l.dir;
+            g.appendChild(textDir);
+            
+            const textNum = document.createElementNS(svgNS, "text");
+            textNum.setAttribute("x", 0); textNum.setAttribute("y", l.y + 15);
+            textNum.setAttribute("text-anchor", "middle"); textNum.setAttribute("font-size", "12");
+            textNum.setAttribute("fill", "var(--secondary-color)");
+            textNum.setAttribute("transform", `rotate(${-l.angle}, 0, ${l.y+15})`);
+            textNum.textContent = `(${l.num})`;
+            g.appendChild(textNum);
+            svg.appendChild(g);
+        });
+
+        const drone = document.createElementNS(svgNS, "polygon");
+        drone.id = `drone-${partId}`;
+        drone.classList.add('drone-arrow');
+        drone.setAttribute("points", "-12,15 0,-15 12,15");
+        drone.setAttribute("transform", "rotate(0)");
+        svg.appendChild(drone);
+        
+        container.appendChild(svg);
+    }
+
+    function createRadioButtons(partId) {
+        const group = document.getElementById(`radio-group-${partId}`);
+        group.innerHTML = '';
+        [1, 2, 3, 4].forEach(dir => {
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.id = `dir-${partId}-${dir}`;
+            input.name = `direction-${partId}`;
+            input.value = dir;
+            if (dir === 1) input.checked = true;
+
+            const label = document.createElement('label');
+            label.htmlFor = `dir-${partId}-${dir}`;
+            label.textContent = `${directions[dir]} (${dir})`;
+
+            group.appendChild(input);
+            group.appendChild(label);
+            
+            input.addEventListener('change', (e) => {
+                const newDir = parseInt(e.target.value);
+                state[partId].startDir = newDir;
+                if (partId === 'e') generateStepsE(newDir);
+                else generateStepsF(newDir);
+                resetAndRenderInitial(partId);
+            });
+        });
+    }
+
+    function updateDrone(partId, direction) {
+        const drone = document.getElementById(`drone-${partId}`);
+        if(drone) drone.setAttribute("transform", `rotate(${angles[direction]})`);
+    }
+    
+    function highlightTableRow(tableId, direction) {
+        document.querySelectorAll(`#${tableId} tr`).forEach(row => row.classList.remove('highlight-row'));
+        const row = document.getElementById(`row-${tableId.slice(-1)}-${direction}`);
+        if(row) row.classList.add('highlight-row');
+    }
+
+    function highlightCodeLine(partId, lineId) {
+        document.querySelectorAll(`#code-block-${partId} .code-line`).forEach(line => line.classList.remove('highlight'));
+        if (lineId !== null) {
+            const line = document.querySelector(`#code-block-${partId} [data-line-id="${lineId}"]`);
+            if (line) line.classList.add('highlight');
+        }
+    }
+    
+    function updateExplanation(partId, stepIndex) {
+        const explanationEl = document.getElementById(`explanation-${partId}`);
+        explanationEl.innerHTML = '';
+        for (let i = 0; i <= stepIndex; i++) {
+            const p = document.createElement('p');
+            p.innerHTML = state[partId].steps[i].explanation;
+            if (i === stepIndex) {
+                p.classList.add('current-step-exp');
+            }
+            explanationEl.appendChild(p);
+        }
+        explanationEl.scrollTop = explanationEl.scrollHeight;
+    }
+    
+    function renderStep(partId, stepIndex) {
+        if (stepIndex < 0 || stepIndex >= state[partId].steps.length) return;
+        
+        const step = state[partId].steps[stepIndex];
+        
+        updateDrone(partId, step.droneDirection);
+        highlightCodeLine(partId, step.lineId);
+        updateExplanation(partId, stepIndex);
+        
+        // Update button states
+        document.getElementById(`prev-btn-${partId}`).disabled = (stepIndex === 0);
+        document.getElementById(`next-btn-${partId}`).disabled = (stepIndex === state[partId].steps.length - 1);
+    }
+    
+    function resetAndRenderInitial(partId) {
+        state[partId].currentStep = 0;
+        highlightTableRow(`table-${partId}`, state[partId].startDir);
+        renderStep(partId, 0);
+    }
+
+    // --- Step Generation Logic ---
+
+    function generateStepsE(startDir) {
+        const steps = [];
+        let currentDir = startDir;
+        
+        steps.push({
+            lineId: null, droneDirection: currentDir,
+            explanation: `程式開始。初始方向為 <strong>${directions[startDir]} (${startDir})</strong>。目標是北方 (1)。`
+        });
+
+        const turns = startDir - 1;
+        steps.push({
+            lineId: 'e-1', droneDirection: currentDir,
+            explanation: `計算迴圈次數: <code>direction - 1</code> = ${startDir} - 1 = <strong>${turns}</strong> 次。`
+        });
+
+        if (turns > 0) {
+            for (let i = 1; i <= turns; i++) {
+                const prevDir = currentDir;
+                currentDir = (currentDir - 2 + 4) % 4 + 1; // Counter-clockwise
+                steps.push({
+                    lineId: 'e-2', droneDirection: currentDir,
+                    explanation: `執行第 ${i} 次 <strong>TL</strong> (逆時針)。方向由 ${directions[prevDir]} 變為 <strong>${directions[currentDir]}</strong>。`
+                });
+            }
+        } else {
+            steps.push({
+                lineId: 'e-1', droneDirection: currentDir,
+                explanation: `轉向次數為 0，跳過迴圈。`
+            });
+        }
+        
+        steps.push({
+            lineId: 'e-3', droneDirection: currentDir,
+            explanation: `轉向完成。執行 <strong>FW</strong> 前進。程式結束。`
+        });
+
+        state.e.steps = steps;
+    }
+
+    function generateStepsF(startDir) {
+        const steps = [];
+        let currentDir = startDir;
+
+        steps.push({
+            lineId: null, droneDirection: currentDir,
+            explanation: `程式開始。初始方向為 <strong>${directions[startDir]} (${startDir})</strong>。目標是東方 (2)。`
+        });
+        
+        // Step 1: Check first IF
+        const if1_result = startDir > 2;
+        steps.push({
+            lineId: 'f-0', droneDirection: currentDir,
+            explanation: `檢查條件 <code>direction > 2</code> (${startDir} > 2) ... 結果為 <strong>${if1_result}</strong>。`
+        });
+
+        if (if1_result) {
+            const turns = startDir - 2;
+            steps.push({
+                lineId: 'f-1', droneDirection: currentDir,
+                explanation: `計算迴圈次數: <code>direction - 2</code> = ${startDir} - 2 = <strong>${turns}</strong> 次。`
+            });
+            for (let i = 1; i <= turns; i++) {
+                const prevDir = currentDir;
+                currentDir = (currentDir - 2 + 4) % 4 + 1; // CCW
+                steps.push({
+                    lineId: 'f-2', droneDirection: currentDir,
+                    explanation: `執行第 ${i} 次 <strong>TL</strong> (逆時針)。方向由 ${directions[prevDir]} 變為 <strong>${directions[currentDir]}</strong>。`
+                });
+            }
+        } else {
+            // Step 2: Check second IF
+            const if2_result = startDir < 2;
+            steps.push({
+                lineId: 'f-3', droneDirection: currentDir,
+                explanation: `檢查條件 <code>direction < 2</code> (${startDir} < 2) ... 結果為 <strong>${if2_result}</strong>。`
+            });
+            if (if2_result) {
+                const turns = startDir + 2;
+                steps.push({
+                    lineId: 'f-4', droneDirection: currentDir,
+                    explanation: `計算迴圈次數: <code>direction + 2</code> = ${startDir} + 2 = <strong>${turns}</strong> 次。`
+                });
+                steps.push({
+                    lineId: 'f-4', droneDirection: currentDir,
+                    explanation: `(註：執行 3 次 TL 等於 1 次 TR，這是從北到東的最短路徑之一，但此處程式碼固定執行 3 次 TL)`
+                });
+                for (let i = 1; i <= turns; i++) {
+                    const prevDir = currentDir;
+                    currentDir = (currentDir - 2 + 4) % 4 + 1; // CCW
+                    steps.push({
+                        lineId: 'f-5', droneDirection: currentDir,
+                        explanation: `執行第 ${i} 次 <strong>TL</strong> (逆時針)。方向由 ${directions[prevDir]} 變為 <strong>${directions[currentDir]}</strong>。`
+                    });
+                }
+            } else { // startDir must be 2
+                 steps.push({
+                    lineId: 'f-3', droneDirection: currentDir,
+                    explanation: `所有條件均不滿足，不執行任何轉向。`
+                });
+            }
+        }
+        
+        steps.push({
+            lineId: 'f-6', droneDirection: currentDir,
+            explanation: `轉向完成。執行 <strong>FW</strong> 前進。程式結束。`
+        });
+
+        state.f.steps = steps;
+    }
+
+    // --- Setup and Event Listeners ---
+
+    function setupPart(partId) {
+        createCompass(`compass-${partId}`, partId);
+        createRadioButtons(partId);
+        
+        const generateFunc = partId === 'e' ? generateStepsE : generateStepsF;
+        generateFunc(state[partId].startDir);
+        resetAndRenderInitial(partId);
+
+        document.getElementById(`next-btn-${partId}`).addEventListener('click', () => {
+            if (state[partId].currentStep < state[partId].steps.length - 1) {
+                state[partId].currentStep++;
+                renderStep(partId, state[partId].currentStep);
+            }
+        });
+
+        document.getElementById(`prev-btn-${partId}`).addEventListener('click', () => {
+            if (state[partId].currentStep > 0) {
+                state[partId].currentStep--;
+                renderStep(partId, state[partId].currentStep);
+            }
+        });
+    }
+
+    function showPart(partId) {
+        ['e', 'f'].forEach(p => {
+            document.getElementById(`part-${p}`).classList.remove('active');
+            document.querySelector(`.tab-button[onclick="showPart('${p}')"]`).classList.remove('active');
+        });
+        document.getElementById(`part-${partId}`).classList.add('active');
+        document.querySelector(`.tab-button[onclick="showPart('${partId}')"]`).classList.add('active');
+    }
+
+    window.onload = () => {
+        setupPart('e');
+        setupPart('f');
+        showPart('e'); // Activate part 'e' by default
+    };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無人機程式設計進階教學 (g) - (j)</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --grid-line-color: #e9ecef;
+            --drone-color: #d0021b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #e9ecef;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 12px 15px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #495057;
+            transition: background-color 0.3s, color 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-button:hover:not(.active) {
+            background-color: #dee2e6;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .grid-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+            background: white;
+            border: 1px solid var(--border-color);
+        }
+        
+        .grid-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls-and-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .panel h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: var(--secondary-color);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .control-group input[type="range"], .control-group input[type="number"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-container span {
+            font-weight: bold;
+            color: var(--primary-color);
+            min-width: 20px;
+        }
+
+        .code-block {
+            font-family: "Courier New", Courier, monospace;
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 0.95em;
+        }
+        
+        .code-line {
+            padding: 2px 5px;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+            white-space: pre-wrap;
+        }
+        
+        .code-line.highlight {
+            background-color: var(--warning-color);
+        }
+        
+        .explanation-steps {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .explanation-steps p {
+            margin: 0 0 8px 0;
+            padding: 8px;
+            border-left: 3px solid var(--border-color);
+            transition: all 0.3s;
+        }
+        
+        .explanation-steps p.current-step-exp {
+            border-left-color: var(--success-color);
+            background-color: #eaf6ec;
+        }
+        
+        .step-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .control-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid var(--primary-color);
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+        
+        .control-btn:disabled {
+            background-color: #ccc;
+            border-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .control-btn.prev-btn {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .control-btn.special-btn {
+            background-color: var(--info-color);
+            border-color: var(--info-color);
+        }
+
+        .control-btn.danger-btn {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        @media (max-width: 800px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .grid-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-button active" onclick="showTab('dist')">距離計算 (g) & (h)</button>
+        <button class="tab-button" onclick="showTab('goto')">自動飛行 (i) & (j)</button>
+    </div>
+
+    <!-- Part (g) & (h) -->
+    <div id="tab-dist" class="tab-content active">
+        <h2>(g) & (h) 計算無人機距離</h2>
+        <div class="main-layout">
+            <div class="grid-container" id="grid-container-dist"></div>
+            <div class="controls-and-info">
+                <div class="panel">
+                    <h3>互動控制</h3>
+                    <div class="control-group">
+                        <label for="slider-x-dist">無人機 X 座標</label>
+                        <div class="slider-container">
+                            <input type="range" id="slider-x-dist" min="1" max="7" value="5">
+                            <span id="label-x-dist">5</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label for="slider-y-dist">無人機 Y 座標</label>
+                        <div class="slider-container">
+                            <input type="range" id="slider-y-dist" min="1" max="7" value="4">
+                            <span id="label-y-dist">4</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>(h) 子程式 DIS() 分析</h3>
+                    <div class="code-block" id="code-block-dist">
+                        <p class="code-line">子程式 DIS()</p>
+                        <p class="code-line" id="dist-formula-line">distance ← ((X-1)² + (Y-1)²) 的平方根</p>
+                        <p class="code-line">傳回 distance</p>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>計算結果</h3>
+                    <div id="explanation-dist"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Part (i) & (j) -->
+    <div id="tab-goto" class="tab-content">
+        <h2>(i) & (j) 自動飛行至目標</h2>
+        <div class="main-layout">
+            <div class="grid-container" id="grid-container-goto"></div>
+            <div class="controls-and-info">
+                <div class="panel">
+                    <h3>互動控制</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="control-group" style="flex: 1;">
+                            <label>初始位置 (X, Y)</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="input-start-x" min="1" max="7" value="2">
+                                <input type="number" id="input-start-y" min="1" max="7" value="2">
+                            </div>
+                        </div>
+                        <div class="control-group" style="flex: 1;">
+                            <label>目標位置 (NX, NY)</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="input-target-x" min="1" max="7" value="6">
+                                <input type="number" id="input-target-y" min="1" max="7" value="5">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-controls">
+                        <!-- "Generate Path" button is removed -->
+                        <button class="control-btn special-btn" onclick="quickReturn()" style="width: 100%;">快速返回 (1,1)</button>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 15px 0;">
+                    <div class="step-controls">
+                       <button id="prev-btn-goto" class="control-btn prev-btn">上一步</button>
+                       <button id="next-btn-goto" class="control-btn">下一步</button>
+                       <button id="autoplay-btn-goto" class="control-btn special-btn">自動播放</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>(i) 子程式 GOTO(NX, NY) 分析</h3>
+                    <div class="code-block" id="code-block-goto">
+                        <p class="code-line" data-line-id="i-0">設 i 由 1 至 |NX - X|</p>
+                        <p class="code-line" data-line-id="i-1" style="padding-left: 20px;">如果 NX > X 則</p>
+                        <p class="code-line" data-line-id="i-2" style="padding-left: 40px;">ME</p>
+                        <p class="code-line" data-line-id="i-3" style="padding-left: 20px;">否則</p>
+                        <p class="code-line" data-line-id="i-4" style="padding-left: 40px;">MW</p>
+                        <p class="code-line" data-line-id="i-5">設 i 由 1 至 |NY - Y|</p>
+                        <p class="code-line" data-line-id="i-6" style="padding-left: 20px;">如果 NY > Y 則</p>
+                        <p class="code-line" data-line-id="i-7" style="padding-left: 40px;">MN</p>
+                        <p class="code-line" data-line-id="i-8" style="padding-left: 20px;">否則</p>
+                        <p class="code-line" data-line-id="i-9" style="padding-left: 40px;">MS</p>
+                    </div>
+                </div>
+                 <div class="panel">
+                    <h3>執行步驟解說</h3>
+                    <div id="explanation-goto" class="explanation-steps">
+                        <!-- Updated initial text -->
+                        <p>請直接修改初始或目標位置，飛行路徑將會自動更新。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const GRID_SIZE = 7;
+    const PERSON_POS = { x: 1, y: 1 };
+
+    // --- Grid Drawing Utility ---
+    function createGrid(containerId, hasPerson = true) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "0 0 400 400");
+        svg.classList.add('grid-svg');
+        container.appendChild(svg);
+
+        const margin = 30;
+        const cell_size = (400 - 2 * margin) / GRID_SIZE;
+
+        // Grid lines and labels
+        for (let i = 0; i <= GRID_SIZE; i++) {
+            // Vertical lines
+            const x = margin + i * cell_size;
+            const v_line = document.createElementNS(svgNS, "line");
+            v_line.setAttribute("x1", x); v_line.setAttribute("y1", margin);
+            v_line.setAttribute("x2", x); v_line.setAttribute("y2", 400 - margin);
+            v_line.setAttribute("stroke", "var(--grid-line-color)");
+            svg.appendChild(v_line);
+
+            // Horizontal lines
+            const y = margin + i * cell_size;
+            const h_line = document.createElementNS(svgNS, "line");
+            h_line.setAttribute("x1", margin); h_line.setAttribute("y1", y);
+            h_line.setAttribute("x2", 400 - margin); h_line.setAttribute("y2", y);
+            h_line.setAttribute("stroke", "var(--grid-line-color)");
+            svg.appendChild(h_line);
+
+            if (i > 0 && i <= GRID_SIZE) {
+                // X labels
+                const x_text = document.createElementNS(svgNS, "text");
+                x_text.setAttribute("x", margin + (i - 0.5) * cell_size);
+                x_text.setAttribute("y", 400 - margin + 15);
+                x_text.setAttribute("text-anchor", "middle");
+                x_text.textContent = i;
+                svg.appendChild(x_text);
+
+                // Y labels
+                const y_text = document.createElementNS(svgNS, "text");
+                y_text.setAttribute("x", margin - 15);
+                y_text.setAttribute("y", 400 - margin - (i - 0.5) * cell_size);
+                y_text.setAttribute("dominant-baseline", "middle");
+                y_text.setAttribute("text-anchor", "middle");
+                y_text.textContent = i;
+                svg.appendChild(y_text);
+            }
+        }
+        
+        // Axis labels
+        const x_axis_label = document.createElementNS(svgNS, "text");
+        x_axis_label.setAttribute("x", 200); x_axis_label.setAttribute("y", 395);
+        x_axis_label.setAttribute("text-anchor", "middle"); x_axis_label.setAttribute("font-weight", "bold");
+        x_axis_label.textContent = "X";
+        svg.appendChild(x_axis_label);
+
+        const y_axis_label = document.createElementNS(svgNS, "text");
+        y_axis_label.setAttribute("x", 10); y_axis_label.setAttribute("y", 200);
+        y_axis_label.setAttribute("text-anchor", "middle"); y_axis_label.setAttribute("font-weight", "bold");
+        y_axis_label.setAttribute("transform", "rotate(-90, 10, 200)");
+        y_axis_label.textContent = "Y";
+        svg.appendChild(y_axis_label);
+
+        if (hasPerson) {
+            const person = document.createElementNS(svgNS, "g");
+            person.id = `person-${containerId}`;
+            const person_circle = document.createElementNS(svgNS, "circle");
+            person_circle.setAttribute("r", 8); person_circle.setAttribute("fill", "var(--success-color)");
+            const person_text = document.createElementNS(svgNS, "text");
+            person_text.textContent = "人"; person_text.setAttribute("fill", "white");
+            person_text.setAttribute("font-size", "10"); person_text.setAttribute("text-anchor", "middle");
+            person_text.setAttribute("dominant-baseline", "central");
+            person.appendChild(person_circle); person.appendChild(person_text);
+            svg.appendChild(person);
+        }
+        
+        return { svg, margin, cell_size };
+    }
+    
+    function gridToSvgCoords(pos, margin, cell_size) {
+        return {
+            x: margin + (pos.x - 0.5) * cell_size,
+            y: 400 - margin - (pos.y - 0.5) * cell_size
+        };
+    }
+
+    // --- Tab Switching ---
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
+    }
+
+    // --- Part (g) & (h) Logic ---
+    const distState = {
+        x: 5, y: 4,
+        grid: null,
+        drone: null, person: null,
+        dxLine: null, dyLine: null, distLine: null,
+        dxText: null, dyText: null, distText: null
+    };
+
+    function setupDist() {
+        const { svg, margin, cell_size } = createGrid('grid-container-dist');
+        distState.grid = { svg, margin, cell_size };
+
+        const svgNS = "http://www.w3.org/2000/svg";
+        distState.person = svg.querySelector('#person-grid-container-dist');
+        distState.drone = document.createElementNS(svgNS, "path");
+        distState.drone.setAttribute("d", "M-10,-10 L10,10 M10,-10 L-10,10");
+        distState.drone.setAttribute("stroke", "var(--drone-color)");
+        distState.drone.setAttribute("stroke-width", "3");
+        
+        distState.dxLine = document.createElementNS(svgNS, "line");
+        distState.dyLine = document.createElementNS(svgNS, "line");
+        distState.distLine = document.createElementNS(svgNS, "line");
+        [distState.dxLine, distState.dyLine].forEach(l => {
+            l.setAttribute("stroke", "var(--danger-color)");
+            l.setAttribute("stroke-width", "2");
+            l.setAttribute("stroke-dasharray", "4 2");
+        });
+        distState.distLine.setAttribute("stroke", "var(--info-color)");
+        distState.distLine.setAttribute("stroke-width", "3");
+        
+        distState.dxText = document.createElementNS(svgNS, "text");
+        distState.dyText = document.createElementNS(svgNS, "text");
+        distState.distText = document.createElementNS(svgNS, "text");
+        [distState.dxText, distState.dyText, distState.distText].forEach(t => {
+            t.setAttribute("fill", "black");
+            t.setAttribute("font-weight", "bold");
+            t.setAttribute("font-size", "14");
+        });
+
+        svg.appendChild(distState.distLine);
+        svg.appendChild(distState.dxLine);
+        svg.appendChild(distState.dyLine);
+        svg.appendChild(distState.drone);
+        svg.appendChild(distState.dxText);
+        svg.appendChild(distState.dyText);
+        svg.appendChild(distState.distText);
+
+        document.getElementById('slider-x-dist').addEventListener('input', e => {
+            distState.x = parseInt(e.target.value);
+            document.getElementById('label-x-dist').textContent = distState.x;
+            updateDistUI();
+        });
+        document.getElementById('slider-y-dist').addEventListener('input', e => {
+            distState.y = parseInt(e.target.value);
+            document.getElementById('label-y-dist').textContent = distState.y;
+            updateDistUI();
+        });
+        
+        updateDistUI();
+    }
+
+    function updateDistUI() {
+        const { margin, cell_size } = distState.grid;
+        const dronePos = { x: distState.x, y: distState.y };
+        
+        const personSvg = gridToSvgCoords(PERSON_POS, margin, cell_size);
+        const droneSvg = gridToSvgCoords(dronePos, margin, cell_size);
+        const cornerSvg = gridToSvgCoords({x: dronePos.x, y: PERSON_POS.y}, margin, cell_size);
+
+        distState.person.setAttribute("transform", `translate(${personSvg.x}, ${personSvg.y})`);
+        distState.drone.setAttribute("transform", `translate(${droneSvg.x}, ${droneSvg.y})`);
+        
+        distState.dxLine.setAttribute("x1", personSvg.x); distState.dxLine.setAttribute("y1", personSvg.y);
+        distState.dxLine.setAttribute("x2", cornerSvg.x); distState.dxLine.setAttribute("y2", cornerSvg.y);
+        
+        distState.dyLine.setAttribute("x1", cornerSvg.x); distState.dyLine.setAttribute("y1", cornerSvg.y);
+        distState.dyLine.setAttribute("x2", droneSvg.x); distState.dyLine.setAttribute("y2", droneSvg.y);
+
+        distState.distLine.setAttribute("x1", personSvg.x); distState.distLine.setAttribute("y1", personSvg.y);
+        distState.distLine.setAttribute("x2", droneSvg.x); distState.distLine.setAttribute("y2", droneSvg.y);
+
+        const dx = Math.abs(dronePos.x - PERSON_POS.x);
+        const dy = Math.abs(dronePos.y - PERSON_POS.y);
+        const distance = Math.sqrt(dx*dx + dy*dy);
+
+        distState.dxText.textContent = dx;
+        distState.dxText.setAttribute("x", (personSvg.x + cornerSvg.x) / 2);
+        distState.dxText.setAttribute("y", personSvg.y + 15);
+        distState.dxText.setAttribute("text-anchor", "middle");
+
+        distState.dyText.textContent = dy;
+        distState.dyText.setAttribute("x", cornerSvg.x + 10);
+        distState.dyText.setAttribute("y", (cornerSvg.y + droneSvg.y) / 2);
+        distState.dyText.setAttribute("dominant-baseline", "middle");
+
+        distState.distText.textContent = distance.toFixed(2);
+        distState.distText.setAttribute("x", (personSvg.x + droneSvg.x) / 2);
+        distState.distText.setAttribute("y", (personSvg.y + droneSvg.y) / 2);
+        distState.distText.setAttribute("transform", `rotate(${Math.atan2(droneSvg.y-personSvg.y, droneSvg.x-personSvg.x)*180/Math.PI}, ${(personSvg.x + droneSvg.x) / 2}, ${(personSvg.y + droneSvg.y) / 2})`);
+        distState.distText.setAttribute("dy", -8);
+
+        const explanationEl = document.getElementById('explanation-dist');
+        explanationEl.innerHTML = `
+            <p>1. 取得無人機位置 X = <strong>${dronePos.x}</strong>, Y = <strong>${dronePos.y}</strong>。</p>
+            <p>2. 計算 X 和 Y 方向與 (1,1) 的差距：</p>
+            <ul style="margin:0; padding-left: 20px;">
+                <li>ΔX = |${dronePos.x} - 1| = <strong>${dx}</strong></li>
+                <li>ΔY = |${dronePos.y} - 1| = <strong>${dy}</strong></li>
+            </ul>
+            <p>3. 套用畢氏定理 (勾股定理):</p>
+            <p style="font-family: monospace; font-size: 1.1em;">distance = √(${dx}² + ${dy}²) = √(${dx*dx} + ${dy*dy}) = √(${dx*dx + dy*dy})</p>
+            <p>4. 最終結果: <strong>${distance.toFixed(3)}</strong></p>
+        `;
+    }
+
+    // --- Part (i) & (j) Logic ---
+    const gotoState = {
+        steps: [],
+        currentStep: -1,
+        grid: null,
+        drone: null,
+        targetMarker: null,
+        isAutoplaying: false,
+        autoplayInterval: null
+    };
+
+    // This function is now the central point for updating the simulation
+    function setupGoto() {
+        stopAutoplay(); // Always stop autoplay on any change
+        
+        const startX = parseInt(document.getElementById('input-start-x').value);
+        const startY = parseInt(document.getElementById('input-start-y').value);
+        const targetX = parseInt(document.getElementById('input-target-x').value);
+        const targetY = parseInt(document.getElementById('input-target-y').value);
+        
+        updateTargetMarker(); // Update target marker position
+        generateGotoSteps(startX, startY, targetX, targetY);
+        gotoState.currentStep = 0;
+        renderGotoStep(0); // Render the initial state of the new path
+    }
+    
+    function quickReturn() {
+        // Set input values
+        document.getElementById('input-target-x').value = 1;
+        document.getElementById('input-target-y').value = 1;
+        // Manually trigger the update
+        setupGoto();
+    }
+
+    function updateTargetMarker() {
+        if (!gotoState.grid) return;
+        const { margin, cell_size } = gotoState.grid;
+        const targetX = parseInt(document.getElementById('input-target-x').value);
+        const targetY = parseInt(document.getElementById('input-target-y').value);
+        const targetSvg = gridToSvgCoords({x: targetX, y: targetY}, margin, cell_size);
+        gotoState.targetMarker.setAttribute("transform", `translate(${targetSvg.x}, ${targetSvg.y})`);
+    }
+
+    function stopAutoplay() {
+        if (gotoState.autoplayInterval) {
+            clearInterval(gotoState.autoplayInterval);
+            gotoState.autoplayInterval = null;
+        }
+        gotoState.isAutoplaying = false;
+        
+        const autoplayBtn = document.getElementById('autoplay-btn-goto');
+        autoplayBtn.textContent = '自動播放';
+        autoplayBtn.classList.remove('danger-btn');
+        autoplayBtn.classList.add('special-btn');
+        
+        // Let renderGotoStep handle the prev/next buttons' state correctly
+        if(gotoState.currentStep !== -1) {
+            renderGotoStep(gotoState.currentStep);
+        }
+    }
+
+    function toggleAutoplay() {
+        if (gotoState.isAutoplaying) {
+            stopAutoplay();
+        } else {
+            gotoState.isAutoplaying = true;
+            const autoplayBtn = document.getElementById('autoplay-btn-goto');
+            autoplayBtn.textContent = '停止播放';
+            autoplayBtn.classList.remove('special-btn');
+            autoplayBtn.classList.add('danger-btn');
+
+            // Disable step-by-step buttons during autoplay
+            document.getElementById('prev-btn-goto').disabled = true;
+            document.getElementById('next-btn-goto').disabled = true;
+            
+            // If at the end, reset to start for replay
+            if (gotoState.currentStep >= gotoState.steps.length - 1) {
+                gotoState.currentStep = 0;
+                renderGotoStep(0);
+            }
+
+            gotoState.autoplayInterval = setInterval(() => {
+                if (gotoState.currentStep < gotoState.steps.length - 1) {
+                    gotoState.currentStep++;
+                    renderGotoStep(gotoState.currentStep);
+                } else {
+                    stopAutoplay(); // Reached the end, stop automatically
+                }
+            }, 800);
+        }
+    }
+
+    function generateGotoSteps(startX, startY, targetX, targetY) {
+        gotoState.steps = [];
+        let currentX = startX;
+        let currentY = startY;
+
+        gotoState.steps.push({
+            pos: { x: currentX, y: currentY },
+            lineId: null,
+            explanation: `路徑已更新。初始位置 (${startX}, ${startY})，目標位置 (${targetX}, ${targetY})。`
+        });
+
+        const dx = targetX - currentX;
+        if (dx !== 0) {
+            gotoState.steps.push({
+                pos: { x: currentX, y: currentY }, lineId: 'i-0',
+                explanation: `開始水平移動。需移動 <strong>${Math.abs(dx)}</strong> 格。`
+            });
+            const moveCmd = dx > 0 ? 'ME' : 'MW';
+            const moveDir = dx > 0 ? '東' : '西';
+            const lineIdCond = dx > 0 ? 'i-1' : 'i-3';
+            const lineIdMove = dx > 0 ? 'i-2' : 'i-4';
+            
+            gotoState.steps.push({
+                pos: { x: currentX, y: currentY }, lineId: lineIdCond,
+                explanation: `判斷條件：目標 NX (${targetX}) ${dx > 0 ? '>' : '<'} 當前 X (${currentX})。執行 <strong>${moveCmd}</strong>。`
+            });
+
+            for (let i = 0; i < Math.abs(dx); i++) {
+                currentX += Math.sign(dx);
+                gotoState.steps.push({
+                    pos: { x: currentX, y: currentY }, lineId: lineIdMove,
+                    explanation: `向${moveDir}移動 1 格。新位置 (${currentX}, ${currentY})。`
+                });
+            }
+        } else {
+             gotoState.steps.push({
+                pos: { x: currentX, y: currentY }, lineId: 'i-0',
+                explanation: `水平方向無需移動 (NX = X)。`
+            });
+        }
+
+        const dy = targetY - currentY;
+        if (dy !== 0) {
+            gotoState.steps.push({
+                pos: { x: currentX, y: currentY }, lineId: 'i-5',
+                explanation: `水平移動完成。開始垂直移動。需移動 <strong>${Math.abs(dy)}</strong> 格。`
+            });
+            const moveCmd = dy > 0 ? 'MN' : 'MS';
+            const moveDir = dy > 0 ? '北' : '南';
+            const lineIdCond = dy > 0 ? 'i-6' : 'i-8';
+            const lineIdMove = dy > 0 ? 'i-7' : 'i-9';
+
+            gotoState.steps.push({
+                pos: { x: currentX, y: currentY }, lineId: lineIdCond,
+                explanation: `判斷條件：目標 NY (${targetY}) ${dy > 0 ? '>' : '<'} 當前 Y (${currentY})。執行 <strong>${moveCmd}</strong>。`
+            });
+
+            for (let i = 0; i < Math.abs(dy); i++) {
+                currentY += Math.sign(dy);
+                gotoState.steps.push({
+                    pos: { x: currentX, y: currentY }, lineId: lineIdMove,
+                    explanation: `向${moveDir}移動 1 格。新位置 (${currentX}, ${currentY})。`
+                });
+            }
+        } else {
+             gotoState.steps.push({
+                pos: { x: currentX, y: currentY }, lineId: 'i-5',
+                explanation: `垂直方向無需移動 (NY = Y)。`
+            });
+        }
+        
+        gotoState.steps.push({
+            pos: { x: currentX, y: currentY }, lineId: null,
+            explanation: `已到達目標位置 (${targetX}, ${targetY})。程式結束。`
+        });
+    }
+
+    function renderGotoStep(stepIndex) {
+        if (stepIndex < 0 || stepIndex >= gotoState.steps.length) return;
+        
+        const step = gotoState.steps[stepIndex];
+        const { margin, cell_size } = gotoState.grid;
+
+        const droneSvg = gridToSvgCoords(step.pos, margin, cell_size);
+        gotoState.drone.setAttribute("transform", `translate(${droneSvg.x}, ${droneSvg.y})`);
+
+        document.querySelectorAll('#code-block-goto .code-line').forEach(l => l.classList.remove('highlight'));
+        if (step.lineId) {
+            document.querySelector(`#code-block-goto [data-line-id="${step.lineId}"]`).classList.add('highlight');
+        }
+
+        const explanationEl = document.getElementById('explanation-goto');
+        explanationEl.innerHTML = '';
+        for (let i = 0; i <= stepIndex; i++) {
+            const p = document.createElement('p');
+            p.innerHTML = gotoState.steps[i].explanation;
+            if (i === stepIndex) p.classList.add('current-step-exp');
+            explanationEl.appendChild(p);
+        }
+        explanationEl.scrollTop = explanationEl.scrollHeight;
+
+        // Update buttons state, respecting autoplay
+        if (!gotoState.isAutoplaying) {
+            document.getElementById('prev-btn-goto').disabled = (stepIndex === 0);
+            document.getElementById('next-btn-goto').disabled = (stepIndex >= gotoState.steps.length - 1);
+        }
+    }
+    
+    function initGotoUI() {
+        const { svg, margin, cell_size } = createGrid('grid-container-goto', false);
+        gotoState.grid = { svg, margin, cell_size };
+        
+        const svgNS = "http://www.w3.org/2000/svg";
+        
+        gotoState.targetMarker = document.createElementNS(svgNS, "path");
+        gotoState.targetMarker.setAttribute("d", "M-12 0 L12 0 M0 -12 L0 12");
+        gotoState.targetMarker.setAttribute("stroke", "var(--success-color)");
+        gotoState.targetMarker.setAttribute("stroke-width", "3");
+        svg.appendChild(gotoState.targetMarker);
+
+        gotoState.drone = document.createElementNS(svgNS, "path");
+        gotoState.drone.setAttribute("d", "M-10,-10 L10,10 M10,-10 L-10,10");
+        gotoState.drone.setAttribute("stroke", "var(--drone-color)");
+        gotoState.drone.setAttribute("stroke-width", "3");
+        svg.appendChild(gotoState.drone);
+        
+        // Add event listeners to all coordinate inputs to trigger path regeneration
+        document.getElementById('input-start-x').addEventListener('change', setupGoto);
+        document.getElementById('input-start-y').addEventListener('change', setupGoto);
+        document.getElementById('input-target-x').addEventListener('change', setupGoto);
+        document.getElementById('input-target-y').addEventListener('change', setupGoto);
+
+        document.getElementById('next-btn-goto').addEventListener('click', () => {
+            if (gotoState.currentStep < gotoState.steps.length - 1) {
+                gotoState.currentStep++;
+                renderGotoStep(gotoState.currentStep);
+            }
+        });
+        document.getElementById('prev-btn-goto').addEventListener('click', () => {
+            if (gotoState.currentStep > 0) {
+                gotoState.currentStep--;
+                renderGotoStep(gotoState.currentStep);
+            }
+        });
+        
+        document.getElementById('autoplay-btn-goto').addEventListener('click', toggleAutoplay);
+        
+        // Initial path generation on page load
+        setupGoto();
+    }
+
+
+    // --- Initialization ---
+    window.onload = () => {
+        setupDist();
+        initGotoUI();
+    };
+</script>
+
+</body>
+</html>
