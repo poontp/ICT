@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無人機程式設計進階教學 (e) & (f) - 分步執行版</title>
+    <title>無人機程式設計互動教學</title>
     <style>
         :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
+            --primary-color: #4a90e2;
+            --secondary-color: #f5a623;
             --background-color: #f8f9fa;
             --text-color: #333;
             --border-color: #dee2e6;
-            --compass-bg: #fff;
+            --grid-line-color: #ccc;
             --drone-color: #d0021b;
+            --path-color: #4a4a4a;
         }
 
         body {
@@ -83,179 +81,139 @@
         }
 
         .main-layout {
-            display: grid;
-            grid-template-columns: 300px 1fr;
+            display: flex;
+            flex-wrap: wrap;
             gap: 20px;
-            align-items: flex-start;
         }
 
-        .compass-container {
-            position: relative;
-            width: 100%;
-            max-width: 280px;
+        .grid-container {
+            flex: 1;
+            min-width: 300px;
             aspect-ratio: 1 / 1;
-            margin: 10px auto;
-        }
-
-        .compass-svg {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .drone-arrow {
-            fill: var(--drone-color);
-            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
 
         .controls-and-info {
+            flex: 1;
+            min-width: 300px;
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
 
-        .panel {
+        .info-panel, .explanation-panel, .controls-panel, .code-panel {
             background-color: #f8f9fa;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 15px;
         }
-        
-        .panel h3 {
-            margin-top: 0;
-            font-size: 1.1em;
-            color: var(--secondary-color);
-        }
 
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .radio-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .radio-group input[type="radio"] {
-            display: none;
-        }
-
-        .radio-group label {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9em;
-        }
-        
-        .radio-group input[type="radio"]:checked + label {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        .step-controls {
+        .controls-panel {
             display: flex;
             gap: 10px;
-            margin-top: 10px;
         }
 
         .control-btn {
             flex: 1;
-            padding: 10px 15px;
+            padding: 10px;
             border-radius: 5px;
             border: 1px solid var(--primary-color);
             background-color: var(--primary-color);
             color: white;
             font-size: 1em;
             cursor: pointer;
-            transition: background-color 0.2s, opacity 0.2s;
+            transition: background-color 0.2s;
+        }
+        
+        .control-btn.reset {
+            background-color: white;
+            color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .control-btn:hover {
+            opacity: 0.85;
         }
         
         .control-btn:disabled {
             background-color: #ccc;
             border-color: #ccc;
             cursor: not-allowed;
-            opacity: 0.7;
-        }
-        
-        .control-btn.prev-btn {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
         }
 
-        .code-block {
+        .info-grid {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .info-grid span:first-child {
+            font-weight: 600;
+        }
+
+        .code-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
             font-family: "Courier New", Courier, monospace;
-            background: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
         }
         
-        .code-line {
-            padding: 2px 5px;
+        .code-list li {
+            padding: 5px 8px;
             border-radius: 3px;
             transition: background-color 0.3s;
         }
-        
-        .code-line.highlight {
-            background-color: var(--warning-color);
+
+        .code-list li.current-step {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: bold;
         }
 
+        .explanation-panel p {
+            margin: 0;
+        }
+        
+        .final-answer {
+            margin-top: 10px !important;
+            padding: 10px;
+            background-color: #e7f3ff;
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .drone-arrow {
+            fill: var(--drone-color);
+            transition: transform 0.4s ease-in-out;
+        }
+
+        .path-line {
+            stroke: var(--path-color);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+        }
+        
         .code-fill {
             font-weight: bold;
-            color: var(--danger-color);
-            border-bottom: 2px solid var(--danger-color);
-            padding: 0 4px;
-        }
-        
-        .explanation-steps {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .explanation-steps p {
-            margin: 0 0 8px 0;
-            padding: 8px;
-            border-left: 3px solid var(--border-color);
-            transition: all 0.3s;
-        }
-        
-        .explanation-steps p.current-step-exp {
-            border-left-color: var(--success-color);
-            background-color: #eaf6ec;
-        }
-
-        .styled-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        
-        .styled-table th, .styled-table td {
-            border: 1px solid var(--border-color);
-            padding: 8px;
-            text-align: center;
-        }
-        
-        .styled-table th {
-            background-color: #e9ecef;
-        }
-        
-        .styled-table tr.highlight-row {
-            background-color: #fff3cd;
-            font-weight: bold;
+            color: var(--drone-color);
         }
 
         @media (max-width: 768px) {
-            .main-layout {
-                grid-template-columns: 1fr;
+            body {
+                padding: 0;
             }
-            .compass-container {
-                max-width: 250px;
+            .container {
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .main-layout {
+                flex-direction: column;
+            }
+            .grid-container {
+                width: 100%;
+                max-width: 400px;
+                margin: 0 auto;
             }
         }
     </style>
@@ -264,111 +222,145 @@
 
 <div class="container">
     <div class="tabs">
-        <button class="tab-button active" onclick="showPart('e')">問題 (e)</button>
-        <button class="tab-button" onclick="showPart('f')">問題 (f)</button>
+        <button class="tab-button active" onclick="showPart('a')">問題 (a)</button>
+        <button class="tab-button" onclick="showPart('b')">問題 (b)</button>
+        <button class="tab-button" onclick="showPart('c')">問題 (c)</button>
+        <button class="tab-button" onclick="showPart('d')">問題 (d)</button>
     </div>
 
-    <!-- Part (e) -->
-    <div id="part-e" class="tab-content active">
-        <h2>(e) 完成子程式 MN (轉向北方)</h2>
+    <!-- Part (a) -->
+    <div id="part-a" class="tab-content active">
+        <h2>(a) 追蹤路徑</h2>
         <div class="main-layout">
-            <div class="compass-container" id="compass-e"></div>
+            <div class="grid-container" id="grid-a"></div>
             <div class="controls-and-info">
-                <div class="panel">
-                    <div class="control-group">
-                        <fieldset>
-                            <legend style="font-weight: 600;">選擇初始方向 (direction)</legend>
-                            <div class="radio-group" id="radio-group-e">
-                                <!-- Radio buttons will be generated by JS -->
-                            </div>
-                        </fieldset>
-                        <div class="step-controls">
-                           <button id="prev-btn-e" class="control-btn prev-btn">上一步</button>
-                           <button id="next-btn-e" class="control-btn">下一步</button>
-                        </div>
+                <div class="controls-panel">
+                    <button id="next-a" class="control-btn">下一步</button>
+                    <button id="reset-a" class="control-btn reset">重置</button>
+                </div>
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <span>目前位置:</span> <span id="pos-a">(4, 3)</span>
+                        <span>目前方向:</span> <span id="dir-a">北</span>
+                        <span>執行指令:</span> <span id="cmd-a">尚未開始</span>
                     </div>
                 </div>
-                <div class="panel">
-                    <h3>程式碼分析</h3>
-                    <div class="code-block" id="code-block-e">
-                        <p class="code-line" data-line-id="e-0">子程式 MN</p>
-                        <p class="code-line" data-line-id="e-1">設 i 由 1 至 <span class="code-fill">direction - 1</span></p>
-                        <p class="code-line" data-line-id="e-2" style="padding-left: 20px;">TL</p>
-                        <p class="code-line" data-line-id="e-3">FW</p>
+                <div class="code-panel">
+                    <p><strong>程式:</strong></p>
+                    <ul id="code-list-a" class="code-list">
+                        <li>TL</li>
+                        <li>FW</li>
+                        <li>FW</li>
+                        <li>FW</li>
+                        <li>TR</li>
+                        <li>FW</li>
+                        <li>FW</li>
+                    </ul>
+                </div>
+                <div class="explanation-panel">
+                    <p id="exp-a">無人機初始位置在 (4, 3)，面向北方。請點擊「下一步」開始執行程式。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Part (b) -->
+    <div id="part-b" class="tab-content">
+        <h2>(b) 完成子程式 TL</h2>
+        <div class="main-layout">
+            <div class="grid-container" id="grid-b"></div>
+            <div class="controls-and-info">
+                <div class="controls-panel">
+                    <button id="next-b" class="control-btn">下一步</button>
+                    <button id="reset-b" class="control-btn reset">重置</button>
+                </div>
+                <div class="info-panel">
+                     <div class="info-grid">
+                        <span>目前位置:</span> <span id="pos-b">(3, 3)</span>
+                        <span>目前方向:</span> <span id="dir-b">北</span>
+                        <span>執行指令:</span> <span id="cmd-b">尚未開始</span>
                     </div>
                 </div>
-                <div class="panel">
-                    <h3>轉向次數分析表 (目標：北方=1)</h3>
-                    <table class="styled-table" id="table-e">
-                        <thead><tr><th>當前方向 (d)</th><th>目標方向</th><th>需要次數 (TL)</th><th>公式 (d - 1)</th></tr></thead>
-                        <tbody>
-                            <tr id="row-e-1"><td>1 (北)</td><td>1</td><td>0</td><td>1 - 1 = 0</td></tr>
-                            <tr id="row-e-2"><td>2 (東)</td><td>1</td><td>1</td><td>2 - 1 = 1</td></tr>
-                            <tr id="row-e-3"><td>3 (南)</td><td>1</td><td>2</td><td>3 - 1 = 2</td></tr>
-                            <tr id="row-e-4"><td>4 (西)</td><td>1</td><td>3</td><td>4 - 1 = 3</td></tr>
-                        </tbody>
-                    </table>
-                    <p style="font-size:0.9em; margin-top:10px;">註：根據公式 <code>direction - 1</code> 推斷，<code>TL</code> 為**逆時針**轉 90 度 (數字減 1)。</p>
-                </div>
-                 <div class="panel">
-                    <h3>執行步驟解說</h3>
-                    <div id="explanation-e" class="explanation-steps">
-                        <p>請選擇一個初始方向開始。</p>
+                <div class="explanation-panel">
+                    <p id="exp-b">
+                        子程式 TL 的功能是「將無人機向逆時針轉 90 度」。我們只有 TR (順時針轉 90 度) 可以用。
+                        <br>逆時針轉 90 度，效果等同於順時針轉 270 度，也就是連續執行 3 次 TR。
+                        <br>點擊「下一步」觀看動畫。
+                    </p>
+                    <div class="code-panel" style="margin-top:10px;">
+                        <p><strong>子程式 TL:</strong></p>
+                        <p>設 i 由 <span class="code-fill">1</span> 至 <span class="code-fill">3</span></p>
+                        <p style="padding-left: 20px;">TR</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Part (f) -->
-    <div id="part-f" class="tab-content">
-        <h2>(f) 優化子程式 ME (轉向東方)</h2>
+    <!-- Part (c) -->
+    <div id="part-c" class="tab-content">
+        <h2>(c) 完成子程式 SQ(N)</h2>
         <div class="main-layout">
-            <div class="compass-container" id="compass-f"></div>
+            <div class="grid-container" id="grid-c"></div>
             <div class="controls-and-info">
-                <div class="panel">
-                    <div class="control-group">
-                        <fieldset>
-                            <legend style="font-weight: 600;">選擇初始方向 (direction)</legend>
-                            <div class="radio-group" id="radio-group-f">
-                                <!-- Radio buttons will be generated by JS -->
-                            </div>
-                        </fieldset>
-                        <div class="step-controls">
-                           <button id="prev-btn-f" class="control-btn prev-btn">上一步</button>
-                           <button id="next-btn-f" class="control-btn">下一步</button>
-                        </div>
+                <div class="controls-panel">
+                    <button id="next-c" class="control-btn">下一步</button>
+                    <button id="reset-c" class="control-btn reset">重置</button>
+                </div>
+                <div class="info-panel">
+                     <div class="info-grid">
+                        <span>目前位置:</span> <span id="pos-c">(2, 2)</span>
+                        <span>目前方向:</span> <span id="dir-c">北</span>
+                        <span>執行指令:</span> <span id="cmd-c">尚未開始</span>
                     </div>
                 </div>
-                <div class="panel">
-                    <h3>程式碼分析 (優化版)</h3>
-                    <div class="code-block" id="code-block-f">
-                        <p class="code-line" data-line-id="f-0">如果 direction > 2 則</p>
-                        <p class="code-line" data-line-id="f-1" style="padding-left: 20px;">設 i 由 1 至 <span class="code-fill">direction - 2</span></p>
-                        <p class="code-line" data-line-id="f-2" style="padding-left: 40px;">TL</p>
-                        <p class="code-line" data-line-id="f-3">否則 如果 <span class="code-fill">direction < 2</span> 則</p>
-                        <p class="code-line" data-line-id="f-4" style="padding-left: 20px;">設 i 由 1 至 <span class="code-fill">direction + 2</span></p>
-                        <p class="code-line" data-line-id="f-5" style="padding-left: 40px;">TL</p>
-                        <p class="code-line" data-line-id="f-6">FW</p>
+                <div class="explanation-panel">
+                    <p id="exp-c">
+                        子程式 SQ(N) 用來畫一個邊長為 N 的正方形。畫正方形需要重複「前進 N 格、轉彎 90 度」這個動作 4 次。
+                        <br>因此，迴圈需要從 1 執行到 4。我們將以範例 SQ(3) 來演示。
+                        <br>點擊「下一步」觀看動畫。
+                    </p>
+                    <div class="code-panel" style="margin-top:10px;">
+                        <p><strong>子程式 SQ(N):</strong></p>
+                        <p>設 i 由 <span class="code-fill">1</span> 至 <span class="code-fill">4</span></p>
+                        <p style="padding-left: 20px;">(重複 N 次 FW)</p>
+                        <p style="padding-left: 20px;">TR</p>
                     </div>
                 </div>
-                <div class="panel">
-                    <h3>轉向次數分析表 (目標：東方=2)</h3>
-                    <table class="styled-table" id="table-f">
-                         <thead><tr><th>當前方向 (d)</th><th>目標方向</th><th>最少轉向次數</th><th>最佳路徑</th></tr></thead>
-                        <tbody>
-                            <tr id="row-f-1"><td>1 (北)</td><td>2</td><td>1</td><td>1 次 TR (順時針)</td></tr>
-                            <tr id="row-f-2"><td>2 (東)</td><td>2</td><td>0</td><td>不需轉動</td></tr>
-                            <tr id="row-f-3"><td>3 (南)</td><td>2</td><td>1</td><td>1 次 TL (逆時針)</td></tr>
-                            <tr id="row-f-4"><td>4 (西)</td><td>2</td><td>2</td><td>2 次 TL (逆時針)</td></tr>
-                        </tbody>
-                    </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Part (d) -->
+    <div id="part-d" class="tab-content">
+        <h2>(d) 執行程式</h2>
+        <div class="main-layout">
+            <div class="grid-container" id="grid-d"></div>
+            <div class="controls-and-info">
+                <div class="controls-panel">
+                    <button id="next-d" class="control-btn">下一步</button>
+                    <button id="reset-d" class="control-btn reset">重置</button>
                 </div>
-                 <div class="panel">
-                    <h3>執行步驟解說</h3>
-                    <div id="explanation-f" class="explanation-steps">
-                        <p>請選擇一個初始方向開始。</p>
+                <div class="info-panel">
+                     <div class="info-grid">
+                        <span>目前位置:</span> <span id="pos-d">(1, 1)</span>
+                        <span>目前方向:</span> <span id="dir-d">北</span>
+                        <span>執行指令:</span> <span id="cmd-d">尚未開始</span>
                     </div>
+                </div>
+                <div class="code-panel">
+                    <p><strong>程式:</strong></p>
+                    <p>設 i 由 1 至 2</p>
+                    <p style="padding-left: 20px;">SQ(i)</p>
+                    <ul id="code-list-d" class="code-list">
+                        <!-- Will be populated by JS -->
+                    </ul>
+                </div>
+                <div class="explanation-panel">
+                    <p id="exp-d">
+                        此程式先執行 SQ(1)，再執行 SQ(2)。無人機從 (1,1) 面向北方開始。
+                        <br>點擊「下一步」開始執行。
+                    </p>
                 </div>
             </div>
         </div>
@@ -377,296 +369,301 @@
 </div>
 
 <script>
-    const directions = { 1: '北', 2: '東', 3: '南', 4: '西' };
-    const angles = { 1: 0, 2: 90, 3: 180, 4: 270 };
-    
-    // State management for each part
-    const state = {
-        e: { steps: [], currentStep: -1, startDir: 1 },
-        f: { steps: [], currentStep: -1, startDir: 1 }
-    };
+    const parts = ['a', 'b', 'c', 'd'];
+    const directions = ['北', '東', '南', '西']; // 0:N, 1:E, 2:S, 3:W
+    const moves = [
+        { dx: 0, dy: 1 },  // North
+        { dx: 1, dy: 0 },  // East
+        { dx: 0, dy: -1 }, // South
+        { dx: -1, dy: 0 }  // West
+    ];
 
-    function createCompass(containerId, partId) {
+    let states = {};
+
+    function createGrid(containerId, partId, size = 6) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
-        svg.setAttribute("viewBox", "-100 -100 200 200");
-        
-        const circle = document.createElementNS(svgNS, "circle");
-        circle.setAttribute("cx", 0); circle.setAttribute("cy", 0);
-        circle.setAttribute("r", 95);
-        circle.setAttribute("fill", "var(--compass-bg)");
-        circle.setAttribute("stroke", "var(--border-color)");
-        circle.setAttribute("stroke-width", "2");
-        svg.appendChild(circle);
+        svg.setAttribute("viewBox", "-20 -20 340 340");
+        svg.style.width = "100%";
+        svg.style.height = "100%";
 
-        const labels = [
-            { dir: '北', num: '1', angle: 0, y: -75 }, { dir: '東', num: '2', angle: 90, y: -75 },
-            { dir: '南', num: '3', angle: 180, y: -75 }, { dir: '西', num: '4', angle: 270, y: -75 },
-        ];
-        labels.forEach(l => {
-            const g = document.createElementNS(svgNS, "g");
-            g.setAttribute("transform", `rotate(${l.angle})`);
-            const textDir = document.createElementNS(svgNS, "text");
-            textDir.setAttribute("x", 0); textDir.setAttribute("y", l.y);
-            textDir.setAttribute("text-anchor", "middle"); textDir.setAttribute("font-size", "14");
-            textDir.setAttribute("font-weight", "bold");
-            textDir.setAttribute("transform", `rotate(${-l.angle}, 0, ${l.y})`);
-            textDir.textContent = l.dir;
-            g.appendChild(textDir);
+        const cellSize = 300 / size;
+
+        // Grid lines and labels
+        for (let i = 0; i <= size; i++) {
+            // Y-axis labels (1 to 6)
+            if (i < size) {
+                const yLabel = document.createElementNS(svgNS, "text");
+                yLabel.setAttribute("x", -10);
+                yLabel.setAttribute("y", (size - 1 - i) * cellSize + cellSize / 2 + 5);
+                yLabel.setAttribute("text-anchor", "middle");
+                yLabel.setAttribute("font-size", "12");
+                yLabel.textContent = i + 1;
+                svg.appendChild(yLabel);
+            }
+             // X-axis labels (1 to 6)
+            if (i < size) {
+                const xLabel = document.createElementNS(svgNS, "text");
+                xLabel.setAttribute("x", i * cellSize + cellSize / 2);
+                xLabel.setAttribute("y", 315);
+                xLabel.setAttribute("text-anchor", "middle");
+                xLabel.setAttribute("font-size", "12");
+                xLabel.textContent = i + 1;
+                svg.appendChild(xLabel);
+            }
             
-            const textNum = document.createElementNS(svgNS, "text");
-            textNum.setAttribute("x", 0); textNum.setAttribute("y", l.y + 15);
-            textNum.setAttribute("text-anchor", "middle"); textNum.setAttribute("font-size", "12");
-            textNum.setAttribute("fill", "var(--secondary-color)");
-            textNum.setAttribute("transform", `rotate(${-l.angle}, 0, ${l.y+15})`);
-            textNum.textContent = `(${l.num})`;
-            g.appendChild(textNum);
-            svg.appendChild(g);
-        });
+            // Grid lines
+            const hLine = document.createElementNS(svgNS, "line");
+            hLine.setAttribute("x1", 0);
+            hLine.setAttribute("y1", i * cellSize);
+            hLine.setAttribute("x2", 300);
+            hLine.setAttribute("y2", i * cellSize);
+            hLine.setAttribute("stroke", "var(--grid-line-color)");
+            svg.appendChild(hLine);
+
+            const vLine = document.createElementNS(svgNS, "line");
+            vLine.setAttribute("x1", i * cellSize);
+            vLine.setAttribute("y1", 0);
+            vLine.setAttribute("x2", i * cellSize);
+            vLine.setAttribute("y2", 300);
+            vLine.setAttribute("stroke", "var(--grid-line-color)");
+            svg.appendChild(vLine);
+        }
+        
+        const pathGroup = document.createElementNS(svgNS, "g");
+        pathGroup.id = `path-${partId}`;
+        svg.appendChild(pathGroup);
 
         const drone = document.createElementNS(svgNS, "polygon");
         drone.id = `drone-${partId}`;
         drone.classList.add('drone-arrow');
-        drone.setAttribute("points", "-12,15 0,-15 12,15");
-        drone.setAttribute("transform", "rotate(0)");
+        drone.setAttribute("points", "-8,10 0,-10 8,10");
         svg.appendChild(drone);
         
         container.appendChild(svg);
     }
-
-    function createRadioButtons(partId) {
-        const group = document.getElementById(`radio-group-${partId}`);
-        group.innerHTML = '';
-        [1, 2, 3, 4].forEach(dir => {
-            const input = document.createElement('input');
-            input.type = 'radio';
-            input.id = `dir-${partId}-${dir}`;
-            input.name = `direction-${partId}`;
-            input.value = dir;
-            if (dir === 1) input.checked = true;
-
-            const label = document.createElement('label');
-            label.htmlFor = `dir-${partId}-${dir}`;
-            label.textContent = `${directions[dir]} (${dir})`;
-
-            group.appendChild(input);
-            group.appendChild(label);
-            
-            input.addEventListener('change', (e) => {
-                const newDir = parseInt(e.target.value);
-                state[partId].startDir = newDir;
-                if (partId === 'e') generateStepsE(newDir);
-                else generateStepsF(newDir);
-                resetAndRenderInitial(partId);
-            });
-        });
+    
+    function toSvgCoords(x, y, size = 6) {
+        const cellSize = 300 / size;
+        return {
+            x: (x - 1) * cellSize + cellSize / 2,
+            y: (size - y) * cellSize + cellSize / 2
+        };
     }
 
-    function updateDrone(partId, direction) {
+    function updateDroneTransform(partId, x, y, dir, size = 6) {
+        const svgCoords = toSvgCoords(x, y, size);
+        const rotation = dir * 90;
         const drone = document.getElementById(`drone-${partId}`);
-        if(drone) drone.setAttribute("transform", `rotate(${angles[direction]})`);
-    }
-    
-    function highlightTableRow(tableId, direction) {
-        document.querySelectorAll(`#${tableId} tr`).forEach(row => row.classList.remove('highlight-row'));
-        const row = document.getElementById(`row-${tableId.slice(-1)}-${direction}`);
-        if(row) row.classList.add('highlight-row');
-    }
-
-    function highlightCodeLine(partId, lineId) {
-        document.querySelectorAll(`#code-block-${partId} .code-line`).forEach(line => line.classList.remove('highlight'));
-        if (lineId !== null) {
-            const line = document.querySelector(`#code-block-${partId} [data-line-id="${lineId}"]`);
-            if (line) line.classList.add('highlight');
+        if (drone) {
+            drone.setAttribute("transform", `translate(${svgCoords.x}, ${svgCoords.y}) rotate(${rotation})`);
         }
     }
-    
-    function updateExplanation(partId, stepIndex) {
-        const explanationEl = document.getElementById(`explanation-${partId}`);
-        explanationEl.innerHTML = '';
-        for (let i = 0; i <= stepIndex; i++) {
-            const p = document.createElement('p');
-            p.innerHTML = state[partId].steps[i].explanation;
-            if (i === stepIndex) {
-                p.classList.add('current-step-exp');
-            }
-            explanationEl.appendChild(p);
-        }
-        explanationEl.scrollTop = explanationEl.scrollHeight;
+
+    function drawPath(partId, x1, y1, x2, y2, size = 6) {
+        const svgCoords1 = toSvgCoords(x1, y1, size);
+        const svgCoords2 = toSvgCoords(x2, y2, size);
+        
+        const pathGroup = document.getElementById(`path-${partId}`);
+        const svgNS = "http://www.w3.org/2000/svg";
+        const line = document.createElementNS(svgNS, "line");
+        line.setAttribute("x1", svgCoords1.x);
+        line.setAttribute("y1", svgCoords1.y);
+        line.setAttribute("x2", svgCoords2.x);
+        line.setAttribute("y2", svgCoords2.y);
+        line.classList.add('path-line');
+        pathGroup.appendChild(line);
     }
     
-    function renderStep(partId, stepIndex) {
-        if (stepIndex < 0 || stepIndex >= state[partId].steps.length) return;
+    function updateUI(partId) {
+        const state = states[partId];
+        document.getElementById(`pos-${partId}`).textContent = `(${state.x}, ${state.y})`;
+        document.getElementById(`dir-${partId}`).textContent = directions[state.dir];
         
-        const step = state[partId].steps[stepIndex];
-        
-        updateDrone(partId, step.droneDirection);
-        highlightCodeLine(partId, step.lineId);
-        updateExplanation(partId, stepIndex);
-        
-        // Update button states
-        document.getElementById(`prev-btn-${partId}`).disabled = (stepIndex === 0);
-        document.getElementById(`next-btn-${partId}`).disabled = (stepIndex === state[partId].steps.length - 1);
-    }
-    
-    function resetAndRenderInitial(partId) {
-        state[partId].currentStep = 0;
-        highlightTableRow(`table-${partId}`, state[partId].startDir);
-        renderStep(partId, 0);
-    }
-
-    // --- Step Generation Logic ---
-
-    function generateStepsE(startDir) {
-        const steps = [];
-        let currentDir = startDir;
-        
-        steps.push({
-            lineId: null, droneDirection: currentDir,
-            explanation: `程式開始。初始方向為 <strong>${directions[startDir]} (${startDir})</strong>。目標是北方 (1)。`
-        });
-
-        const turns = startDir - 1;
-        steps.push({
-            lineId: 'e-1', droneDirection: currentDir,
-            explanation: `計算迴圈次數: <code>direction - 1</code> = ${startDir} - 1 = <strong>${turns}</strong> 次。`
-        });
-
-        if (turns > 0) {
-            for (let i = 1; i <= turns; i++) {
-                const prevDir = currentDir;
-                currentDir = (currentDir - 2 + 4) % 4 + 1; // Counter-clockwise
-                steps.push({
-                    lineId: 'e-2', droneDirection: currentDir,
-                    explanation: `執行第 ${i} 次 <strong>TL</strong> (逆時針)。方向由 ${directions[prevDir]} 變為 <strong>${directions[currentDir]}</strong>。`
-                });
-            }
+        // *** FIX: Handle the initial state (step = -1) to prevent error ***
+        let commandLabel;
+        if (state.step === -1) {
+            commandLabel = "尚未開始";
+        } else if (state.step < state.commands.length) {
+            commandLabel = state.commands[state.step].label;
         } else {
-            steps.push({
-                lineId: 'e-1', droneDirection: currentDir,
-                explanation: `轉向次數為 0，跳過迴圈。`
+            commandLabel = "結束";
+        }
+        document.getElementById(`cmd-${partId}`).textContent = commandLabel;
+        
+        if (document.getElementById(`code-list-${partId}`)) {
+            const codeItems = document.querySelectorAll(`#code-list-${partId} li`);
+            codeItems.forEach((item, index) => {
+                item.classList.toggle('current-step', index === state.step);
             });
         }
         
-        steps.push({
-            lineId: 'e-3', droneDirection: currentDir,
-            explanation: `轉向完成。執行 <strong>FW</strong> 前進。程式結束。`
-        });
-
-        state.e.steps = steps;
+        // This function call will now reliably execute on initial setup
+        updateDroneTransform(partId, state.x, state.y, state.dir);
     }
-
-    function generateStepsF(startDir) {
-        const steps = [];
-        let currentDir = startDir;
-
-        steps.push({
-            lineId: null, droneDirection: currentDir,
-            explanation: `程式開始。初始方向為 <strong>${directions[startDir]} (${startDir})</strong>。目標是東方 (2)。`
-        });
-        
-        // Step 1: Check first IF
-        const if1_result = startDir > 2;
-        steps.push({
-            lineId: 'f-0', droneDirection: currentDir,
-            explanation: `檢查條件 <code>direction > 2</code> (${startDir} > 2) ... 結果為 <strong>${if1_result}</strong>。`
-        });
-
-        if (if1_result) {
-            const turns = startDir - 2;
-            steps.push({
-                lineId: 'f-1', droneDirection: currentDir,
-                explanation: `計算迴圈次數: <code>direction - 2</code> = ${startDir} - 2 = <strong>${turns}</strong> 次。`
-            });
-            for (let i = 1; i <= turns; i++) {
-                const prevDir = currentDir;
-                currentDir = (currentDir - 2 + 4) % 4 + 1; // CCW
-                steps.push({
-                    lineId: 'f-2', droneDirection: currentDir,
-                    explanation: `執行第 ${i} 次 <strong>TL</strong> (逆時針)。方向由 ${directions[prevDir]} 變為 <strong>${directions[currentDir]}</strong>。`
-                });
-            }
-        } else {
-            // Step 2: Check second IF
-            const if2_result = startDir < 2;
-            steps.push({
-                lineId: 'f-3', droneDirection: currentDir,
-                explanation: `檢查條件 <code>direction < 2</code> (${startDir} < 2) ... 結果為 <strong>${if2_result}</strong>。`
-            });
-            if (if2_result) {
-                const turns = startDir + 2;
-                steps.push({
-                    lineId: 'f-4', droneDirection: currentDir,
-                    explanation: `計算迴圈次數: <code>direction + 2</code> = ${startDir} + 2 = <strong>${turns}</strong> 次。`
-                });
-                steps.push({
-                    lineId: 'f-4', droneDirection: currentDir,
-                    explanation: `(註：執行 3 次 TL 等於 1 次 TR，這是從北到東的最短路徑之一，但此處程式碼固定執行 3 次 TL)`
-                });
-                for (let i = 1; i <= turns; i++) {
-                    const prevDir = currentDir;
-                    currentDir = (currentDir - 2 + 4) % 4 + 1; // CCW
-                    steps.push({
-                        lineId: 'f-5', droneDirection: currentDir,
-                        explanation: `執行第 ${i} 次 <strong>TL</strong> (逆時針)。方向由 ${directions[prevDir]} 變為 <strong>${directions[currentDir]}</strong>。`
-                    });
-                }
-            } else { // startDir must be 2
-                 steps.push({
-                    lineId: 'f-3', droneDirection: currentDir,
-                    explanation: `所有條件均不滿足，不執行任何轉向。`
-                });
-            }
-        }
-        
-        steps.push({
-            lineId: 'f-6', droneDirection: currentDir,
-            explanation: `轉向完成。執行 <strong>FW</strong> 前進。程式結束。`
-        });
-
-        state.f.steps = steps;
-    }
-
-    // --- Setup and Event Listeners ---
 
     function setupPart(partId) {
-        createCompass(`compass-${partId}`, partId);
-        createRadioButtons(partId);
+        createGrid(`grid-${partId}`, partId);
         
-        const generateFunc = partId === 'e' ? generateStepsE : generateStepsF;
-        generateFunc(state[partId].startDir);
-        resetAndRenderInitial(partId);
+        let initialState = {};
+        switch(partId) {
+            case 'a':
+                initialState = {
+                    x: 4, y: 3, dir: 0, step: -1,
+                    commands: [
+                        { op: 'TL', label: 'TL' }, { op: 'FW', label: 'FW' }, { op: 'FW', label: 'FW' },
+                        { op: 'FW', label: 'FW' }, { op: 'TR', label: 'TR' }, { op: 'FW', label: 'FW' },
+                        { op: 'FW', label: 'FW' }
+                    ]
+                };
+                document.getElementById('exp-a').innerHTML = '無人機初始位置在 (4, 3)，面向北方。請點擊「下一步」開始執行程式。';
+                break;
+            case 'b':
+                initialState = {
+                    x: 3, y: 3, dir: 0, step: -1,
+                    commands: [
+                        { op: 'TR', label: 'TR (1/3)' },
+                        { op: 'TR', label: 'TR (2/3)' },
+                        { op: 'TR', label: 'TR (3/3)' }
+                    ]
+                };
+                document.getElementById('exp-b').innerHTML = '逆時針轉 90 度 (TL) 等同於順時針轉 3 次 90 度 (TR)。點擊「下一步」觀看效果。';
+                break;
+            case 'c':
+                const sq3_commands = [];
+                for(let i=1; i<=4; i++) {
+                    for(let j=1; j<=3; j++) {
+                        sq3_commands.push({ op: 'FW', label: `第 ${i} 邊: 前進 (${j}/3)`});
+                    }
+                    sq3_commands.push({ op: 'TR', label: `第 ${i} 邊: 轉向`});
+                }
+                initialState = {
+                    x: 2, y: 2, dir: 0, step: -1,
+                    commands: sq3_commands
+                };
+                document.getElementById('exp-c').innerHTML = '以 SQ(3) 為例，重複「前進 3 格、轉彎」4 次。點擊「下一步」開始繪製正方形。';
+                break;
+            case 'd':
+                const sq_d_commands = [];
+                const codeListD = document.getElementById('code-list-d');
+                codeListD.innerHTML = '';
+                
+                let flatStepIndex = 0;
+                // SQ(1)
+                let li_sq1 = document.createElement('li');
+                li_sq1.textContent = '執行 SQ(1)';
+                li_sq1.style.fontWeight = 'bold';
+                codeListD.appendChild(li_sq1);
+                sq_d_commands[flatStepIndex++] = { op: 'META', label: '執行 SQ(1)' };
+                for(let i=1; i<=4; i++) {
+                    sq_d_commands[flatStepIndex++] = { op: 'FW', label: `SQ(1) 邊${i}: 前進` };
+                    sq_d_commands[flatStepIndex++] = { op: 'TR', label: `SQ(1) 邊${i}: 轉向` };
+                }
 
-        document.getElementById(`next-btn-${partId}`).addEventListener('click', () => {
-            if (state[partId].currentStep < state[partId].steps.length - 1) {
-                state[partId].currentStep++;
-                renderStep(partId, state[partId].currentStep);
-            }
-        });
+                // SQ(2)
+                let li_sq2 = document.createElement('li');
+                li_sq2.textContent = '執行 SQ(2)';
+                li_sq2.style.fontWeight = 'bold';
+                codeListD.appendChild(li_sq2);
+                sq_d_commands[flatStepIndex++] = { op: 'META', label: '執行 SQ(2)' };
+                for(let i=1; i<=4; i++) {
+                    sq_d_commands[flatStepIndex++] = { op: 'FW', label: `SQ(2) 邊${i}: 前進 (1/2)` };
+                    sq_d_commands[flatStepIndex++] = { op: 'FW', label: `SQ(2) 邊${i}: 前進 (2/2)` };
+                    sq_d_commands[flatStepIndex++] = { op: 'TR', label: `SQ(2) 邊${i}: 轉向` };
+                }
 
-        document.getElementById(`prev-btn-${partId}`).addEventListener('click', () => {
-            if (state[partId].currentStep > 0) {
-                state[partId].currentStep--;
-                renderStep(partId, state[partId].currentStep);
+                initialState = {
+                    x: 1, y: 1, dir: 0, step: -1,
+                    commands: sq_d_commands
+                };
+                document.getElementById('exp-d').innerHTML = '此程式先執行 SQ(1)，再執行 SQ(2)。無人機從 (1,1) 面向北方開始。<br>點擊「下一步」開始執行。';
+                break;
+        }
+        
+        states[partId] = initialState;
+        document.getElementById(`next-${partId}`).disabled = false;
+        updateUI(partId);
+    }
+
+    function step(partId) {
+        const state = states[partId];
+        if (state.step + 1 >= state.commands.length) {
+            document.getElementById(`next-${partId}`).disabled = true;
+            return;
+        }
+        
+        state.step++;
+        const command = state.commands[state.step];
+        const oldPos = { x: state.x, y: state.y };
+        let explanation = '';
+
+        switch(command.op) {
+            case 'FW':
+                const move = moves[state.dir];
+                state.x += move.dx;
+                state.y += move.dy;
+                drawPath(partId, oldPos.x, oldPos.y, state.x, state.y);
+                explanation = `執行 <strong>${command.label}</strong>：從 (${oldPos.x}, ${oldPos.y}) 向${directions[state.dir]}移動至 (${state.x}, ${state.y})。`;
+                break;
+            case 'TR':
+                const oldDir = state.dir;
+                state.dir = (state.dir + 1) % 4;
+                explanation = `執行 <strong>${command.label}</strong>：從面向「${directions[oldDir]}」順時針旋轉 90 度，變為面向「${directions[state.dir]}」。`;
+                break;
+            case 'TL':
+                const oldDirTL = state.dir;
+                state.dir = (state.dir + 3) % 4;
+                explanation = `執行 <strong>${command.label}</strong>：從面向「${directions[oldDirTL]}」逆時針旋轉 90 度，變為面向「${directions[state.dir]}」。`;
+                break;
+            case 'META': // For commands that don't move the drone
+                 explanation = `開始執行 <strong>${command.label}</strong>。`;
+                 step(partId); // Immediately execute next step
+                 return;
+        }
+        
+        updateUI(partId);
+        document.getElementById(`exp-${partId}`).innerHTML = explanation;
+        
+        if (state.step + 1 >= state.commands.length) {
+            document.getElementById(`next-${partId}`).disabled = true;
+            let finalAnswer = '';
+            switch(partId) {
+                case 'a':
+                    finalAnswer = `程式執行完畢。<br><div class="final-answer">最終位置: (${state.x}, ${state.y})<br>最終方向: ${directions[state.dir]}</div>`;
+                    break;
+                case 'b':
+                    finalAnswer = `動畫結束。執行 3 次 TR 後，無人機完成了一次逆時針 90 度轉彎 (TL)。<br><div class="final-answer">答案：設 i 由 1 至 3</div>`;
+                    break;
+                case 'c':
+                    finalAnswer = `SQ(3) 執行完畢，畫出了一個 3x3 的正方形。<br><div class="final-answer">答案：設 i 由 1 至 4</div>`;
+                    break;
+                case 'd':
+                    finalAnswer = `程式執行完畢。<br><div class="final-answer">最終位置: (${state.x}, ${state.y})<br>最終方向: ${directions[state.dir]}</div>`;
+                    break;
             }
-        });
+            document.getElementById(`exp-${partId}`).innerHTML += finalAnswer;
+        }
     }
 
     function showPart(partId) {
-        ['e', 'f'].forEach(p => {
+        parts.forEach(p => {
             document.getElementById(`part-${p}`).classList.remove('active');
             document.querySelector(`.tab-button[onclick="showPart('${p}')"]`).classList.remove('active');
         });
         document.getElementById(`part-${partId}`).classList.add('active');
         document.querySelector(`.tab-button[onclick="showPart('${partId}')"]`).classList.add('active');
+        
+        setupPart(partId);
     }
 
     window.onload = () => {
-        setupPart('e');
-        setupPart('f');
-        showPart('e'); // Activate part 'e' by default
+        parts.forEach(p => {
+            document.getElementById(`next-${p}`).addEventListener('click', () => step(p));
+            document.getElementById(`reset-${p}`).addEventListener('click', () => setupPart(p));
+        });
+        showPart('a');
     };
 </script>
 
