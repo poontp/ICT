@@ -15,8 +15,14 @@
             --code-bg: #e9ecef;
             --probe-color: rgba(255, 193, 7, 0.5);
             --current-pos-color: rgba(25, 135, 84, 0.7);
+            --comparison-highlight: rgba(255, 87, 34, 0.4); /* For failed comparison */
+            --comparison-success-color: rgba(40, 167, 69, 0.4); /* NEW: For successful/ongoing comparison */
             --true-color: #198754;
             --false-color: #dc3545;
+            --pause-color: #ffc107;
+            --pause-text-color: #000;
+            --modified-code-bg: #fff3cd;
+            --line-color: #dc3545;
         }
         body {
             font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
@@ -37,6 +43,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
+            gap: 1.5rem;
         }
         h1 {
             color: var(--accent-color);
@@ -58,7 +65,7 @@
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
-            min-width: 0; /* Prevents grid blowout */
+            min-width: 0;
         }
         .panel {
             background: #fff;
@@ -68,9 +75,6 @@
             display: flex;
             flex-direction: column;
         }
-        #code-panel {
-            flex-grow: 1;
-        }
         .panel-header {
             display: flex;
             justify-content: space-between;
@@ -79,20 +83,8 @@
             padding-bottom: 0.5rem;
             margin-bottom: 1rem;
         }
-        .header-controls {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .bottom-right-layout {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 1.5rem;
-            align-items: start;
-        }
-        #pattern-panel { 
-            justify-content: center;
-            align-items: center;
-        }
+        .header-controls { display: flex; gap: 0.5rem; }
+        .bottom-right-layout { display: grid; grid-template-columns: auto 1fr; gap: 1.5rem; align-items: start; }
         pre {
             background-color: var(--code-bg);
             padding: 1rem;
@@ -102,176 +94,135 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             flex-grow: 1;
+            line-height: 1.4;
         }
-        .code-line {
-            display: block;
-            padding: 2px 5px;
-            margin: -2px -5px;
-            border-radius: 3px;
-            transition: background-color 0.3s;
-        }
-        .line-number {
-            display: inline-block;
-            width: 2.5em;
-            color: #888;
-            text-align: right;
-            margin-right: 1em;
-            user-select: none;
-        }
-        .highlight {
-            background-color: var(--highlight-bg);
-            font-weight: bold;
-        }
-        .pattern-grid {
-            border-collapse: collapse;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: auto;
-            position: relative;
-        }
-        .pattern-grid td {
-            border: 2px solid #555;
-            width: 60px;
-            height: 60px;
-            text-align: center;
-            vertical-align: middle;
-            transition: background-color 0.3s, color 0.3s;
-            position: relative;
-        }
-        .current-pos {
-            background-color: var(--current-pos-color) !important;
-            color: white;
-        }
-        .probe-pos {
-            background-color: var(--probe-color) !important;
-        }
-        .probe-pos::after {
-            content: '?';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
-            color: rgba(0,0,0,0.5);
-        }
-        .state-vars {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-        }
-        .state-var {
-            text-align: center;
-            padding: 0.5rem;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-        .state-var .label {
-            font-size: 0.9em;
-            color: #666;
-            display: block;
-        }
-        .state-var .value {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: var(--accent-color);
-        }
-        #explanation {
-            min-height: 80px;
-            background-color: #e3f2fd;
-            border-left: 5px solid var(--accent-color);
-            padding: 1rem;
-            flex-grow: 1;
-            white-space: pre-wrap; /* Important for showing newlines */
-        }
+        .code-line { display: block; padding: 1px 5px; margin: -1px -5px; border-radius: 3px; transition: background-color 0.3s; }
+        .line-number { display: inline-block; width: 2.5em; color: #888; text-align: right; margin-right: 1em; user-select: none; }
+        .highlight { background-color: var(--highlight-bg); font-weight: bold; }
+        .modified { background-color: var(--modified-code-bg); }
+        .pattern-grid { border-collapse: collapse; font-size: 1.5rem; font-weight: bold; margin: auto; position: relative; }
+        .pattern-grid td { border: 2px solid #555; width: 60px; height: 60px; text-align: center; vertical-align: middle; transition: background-color 0.3s, color 0.3s; position: relative; }
+        .current-pos { background-color: var(--current-pos-color) !important; color: white; }
+        .probe-pos { background-color: var(--probe-color) !important; }
+        .comparison-highlight { background-color: var(--comparison-highlight) !important; }
+        .comparison-success-highlight { background-color: var(--comparison-success-color) !important; } /* NEW STYLE */
+        .state-vars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .state-var { text-align: center; padding: 0.5rem; background: #f8f9fa; border-radius: 5px; }
+        .state-var .label { font-size: 0.9em; color: #666; display: block; }
+        .state-var .value { font-size: 1.2em; font-weight: bold; color: var(--accent-color); }
+        #explanation { min-height: 80px; background-color: #e3f2fd; border-left: 5px solid var(--accent-color); padding: 1rem; flex-grow: 1; white-space: pre-wrap; }
         #explanation strong.true { color: var(--true-color); }
         #explanation strong.false { color: var(--false-color); }
+        button { background-color: var(--accent-color); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 5px; font-size: 0.9rem; cursor: pointer; transition: background-color 0.3s, opacity 0.3s; }
+        button:hover:not(:disabled) { background-color: #0b5ed7; }
+        button:disabled { background-color: #aaa; cursor: not-allowed; }
+        #autoplay-btn.pause-btn { background-color: var(--pause-color); color: var(--pause-text-color); }
+        #autoplay-btn.pause-btn:hover:not(:disabled) { background-color: #ffda6a; }
+        .version-selector-radios { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+        .version-selector-radios label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+        #problem-desc { background-color: #fffbe6; border-left: 5px solid #ffc107; padding: 1rem; }
+        #c-controls-panel { background-color: #e6f7ff; border-left: 5px solid #17a2b8; padding: 1rem; display: none; flex-direction: column; gap: 1rem; }
+        .c-panel-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+        #c-controls-panel .controls-header { font-weight: bold; color: #0c5460; grid-column: 1 / -1; }
+        #c-controls-panel .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        #c-controls-panel label { font-weight: bold; }
+        #c-controls-panel input[type="number"] { padding: 0.5rem; border-radius: 5px; border: 1px solid var(--border-color); width: 100px; font-size: 1rem; }
+        #c-controls-panel .validation-msg { font-size: 0.9em; color: var(--false-color); height: 1.2em; }
+        .validation-code { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 0.75rem; border-radius: 5px; }
+        .validation-code pre { background-color: transparent; padding: 0; font-size: 1em; color: var(--false-color); font-family: 'Courier New', Courier, monospace; }
 
-        button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.6rem 1.2rem;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background-color 0.3s, opacity 0.3s;
-        }
-        button:hover:not(:disabled) {
-            background-color: #0b5ed7;
-        }
-        button:disabled {
-            background-color: #aaa;
-            cursor: not-allowed;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 1200px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-        @media (max-width: 768px) {
-            .bottom-right-layout {
-                grid-template-columns: 1fr;
-            }
-            .pattern-grid td {
-                width: 50px;
-                height: 50px;
-                font-size: 1.2rem;
-            }
-        }
-        @media (max-width: 480px) {
-            .panel-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.75rem;
-            }
-            .state-vars {
-                grid-template-columns: 1fr; /* Revert to single column on very small screens */
-            }
-        }
+        /* Styles for Part (d) */
+        #d-panel { display: none; /* Initially hidden */ }
+        .d-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-container { text-align: center; }
+        .grid-container h3 { margin-top: 0; }
+        #drawn-grid td { cursor: pointer; }
+        #drawn-grid td:hover { background-color: #f0f0f0; }
+        .drawn-grid-wrapper { position: relative; display: inline-block; }
+        #line-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #line-svg line { stroke: var(--line-color); stroke-width: 3px; stroke-linecap: round; }
+
+        @media (max-width: 1200px) { .main-layout { grid-template-columns: 1fr; } .d-layout { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .bottom-right-layout { grid-template-columns: 1fr; } .c-panel-layout { grid-template-columns: 1fr; } .pattern-grid td { width: 50px; height: 50px; font-size: 1.2rem; } }
+        @media (max-width: 480px) { .panel-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .state-vars { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>互動動畫：解說偽代碼</h1>
-    <div class="main-layout">
-        <!-- Left Column -->
-        <div class="left-column">
-            <div class="panel" id="code-panel">
-                <div class="panel-header">
-                    <h2>偽代碼</h2>
-                </div>
-                <pre id="code-block"><code><span class="code-line" id="line-1"><span class="line-number">1</span>將 pattern 中的所有項目初始化為 0</span>
-<span class="code-line" id="line-2"><span class="line-number">2</span>R ← 1</span>
-<span class="code-line" id="line-3"><span class="line-number">3</span>C ← 1</span>
-<span class="code-line" id="line-4"><span class="line-number">4</span>DR ← 1</span>
-<span class="code-line" id="line-5"><span class="line-number">5</span>DC ← 0</span>
-<span class="code-line" id="line-6"><span class="line-number">6</span>dir ← 2</span>
-<span class="code-line" id="line-7"><span class="line-number">7</span>for i 由 1 至 9</span>
-<span class="code-line" id="line-8"><span class="line-number">8</span>    pattern[R,C] ← i</span>
-<span class="code-line" id="line-9"><span class="line-number">9</span>    如果 R+DR < 1 or R+DR > 3 or C+DC < 1 or C+DC > 3 or pattern[R+DR,C+DC] != 0 則</span>
-<span class="code-line" id="line-10"><span class="line-number">10</span>        dir ← (dir - 1) % 4</span>
-<span class="code-line" id="line-11"><span class="line-number">11</span>        如果 dir = 0 則 (上)</span>
-<span class="code-line" id="line-12"><span class="line-number">12</span>            DR ← -1; DC ← 0</span>
-<span class="code-line" id="line-14"><span class="line-number">14</span>        否則如果 dir = 1 則 (右)</span>
-<span class="code-line" id="line-15"><span class="line-number">15</span>            DR ← 0; DC ← 1</span>
-<span class="code-line" id="line-17"><span class="line-number">17</span>        否則如果 dir = 2 則 (下)</span>
-<span class="code-line" id="line-18"><span class="line-number">18</span>            DR ← 1; DC ← 0</span>
-<span class="code-line" id="line-20"><span class="line-number">20</span>        否則 (左, dir=3)</span>
-<span class="code-line" id="line-21"><span class="line-number">21</span>            DR ← 0; DC ← -1</span>
-<span class="code-line" id="line-23"><span class="line-number">23</span>    R ← R + DR</span>
-<span class="code-line" id="line-24"><span class="line-number">24</span>    C ← C + DC</span></code></pre>
+
+    <div class="panel version-selector">
+        <div class="panel-header" style="margin-bottom: 0;"><h2>選擇版本</h2></div>
+        <div class="version-selector-radios">
+            <label><input type="radio" name="version" value="original" onchange="switchVersion()" checked> 原始演算法</label>
+            <label><input type="radio" name="version" value="a" onchange="switchVersion()"> (a) 小題解答</label>
+            <label><input type="radio" name="version" value="b_i" onchange="switchVersion()"> (b)(i) 小題解答</label>
+            <label><input type="radio" name="version" value="b_iii" onchange="switchVersion()"> (b)(iii) 小題解答</label>
+            <label><input type="radio" name="version" value="c" onchange="switchVersion()"> (c) 小題解答</label>
+            <label><input type="radio" name="version" value="d" onchange="switchVersion()"> (d) 小題解答</label>
+        </div>
+        <div id="problem-desc"></div>
+    </div>
+
+    <div id="c-controls-panel">
+        <div class="controls-header">(c) 小題控制面板</div>
+        <div class="c-panel-layout">
+            <div class="validation-code">
+                <div class="controls-header" style="padding-bottom: 0.5rem;">(c)(ii) 輸入驗證偽代碼</div>
+                <p>此偽代碼確保使用者輸入的 `num` 在有效範圍內。</p>
+                <pre><code>輸入 num
+當 num < 2 or num > 9
+    輸入 num</code></pre>
+            </div>
+            <div class="input-group">
+                <label for="num-input">互動模擬：請輸入 `num`</label>
+                <input type="number" id="num-input" value="5" min="1" max="10" oninput="validateNumInput()">
+                <div id="num-validation-msg" class="validation-msg"></div>
+                <p style="font-size:0.9em; margin-top:0.5rem;">當輸入無效時，您將無法點擊「重置」來啟動動畫，模擬程式在迴圈中等待有效輸入的狀態。</p>
             </div>
         </div>
-        <!-- Right Column -->
+    </div>
+    
+    <div id="d-panel" class="panel">
+        <div class="panel-header"><h2>(d) 圖案比對</h2></div>
+        <div class="d-layout">
+            <div class="grid-container">
+                <h3>`pattern` (正確圖案)</h3>
+                <table class="pattern-grid" id="pattern-grid-d">
+                    <tr><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td></tr>
+                </table>
+            </div>
+            <div class="grid-container">
+                <h3>`drawn` (點擊繪製路徑)</h3>
+                <div class="drawn-grid-wrapper">
+                    <table class="pattern-grid" id="drawn-grid">
+                        <tr><td data-r="1" data-c="1" onclick="handleDrawnCellClick(this)"></td><td data-r="1" data-c="2" onclick="handleDrawnCellClick(this)"></td><td data-r="1" data-c="3" onclick="handleDrawnCellClick(this)"></td></tr>
+                        <tr><td data-r="2" data-c="1" onclick="handleDrawnCellClick(this)"></td><td data-r="2" data-c="2" onclick="handleDrawnCellClick(this)"></td><td data-r="2" data-c="3" onclick="handleDrawnCellClick(this)"></td></tr>
+                        <tr><td data-r="3" data-c="1" onclick="handleDrawnCellClick(this)"></td><td data-r="3" data-c="2" onclick="handleDrawnCellClick(this)"></td><td data-r="3" data-c="3" onclick="handleDrawnCellClick(this)"></td></tr>
+                    </table>
+                    <svg id="line-svg"></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout" id="main-animation-layout">
+        <div class="left-column">
+            <div class="panel" id="code-panel">
+                <div class="panel-header"><h2>偽代碼</h2></div>
+                <pre id="code-block"></pre>
+            </div>
+        </div>
         <div class="right-column">
             <div class="panel" id="explanation-panel">
                 <div class="panel-header">
                     <h2>執行說明</h2>
                     <div class="header-controls">
                         <button id="prev-btn" onclick="prevStep()">上一步</button>
+                        <button id="autoplay-btn" onclick="toggleAutoplay()">自動播放</button>
                         <button id="next-btn" onclick="nextStep()">下一步</button>
                         <button id="reset-btn" onclick="reset()">重置</button>
                     </div>
@@ -280,9 +231,7 @@
             </div>
             <div class="bottom-right-layout">
                 <div class="panel" id="pattern-panel">
-                    <div class="panel-header">
-                        <h2>圖案</h2>
-                    </div>
+                    <div class="panel-header"><h2>圖案</h2></div>
                     <table class="pattern-grid" id="output-grid">
                         <tr><td></td><td></td><td></td></tr>
                         <tr><td></td><td></td><td></td></tr>
@@ -290,17 +239,8 @@
                     </table>
                 </div>
                 <div class="panel" id="variables-panel">
-                    <div class="panel-header">
-                        <h2>變數</h2>
-                    </div>
-                    <div class="state-vars">
-                        <div class="state-var"><span class="label">迴圈變數 i</span><span class="value" id="val-i">?</span></div>
-                        <div class="state-var"><span class="label">位置 R</span><span class="value" id="val-r">?</span></div>
-                        <div class="state-var"><span class="label">位置 C</span><span class="value" id="val-c">?</span></div>
-                        <div class="state-var"><span class="label">方向 dir</span><span class="value" id="val-dir">?</span></div>
-                        <div class="state-var"><span class="label">方向增量 DR</span><span class="value" id="val-dr">?</span></div>
-                        <div class="state-var"><span class="label">方向增量 DC</span><span class="value" id="val-dc">?</span></div>
-                    </div>
+                    <div class="panel-header"><h2>變數</h2></div>
+                    <div id="variables-content"></div>
                 </div>
             </div>
         </div>
@@ -308,274 +248,586 @@
 </div>
 
 <script>
+    // --- UI Elements ---
+    const codeBlock = document.getElementById('code-block');
+    const explanationEl = document.getElementById('explanation');
+    const problemDescEl = document.getElementById('problem-desc');
+    const cControlsPanel = document.getElementById('c-controls-panel');
+    const dPanel = document.getElementById('d-panel');
+    const mainAnimationLayout = document.getElementById('main-animation-layout');
+    const patternPanel = document.getElementById('pattern-panel');
+    const variablesContent = document.getElementById('variables-content');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const autoplayBtn = document.getElementById('autoplay-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const lineSvg = document.getElementById('line-svg');
+
     // --- State Management ---
     let currentState;
     let historyStack = [];
-
-    // NOTE: The pseudocode in the image has a logical flaw. The if/else block (lines 11-22)
-    // is placed inside the turn condition (line 9). A correct spiral algorithm would
-    // determine DR/DC based on 'dir' *before* checking the move, or update DR/DC
-    // after a turn and then re-check. This simulation implements the *intended* logic
-    // that produces the target pattern, while mapping the steps to the provided (flawed)
-    // pseudocode as closely as possible for educational purposes.
+    let autoplayTimer = null;
+    let isAutoPlaying = false;
+    const autoplaySpeed = 800;
+    let currentVersion = 'original';
+    
+    // --- Data Store for (d) ---
+    const correctPatternD = [
+        [0, 0, 0, 0],
+        [0, 1, 8, 7],
+        [0, 2, 9, 6],
+        [0, 3, 4, 5]
+    ];
+    let drawnPatternD = Array(4).fill(0).map(() => Array(4).fill(0));
+    let clickCounter = 1;
+    let lastClickedCell = null;
 
     const PHASES = {
-        INIT: 'INIT',
-        START_LOOP: 'START_LOOP',
-        PLACE_NUMBER: 'PLACE_NUMBER',
-        DETERMINE_DR_DC: 'DETERMINE_DR_DC',
-        CHECK_MOVE: 'CHECK_MOVE',
-        TURN: 'TURN',
-        MOVE: 'MOVE',
-        END_LOOP: 'END_LOOP',
-        DONE: 'DONE'
+        INIT: 'INIT', SET_R: 'SET_R', SET_C: 'SET_C', SET_DR: 'SET_DR', SET_DC: 'SET_DC', SET_DIR: 'SET_DIR',
+        START_LOOP: 'START_LOOP', PLACE_NUMBER: 'PLACE_NUMBER',
+        CHECK_MOVE_START: 'CHECK_MOVE_START', CHECK_MOVE_UP: 'CHECK_MOVE_UP', CHECK_MOVE_DOWN: 'CHECK_MOVE_DOWN', CHECK_MOVE_LEFT: 'CHECK_MOVE_LEFT', CHECK_MOVE_RIGHT: 'CHECK_MOVE_RIGHT', CHECK_MOVE_OCCUPIED: 'CHECK_MOVE_OCCUPIED', EVALUATE_CHECK_RESULT: 'EVALUATE_CHECK_RESULT',
+        TURN: 'TURN', CHECK_DIR_0: 'CHECK_DIR_0', SET_DIR_0: 'SET_DIR_0', CHECK_DIR_1: 'CHECK_DIR_1', SET_DIR_1: 'SET_DIR_1', CHECK_DIR_2: 'CHECK_DIR_2', SET_DIR_2: 'SET_DIR_2', CHECK_DIR_3: 'CHECK_DIR_3', SET_DIR_3: 'SET_DIR_3',
+        MOVE_R: 'MOVE_R', MOVE_C: 'MOVE_C', END_LOOP: 'END_LOOP', DONE: 'DONE',
+        // Phases for (d)
+        INIT_D: 'INIT_D', SET_CORRECT_D: 'SET_CORRECT_D', SET_I_D: 'SET_I_D',
+        OUTER_LOOP_CHECK_D: 'OUTER_LOOP_CHECK_D', SET_J_D: 'SET_J_D',
+        INNER_LOOP_CHECK_D: 'INNER_LOOP_CHECK_D', COMPARE_CELLS_D: 'COMPARE_CELLS_D',
+        SET_CORRECT_FALSE_D: 'SET_CORRECT_FALSE_D', INC_J_D: 'INC_J_D',
+        END_INNER_D: 'END_INNER_D', INC_I_D: 'INC_I_D', END_OUTER_D: 'END_OUTER_D',
+        FINAL_CHECK_D: 'FINAL_CHECK_D', OUTPUT_D: 'OUTPUT_D'
     };
 
-    function getInitialState() {
-        return {
+    const codeTemplates = {
+        main: `
+<span class="code-line" id="line-1"><span class="line-number">1</span>將 pattern 中的所有項目初始化為 0</span>
+<span class="code-line" id="line-2"><span class="line-number">2</span>R ← 1</span>
+<span class="code-line" id="line-3"><span class="line-number">3</span>C ← 1</span>
+<span class="code-line" id="line-4"><span class="line-number">4</span><span id="code-line-4-content"></span></span>
+<span class="code-line" id="line-5"><span class="line-number">5</span><span id="code-line-5-content"></span></span>
+<span class="code-line" id="line-6"><span class="line-number">6</span><span id="code-line-6-content"></span></span>
+<span class="code-line" id="line-7"><span class="line-number">7</span><span id="code-line-7-content"></span></span>
+<span class="code-line" id="line-8"><span class="line-number">8</span>    <span id="code-line-8-content"></span></span>
+<span class="code-line" id="line-9"><span class="line-number">9</span>    <span id="code-line-9-content"></span></span>
+<span class="code-line" id="line-10"><span class="line-number">10</span>        <span id="code-line-10-content"></span></span>
+<span class="code-line" id="line-11"><span class="line-number">11</span>        如果 dir = 0 則 (上)</span>
+<span class="code-line" id="line-12"><span class="line-number">12</span>            DR ← -1; DC ← 0</span>
+<span class="code-line" id="line-13"><span class="line-number"></span></span>
+<span class="code-line" id="line-14"><span class="line-number">14</span>        否則如果 dir = 1 則 (右)</span>
+<span class="code-line" id="line-15"><span class="line-number">15</span>            DR ← 0; DC ← 1</span>
+<span class="code-line" id="line-16"><span class="line-number"></span></span>
+<span class="code-line" id="line-17"><span class="line-number">17</span>        否則如果 dir = 2 則 (下)</span>
+<span class="code-line" id="line-18"><span class="line-number">18</span>            DR ← 1; DC ← 0</span>
+<span class="code-line" id="line-19"><span class="line-number"></span></span>
+<span class="code-line" id="line-20"><span class="line-number">20</span>        否則 (左, dir=3)</span>
+<span class="code-line" id="line-21"><span class="line-number">21</span>            DR ← 0; DC ← -1</span>
+<span class="code-line" id="line-22"><span class="line-number"></span></span>
+<span class="code-line" id="line-23"><span class="line-number">23</span>    R ← R + DR</span>
+<span class="code-line" id="line-24"><span class="line-number">24</span>    C ← C + DC</span>`,
+        d: `
+<span class="code-line" id="line-d-1"><span class="line-number">1</span>correct ← <strong>True</strong></span>
+<span class="code-line" id="line-d-2"><span class="line-number">2</span>i ← 1</span>
+<span class="code-line" id="line-d-3"><span class="line-number">3</span></span>
+<span class="code-line" id="line-d-4"><span class="line-number">4</span>當 i <= 3 and correct = True</span>
+<span class="code-line" id="line-d-5"><span class="line-number">5</span>    j ← 1</span>
+<span class="code-line" id="line-d-6"><span class="line-number">6</span>    當 j <= 3 and correct = True</span>
+<span class="code-line" id="line-d-7"><span class="line-number">7</span>        如果 <strong>pattern[i,j] != drawn[i,j]</strong> 則</span>
+<span class="code-line" id="line-d-8"><span class="line-number">8</span>            correct ← <strong>False</strong></span>
+<span class="code-line" id="line-d-9"><span class="line-number">9</span></span>
+<span class="code-line" id="line-d-10"><span class="line-number">10</span>        <strong>j ← j+1</strong></span>
+<span class="code-line" id="line-d-11"><span class="line-number">11</span></span>
+<span class="code-line" id="line-d-12"><span class="line-number">12</span>    <strong>i ← i+1</strong></span>
+<span class="code-line" id="line-d-13"><span class="line-number">13</span></span>
+<span class="code-line" id="line-d-14"><span class="line-number">14</span>如果 correct 則</span>
+<span class="code-line" id="line-d-15"><span class="line-number">15</span>    輸出 "Unlocked"</span>
+<span class="code-line" id="line-d-16"><span class="line-number">16</span>否則</span>
+<span class="code-line" id="line-d-17"><span class="line-number">17</span>    輸出 "Wrong input"</span>`
+    };
+    
+    const variablesTemplates = {
+        main: `
+<div class="state-vars">
+    <div class="state-var"><span class="label">迴圈變數 i</span><span class="value" id="val-i">?</span></div>
+    <div class="state-var"><span class="label">位置 R</span><span class="value" id="val-r">?</span></div>
+    <div class="state-var"><span class="label">位置 C</span><span class="value" id="val-c">?</span></div>
+    <div class="state-var"><span class="label">方向 dir</span><span class="value" id="val-dir">?</span></div>
+    <div class="state-var"><span class="label">方向增量 DR</span><span class="value" id="val-dr">?</span></div>
+    <div class="state-var"><span class="label">方向增量 DC</span><span class="value" id="val-dc">?</span></div>
+</div>`,
+        d: `
+<div class="state-vars" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="state-var"><span class="label">外迴圈 i</span><span class="value" id="val-d-i">?</span></div>
+    <div class="state-var"><span class="label">內迴圈 j</span><span class="value" id="val-d-j">?</span></div>
+    <div class="state-var"><span class="label">標記 correct</span><span class="value" id="val-d-correct">?</span></div>
+</div>`
+    };
+
+    function getInitialState(version) {
+        if (version === 'd') {
+            return {
+                phase: PHASES.INIT_D,
+                i: undefined, j: undefined, correct: undefined,
+                highlightedLine: null,
+                explanation: '點擊「下一步」開始比對圖案。',
+                conditionMet: false
+            };
+        }
+        
+        let num = 9;
+        if (version === 'c') {
+            num = parseInt(document.getElementById('num-input').value, 10);
+        }
+
+        const state = {
             phase: PHASES.INIT,
-            i: 1,
+            i: version === 'a' ? 9 : 1,
+            num: num,
             pattern: Array(4).fill(0).map(() => Array(4).fill(0)),
-            R: 0, C: 0,
-            dir: undefined,
-            DR: undefined, DC: undefined,
+            R: undefined, C: undefined, dir: undefined, DR: undefined, DC: undefined,
             nextR: 0, nextC: 0,
             highlightedLine: null,
-            explanation: '點擊「下一步」開始執行程式。'
+            explanation: '點擊「下一步」開始執行程式。',
+            conditionMet: false
         };
+        
+        if (version === 'b_i') {
+            state.DR = 0; state.DC = 1; state.dir = 1;
+        }
+        
+        return state;
     }
-    
+
     function getDirName(d) {
         if (d === undefined) return '?';
         return ['上', '右', '下', '左'][d];
     }
     
-    function reset() {
+    function switchVersion() {
+        currentVersion = document.querySelector('input[name="version"]:checked').value;
+        updateCodeAndDescription();
+        reset();
+    }
+    
+    function validateNumInput() {
+        const input = document.getElementById('num-input');
+        const msg = document.getElementById('num-validation-msg');
+        const val = parseInt(input.value, 10);
+        const isValid = !isNaN(val) && val >= 2 && val <= 9;
+        
+        if (input.value === '' || isValid) {
+            msg.textContent = '';
+        } else {
+            msg.textContent = '錯誤：數字必須介於 2 和 9 之間。';
+        }
+        
+        resetBtn.disabled = !isValid;
+    }
+
+    function setupD() {
+        // Populate correct pattern grid
+        for (let r = 1; r <= 3; r++) {
+            for (let c = 1; c <= 3; c++) {
+                const cell = document.querySelector(`#pattern-grid-d tr:nth-child(${r}) td:nth-child(${c})`);
+                cell.textContent = correctPatternD[r][c] || '';
+            }
+        }
+        // Populate drawn pattern grid from data
+        document.querySelectorAll('#drawn-grid td').forEach(cell => {
+            const r = parseInt(cell.dataset.r);
+            const c = parseInt(cell.dataset.c);
+            cell.textContent = drawnPatternD[r][c] || '';
+        });
+        redrawAllLines();
+    }
+    
+    function drawLine(cell1, cell2) {
+        const svgRect = lineSvg.getBoundingClientRect();
+        const rect1 = cell1.getBoundingClientRect();
+        const rect2 = cell2.getBoundingClientRect();
+
+        const x1 = rect1.left + rect1.width / 2 - svgRect.left;
+        const y1 = rect1.top + rect1.height / 2 - svgRect.top;
+        const x2 = rect2.left + rect2.width / 2 - svgRect.left;
+        const y2 = rect2.top + rect2.height / 2 - svgRect.top;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        lineSvg.appendChild(line);
+    }
+
+    function redrawAllLines() {
+        lineSvg.innerHTML = '';
+        if (clickCounter <= 2) return;
+
+        const cells = {};
+        document.querySelectorAll('#drawn-grid td').forEach(cell => {
+            if (cell.textContent) {
+                cells[cell.textContent] = cell;
+            }
+        });
+
+        for (let i = 1; i < clickCounter - 1; i++) {
+            const startCell = cells[i];
+            const endCell = cells[i + 1];
+            if (startCell && endCell) {
+                drawLine(startCell, endCell);
+            }
+        }
+    }
+
+    function resetAnimation() {
+        stopAutoplay();
         historyStack = [];
-        currentState = getInitialState();
+        currentState = getInitialState(currentVersion);
         updateAllUI();
-        // Manually trigger the first step without saving it to history
-        nextStep(); 
-        historyStack = []; // Clear history after the first step
-        updateAllUI(); // Re-update UI to disable prev button initially
+    }
+
+    function handleDrawnCellClick(cell) {
+        if (cell.textContent || clickCounter > 9) {
+            return;
+        }
+
+        const r = parseInt(cell.dataset.r);
+        const c = parseInt(cell.dataset.c);
+
+        cell.textContent = clickCounter;
+        drawnPatternD[r][c] = clickCounter;
+        
+        if (lastClickedCell) {
+            drawLine(lastClickedCell, cell);
+        }
+
+        lastClickedCell = cell;
+        clickCounter++;
+
+        if (currentVersion === 'd' && currentState.phase !== PHASES.INIT_D) {
+            resetAnimation();
+        }
+    }
+
+    function updateCodeAndDescription() {
+        let desc = '';
+        let modifications = {};
+        
+        cControlsPanel.style.display = 'none';
+        dPanel.style.display = 'none';
+        patternPanel.style.display = 'flex';
+        
+        codeBlock.innerHTML = codeTemplates.main;
+        variablesContent.innerHTML = variablesTemplates.main;
+
+        switch(currentVersion) {
+            case 'original': desc = '<strong>原始演算法：</strong>此為題目一開始提供的偽代碼，會產生一個逆時針向内螺旋的數字圖案 (1-9)。'; break;
+            case 'a': desc = '<strong>(a) 小題解答：</strong>將迴圈從 `i 由 1 至 9` 修改為 `i 由 9 下至 1`，以產生遞減填入的螺旋。'; modifications = { line7: 'for i 由 9 下至 1' }; break;
+            case 'b_i': desc = '<strong>(b)(i) 小題解答：</strong>修改初始方向為「向右」，並將轉向邏輯改為順時針 `(dir + 1) % 4`，以產生順時針向外螺旋。'; modifications = { line4: 'DR ← 0', line5: 'DC ← 1', line6: 'dir ← 1', line10: 'dir ← (dir + 1) % 4' }; break;
+            case 'b_iii': desc = '<strong>(b)(iii) 小題解答：</strong>在讀寫 `pattern` 陣列時使用 `(4-R, 4-C)` 進行座標轉換，將圖案進行180度旋轉。'; modifications = { line8: 'pattern[4-R, 4-C] ← i', line9: '如果 R+DR < 1 or R+DR > 3 or C+DC < 1 or C+DC > 3 or pattern[4-R-DR, 4-C-DC] != 0 則' }; break;
+            case 'c':
+                cControlsPanel.style.display = 'flex';
+                desc = '<strong>(c) 小題解答：</strong>產生一個長度為 `num` 的逆時針螺旋。<br>• <strong>(c)(i)</strong>：在上方控制面板輸入 7，觀看 `num=7` 時的圖案生成。<br>• <strong>(c)(ii)</strong>：上方控制面板展示了輸入驗證偽代碼及其互動模擬。<br>• <strong>(c)(iii)</strong>：修改第 7 行，將迴圈改為 `for i 由 1 至 num`。';
+                modifications = { line7: 'for i 由 1 至 num' };
+                validateNumInput();
+                break;
+            case 'd':
+                dPanel.style.display = 'block';
+                patternPanel.style.display = 'none';
+                
+                codeBlock.innerHTML = codeTemplates.d;
+                variablesContent.innerHTML = variablesTemplates.d;
+                desc = '<strong>(d) 小題解答：</strong>此程式比對使用者繪製的 `drawn` 圖案與預存的 `pattern` 是否相符。<br>• 在右側的 `drawn` 網格中，依序點擊格子來繪製 `1` 到 `9` 的路徑，程式會自動畫出連接線。<br>• 點擊「下一步」開始逐格比對您繪製的路徑是否正確。';
+                setupD();
+                break;
+        }
+
+        problemDescEl.innerHTML = desc;
+        
+        if (currentVersion !== 'd') {
+            const originalCode = {
+                line4: 'DR ← 1', line5: 'DC ← 0', line6: 'dir ← 2',
+                line7: 'for i 由 1 至 9', line8: 'pattern[R,C] ← i',
+                line9: '如果 R+DR < 1 or R+DR > 3 or C+DC < 1 or C+DC > 3 or pattern[R+DR,C+DC] != 0 則',
+                line10: 'dir ← (dir - 1) % 4'
+            };
+            document.getElementById('code-line-4-content').innerHTML = modifications.line4 || originalCode.line4;
+            document.getElementById('code-line-5-content').innerHTML = modifications.line5 || originalCode.line5;
+            document.getElementById('code-line-6-content').innerHTML = modifications.line6 || originalCode.line6;
+            document.getElementById('code-line-7-content').innerHTML = modifications.line7 || originalCode.line7;
+            document.getElementById('code-line-8-content').innerHTML = modifications.line8 || originalCode.line8;
+            document.getElementById('code-line-9-content').innerHTML = modifications.line9 || originalCode.line9;
+            document.getElementById('code-line-10-content').innerHTML = modifications.line10 || originalCode.line10;
+
+            document.querySelectorAll('[id^="code-line-"]').forEach(el => el.classList.remove('modified'));
+            if (modifications.line4) document.getElementById('line-4').classList.add('modified');
+            if (modifications.line5) document.getElementById('line-5').classList.add('modified');
+            if (modifications.line6) document.getElementById('line-6').classList.add('modified');
+            if (modifications.line7) document.getElementById('line-7').classList.add('modified');
+            if (modifications.line8) document.getElementById('line-8').classList.add('modified');
+            if (modifications.line9) document.getElementById('line-9').classList.add('modified');
+            if (modifications.line10) document.getElementById('line-10').classList.add('modified');
+        }
+    }
+
+    function reset() {
+        stopAutoplay();
+        historyStack = [];
+        
+        if (currentVersion === 'd') {
+            drawnPatternD = Array(4).fill(0).map(() => Array(4).fill(0));
+            clickCounter = 1;
+            lastClickedCell = null;
+            lineSvg.innerHTML = '';
+            document.querySelectorAll('#drawn-grid td').forEach(cell => cell.textContent = '');
+        }
+
+        currentState = getInitialState(currentVersion);
+        updateAllUI();
     }
 
     function prevStep() {
+        if (isAutoPlaying) return;
         if (historyStack.length > 0) {
             currentState = historyStack.pop();
             updateAllUI();
         }
     }
 
+    function toggleAutoplay() {
+        if (isAutoPlaying) stopAutoplay();
+        else startAutoplay();
+    }
+
+    function startAutoplay() {
+        if (isAutoPlaying || currentState.phase === PHASES.DONE) return;
+        isAutoPlaying = true;
+        autoplayBtn.textContent = '暫停';
+        autoplayBtn.classList.add('pause-btn');
+        updateAllUI();
+        nextStep();
+        if (currentState.phase !== PHASES.DONE) {
+            autoplayTimer = setInterval(nextStep, autoplaySpeed);
+        }
+    }
+
+    function stopAutoplay() {
+        if (!isAutoPlaying) return;
+        isAutoPlaying = false;
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+        autoplayBtn.textContent = '自動播放';
+        autoplayBtn.classList.remove('pause-btn');
+        updateAllUI();
+    }
+
+    function isLoopFinished(state) {
+        if (currentVersion === 'a') return state.i < 1;
+        if (currentVersion === 'c') return state.i > state.num;
+        return state.i > 9;
+    }
+
+    // --- MODIFIED FUNCTION ---
     function updateAllUI() {
-        // Highlight line
         document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
         if (currentState.highlightedLine) {
-            document.getElementById(currentState.highlightedLine).classList.add('highlight');
+            const lineEl = document.getElementById(currentState.highlightedLine);
+            if (lineEl) lineEl.classList.add('highlight');
         }
-
-        // Update explanation
-        document.getElementById('explanation').innerHTML = currentState.explanation;
-
-        // Update variables
-        document.getElementById('val-i').textContent = currentState.i > 9 ? '結束' : (currentState.i || '?');
-        document.getElementById('val-r').textContent = currentState.R || '?';
-        document.getElementById('val-c').textContent = currentState.C || '?';
-        document.getElementById('val-dir').textContent = `${currentState.dir !== undefined ? currentState.dir : '?'} (${getDirName(currentState.dir)})`;
-        document.getElementById('val-dr').textContent = currentState.DR !== undefined ? currentState.DR : '?';
-        document.getElementById('val-dc').textContent = currentState.DC !== undefined ? currentState.DC : '?';
+        explanationEl.innerHTML = currentState.explanation;
         
-        // Update grid
-        const gridCells = document.querySelectorAll('#output-grid td');
-        gridCells.forEach(cell => {
-            cell.textContent = '';
-            cell.className = '';
-        });
-        for (let r = 1; r <= 3; r++) {
-            for (let c = 1; c <= 3; c++) {
-                const cell = document.querySelector(`#output-grid tr:nth-child(${r}) td:nth-child(${c})`);
-                if (currentState.pattern[r][c] !== 0) {
-                    cell.textContent = currentState.pattern[r][c];
+        if (currentVersion === 'd') {
+            document.getElementById('val-d-i').textContent = currentState.i !== undefined ? currentState.i : '?';
+            document.getElementById('val-d-j').textContent = currentState.j !== undefined ? currentState.j : '?';
+            const correctVal = currentState.correct;
+            document.getElementById('val-d-correct').textContent = correctVal === undefined ? '?' : (correctVal ? 'True' : 'False');
+            if(correctVal !== undefined) {
+                document.getElementById('val-d-correct').style.color = correctVal ? 'var(--true-color)' : 'var(--false-color)';
+            } else {
+                document.getElementById('val-d-correct').style.color = '';
+            }
+
+            // --- START: MODIFIED HIGHLIGHT LOGIC ---
+            // Clear all potential comparison highlights first
+            document.querySelectorAll('#pattern-grid-d td, #drawn-grid td').forEach(c => {
+                c.classList.remove('comparison-highlight');
+                c.classList.remove('comparison-success-highlight');
+            });
+
+            // Apply the correct highlight based on the current phase
+            if (currentState.phase === PHASES.COMPARE_CELLS_D) {
+                // Apply GREEN highlight for ongoing comparison
+                const cell1 = document.querySelector(`#pattern-grid-d tr:nth-child(${currentState.i}) td:nth-child(${currentState.j})`);
+                const cell2 = document.querySelector(`#drawn-grid tr:nth-child(${currentState.i}) td:nth-child(${currentState.j})`);
+                if (cell1) cell1.classList.add('comparison-success-highlight');
+                if (cell2) cell2.classList.add('comparison-success-highlight');
+            } else if (currentState.phase === PHASES.SET_CORRECT_FALSE_D) {
+                // Apply RED highlight for failed comparison
+                const cell1 = document.querySelector(`#pattern-grid-d tr:nth-child(${currentState.i}) td:nth-child(${currentState.j})`);
+                const cell2 = document.querySelector(`#drawn-grid tr:nth-child(${currentState.i}) td:nth-child(${currentState.j})`);
+                if (cell1) cell1.classList.add('comparison-highlight');
+                if (cell2) cell2.classList.add('comparison-highlight');
+            }
+            // --- END: MODIFIED HIGHLIGHT LOGIC ---
+
+        } else {
+            let loopVarText = currentState.i !== undefined ? currentState.i : '?';
+            if (isLoopFinished(currentState)) loopVarText = (currentVersion === 'a' ? '< 1' : '> ' + (currentVersion === 'c' ? currentState.num : 9));
+            document.getElementById('val-i').textContent = loopVarText;
+            document.getElementById('val-r').textContent = currentState.R !== undefined ? currentState.R : '?';
+            document.getElementById('val-c').textContent = currentState.C !== undefined ? currentState.C : '?';
+            document.getElementById('val-dir').textContent = `${currentState.dir !== undefined ? currentState.dir : '?'} (${getDirName(currentState.dir)})`;
+            document.getElementById('val-dr').textContent = currentState.DR !== undefined ? currentState.DR : '?';
+            document.getElementById('val-dc').textContent = currentState.DC !== undefined ? currentState.DC : '?';
+            
+            const gridCells = document.querySelectorAll('#output-grid td');
+            gridCells.forEach(cell => { cell.textContent = ''; cell.className = ''; });
+            for (let r = 1; r <= 3; r++) {
+                for (let c = 1; c <= 3; c++) {
+                    const cell = document.querySelector(`#output-grid tr:nth-child(${r}) td:nth-child(${c})`);
+                    if (currentState.pattern[r][c] !== 0) cell.textContent = currentState.pattern[r][c];
                 }
-                if (currentState.R === r && currentState.C === c) {
-                    cell.classList.add('current-pos');
-                }
-                if (currentState.phase === PHASES.CHECK_MOVE && currentState.nextR === r && currentState.nextC === c) {
-                     cell.classList.add('probe-pos');
-                }
+            }
+            if (currentState.R !== undefined && currentState.C !== undefined) {
+                let displayR = currentState.R, displayC = currentState.C;
+                if (currentVersion === 'b_iii') { displayR = 4 - currentState.R; displayC = 4 - currentState.C; }
+                const currentCell = document.querySelector(`#output-grid tr:nth-child(${displayR}) td:nth-child(${displayC})`);
+                if (currentCell) currentCell.classList.add('current-pos');
+            }
+            const isChecking = currentState.phase.startsWith('CHECK_MOVE') || currentState.phase === 'EVALUATE_CHECK_RESULT';
+            if (isChecking && currentState.nextR >= 1 && currentState.nextR <= 3 && currentState.nextC >= 1 && currentState.nextC <= 3) {
+                let probeR = currentState.nextR, probeC = currentState.nextC;
+                if (currentVersion === 'b_iii') { probeR = 4 - currentState.nextR; probeC = 4 - currentState.nextC; }
+                const probeCell = document.querySelector(`#output-grid tr:nth-child(${probeR}) td:nth-child(${probeC})`);
+                if (probeCell) probeCell.classList.add('probe-pos');
             }
         }
 
-        // Update buttons
-        document.getElementById('prev-btn').disabled = historyStack.length === 0;
-        document.getElementById('next-btn').disabled = currentState.phase === PHASES.DONE;
+        prevBtn.disabled = isAutoPlaying || historyStack.length === 0;
+        nextBtn.disabled = isAutoPlaying || currentState.phase === PHASES.DONE;
+        autoplayBtn.disabled = currentState.phase === PHASES.DONE;
+        resetBtn.disabled = isAutoPlaying;
+        if (currentVersion === 'c') validateNumInput();
     }
 
-
     function nextStep() {
-        // Save current state for 'previous' functionality
-        historyStack.push(JSON.parse(JSON.stringify(currentState)));
+        if (currentState.phase === PHASES.DONE) { stopAutoplay(); return; }
+        if (!isAutoPlaying) { historyStack.push(JSON.parse(JSON.stringify(currentState))); }
 
-        const state = currentState; // Use a shorthand
+        const state = currentState;
+        let res;
         
-        switch (state.phase) {
-            case PHASES.INIT:
-                state.highlightedLine = 'line-1';
-                state.explanation = '初始化一個 3x3 的 pattern 陣列，所有值為 0。';
-                state.phase = 'SET_R';
-                break;
-            
-            case 'SET_R':
-                state.highlightedLine = 'line-2';
-                state.R = 1;
-                state.explanation = '設定起始位置的行 R 為 1。';
-                state.phase = 'SET_C';
-                break;
-
-            case 'SET_C':
-                state.highlightedLine = 'line-3';
-                state.C = 1;
-                state.explanation = '設定起始位置的列 C 為 1。目前位置在 (1, 1)。';
-                state.phase = 'SET_DR';
-                break;
-            
-            case 'SET_DR':
-                state.highlightedLine = 'line-4';
-                state.DR = 1;
-                state.explanation = '設定初始垂直移動增量 DR 為 1。';
-                state.phase = 'SET_DC';
-                break;
-
-            case 'SET_DC':
-                state.highlightedLine = 'line-5';
-                state.DC = 0;
-                state.explanation = '設定初始水平移動增量 DC 為 0。';
-                state.phase = 'SET_DIR';
-                break;
-
-            case 'SET_DIR':
-                state.highlightedLine = 'line-6';
-                state.dir = 2;
-                state.explanation = `設定初始方向 dir 為 2 (${getDirName(state.dir)})。`;
-                state.phase = PHASES.START_LOOP;
-                break;
-
-            case PHASES.START_LOOP:
-                if (state.i > 9) {
+        if (currentVersion === 'd') {
+            // --- Part (d) Logic ---
+            switch (state.phase) {
+                case PHASES.INIT_D: state.highlightedLine = 'line-d-1'; state.explanation = '開始執行。'; state.phase = PHASES.SET_CORRECT_D; break;
+                case PHASES.SET_CORRECT_D: state.correct = true; state.explanation = '初始化標記 `correct` 為 <strong class="true">True</strong>。'; state.phase = PHASES.SET_I_D; break;
+                case PHASES.SET_I_D: state.highlightedLine = 'line-d-2'; state.i = 1; state.explanation = '初始化外層迴圈變數 `i` 為 1。'; state.phase = PHASES.OUTER_LOOP_CHECK_D; break;
+                case PHASES.OUTER_LOOP_CHECK_D:
+                    state.highlightedLine = 'line-d-4';
+                    res = state.i <= 3 && state.correct;
+                    state.explanation = `檢查外層迴圈條件: i <= 3 and correct = True ?\n(${state.i} <= 3 and ${state.correct}) 結果為 <strong class="${res}">${res}</strong>。`;
+                    state.phase = res ? PHASES.SET_J_D : PHASES.FINAL_CHECK_D;
+                    break;
+                case PHASES.SET_J_D: state.highlightedLine = 'line-d-5'; state.j = 1; state.explanation = `進入外層迴圈 (i=${state.i})。\n初始化內層迴圈變數 \`j\` 為 1。`; state.phase = PHASES.INNER_LOOP_CHECK_D; break;
+                case PHASES.INNER_LOOP_CHECK_D:
+                    state.highlightedLine = 'line-d-6';
+                    res = state.j <= 3 && state.correct;
+                    state.explanation = `檢查內層迴圈條件: j <= 3 and correct = True ?\n(${state.j} <= 3 and ${state.correct}) 結果為 <strong class="${res}">${res}</strong>。`;
+                    state.phase = res ? PHASES.COMPARE_CELLS_D : PHASES.END_INNER_D;
+                    break;
+                case PHASES.COMPARE_CELLS_D:
+                    state.highlightedLine = 'line-d-7';
+                    const val1 = correctPatternD[state.i][state.j];
+                    const val2 = drawnPatternD[state.i][state.j];
+                    res = val1 !== val2;
+                    state.explanation = `進入內層迴圈 (j=${state.j})。\n比對 pattern[${state.i},${state.j}] (值:${val1}) 和 drawn[${state.i},${state.j}] (值:${val2})。\n條件 \`!= \` 結果為 <strong class="${res}">${res}</strong>。`;
+                    state.phase = res ? PHASES.SET_CORRECT_FALSE_D : PHASES.INC_J_D;
+                    break;
+                case PHASES.SET_CORRECT_FALSE_D: state.highlightedLine = 'line-d-8'; state.correct = false; state.explanation = `因為圖案不匹配，設定 \`correct\` 為 <strong class="false">False</strong>。`; state.phase = PHASES.INC_J_D; break;
+                case PHASES.INC_J_D: state.highlightedLine = 'line-d-10'; state.j++; state.explanation = `內層迴圈結束，j 增加 1，變為 ${state.j}。`; state.phase = PHASES.INNER_LOOP_CHECK_D; break;
+                case PHASES.END_INNER_D: state.highlightedLine = 'line-d-12'; state.explanation = '內層迴圈結束。'; state.phase = PHASES.INC_I_D; break;
+                case PHASES.INC_I_D: state.i++; state.explanation = `外層迴圈結束，i 增加 1，變為 ${state.i}。`; state.phase = PHASES.OUTER_LOOP_CHECK_D; break;
+                case PHASES.FINAL_CHECK_D:
+                    state.highlightedLine = 'line-d-14';
+                    res = state.correct;
+                    state.explanation = `迴圈結束。檢查最終的 \`correct\` 值。\n條件 \`correct\` 結果為 <strong class="${res}">${res}</strong>。`;
+                    state.phase = PHASES.OUTPUT_D;
+                    break;
+                case PHASES.OUTPUT_D:
+                    if (state.correct) {
+                        state.highlightedLine = 'line-d-15';
+                        state.explanation = '最終結果: <strong class="true">Unlocked</strong>';
+                    } else {
+                        state.highlightedLine = 'line-d-17';
+                        state.explanation = '最終結果: <strong class="false">Wrong input</strong>';
+                    }
                     state.phase = PHASES.DONE;
-                    nextStep(); // Recurse to enter DONE phase
-                    return;
-                }
-                state.highlightedLine = 'line-7';
-                state.explanation = `進入迴圈，i = ${state.i}。`;
-                state.phase = PHASES.PLACE_NUMBER;
-                break;
-
-            case PHASES.PLACE_NUMBER:
-                state.highlightedLine = 'line-8';
-                state.pattern[state.R][state.C] = state.i;
-                state.explanation = `在目前位置 (${state.R}, ${state.C}) 填入數字 ${state.i}。`;
-                state.phase = PHASES.CHECK_MOVE; // Directly check move with current DR/DC
-                break;
-            
-            case PHASES.DETERMINE_DR_DC:
-                // This phase is used after a turn to get the new DR/DC
-                if (state.dir === 0) { state.DR = -1; state.DC = 0; state.highlightedLine = 'line-12'; }
-                else if (state.dir === 1) { state.DR = 0; state.DC = 1; state.highlightedLine = 'line-15'; }
-                else if (state.dir === 2) { state.DR = 1; state.DC = 0; state.highlightedLine = 'line-18'; }
-                else { state.DR = 0; state.DC = -1; state.highlightedLine = 'line-21'; }
-                
-                state.explanation = `根據新的方向 dir=${state.dir} (${getDirName(state.dir)})，更新移動向量為 (DR=${state.DR}, DC=${state.DC})。`;
-                state.phase = PHASES.MOVE; // After turning and getting new vector, we must move.
-                break;
-
-            case PHASES.CHECK_MOVE:
-                 if (state.i === 9) { // Last number placed, no need to move
-                    state.phase = PHASES.END_LOOP;
-                    nextStep(); // Recurse
-                    return;
-                }
-                state.highlightedLine = 'line-9';
-                state.nextR = state.R + state.DR;
-                state.nextC = state.C + state.DC;
-                
-                let expl = `檢查下一個位置 (${state.nextR}, ${state.nextC}) 是否有效。\n\n`;
-                let conditionMet = false;
-                let reason = '';
-
-                let res1 = state.nextR < 1;
-                expl += `1. 是否向上越界 (R+DR < 1) ?\n   ${state.nextR} < 1 為 <strong class="${res1}">${res1}</strong>\n`;
-                if (res1) { conditionMet = true; reason = '向上越界'; }
-
-                let res2 = state.nextR > 3;
-                if (!conditionMet) {
-                    expl += `2. 是否向下越界 (R+DR > 3) ?\n   ${state.nextR} > 3 為 <strong class="${res2}">${res2}</strong>\n`;
-                    if (res2) { conditionMet = true; reason = '向下越界'; }
-                }
-
-                let res3 = state.nextC < 1;
-                if (!conditionMet) {
-                    expl += `3. 是否向左越界 (C+DC < 1) ?\n   ${state.nextC} < 1 為 <strong class="${res3}">${res3}</strong>\n`;
-                    if (res3) { conditionMet = true; reason = '向左越界'; }
-                }
-
-                let res4 = state.nextC > 3;
-                if (!conditionMet) {
-                    expl += `4. 是否向右越界 (C+DC > 3) ?\n   ${state.nextC} > 3 為 <strong class="${res4}">${res4}</strong>\n`;
-                    if (res4) { conditionMet = true; reason = '向右越界'; }
-                }
-                
-                let res5 = false;
-                if (!conditionMet) {
-                    const nextVal = state.pattern[state.nextR][state.nextC];
-                    res5 = nextVal !== 0;
-                    expl += `5. 是否已被佔據 (pattern[${state.nextR},${state.nextC}] != 0) ?\n   ${nextVal} != 0 為 <strong class="${res5}">${res5}</strong>\n`;
-                    if (res5) { conditionMet = true; reason = `已被數字 ${nextVal} 佔據`; }
-                }
-
-                if (conditionMet) {
-                    expl += `\n結論：條件成立 (因為 ${reason})，將進行轉向。`;
-                    state.phase = PHASES.TURN;
-                } else {
-                    expl += `\n結論：所有條件均不成立，移動有效，將更新位置。`;
-                    state.phase = PHASES.MOVE;
-                }
-                state.explanation = expl;
-                break;
-
-            case PHASES.TURN:
-                state.highlightedLine = 'line-10';
-                state.dir = (state.dir - 1 + 4) % 4; // JS friendly modulo for negative numbers
-                state.explanation = `進行轉向 (dir-1)，新的方向為 dir=${state.dir} (${getDirName(state.dir)})。`;
-                // According to pseudocode, the DR/DC update happens next.
-                state.phase = PHASES.DETERMINE_DR_DC;
-                break;
-
-            case PHASES.MOVE:
-                state.highlightedLine = 'line-23';
-                state.R += state.DR;
-                state.C += state.DC;
-                state.explanation = `移動到新位置 (${state.R}, ${state.C})。`;
-                state.phase = PHASES.END_LOOP;
-                break;
-
-            case PHASES.END_LOOP:
-                state.i++;
-                state.highlightedLine = null;
-                state.explanation = '完成本次迴圈，準備下一次。';
-                state.phase = PHASES.START_LOOP;
-                break;
-                
-            case PHASES.DONE:
-                state.highlightedLine = null;
-                state.explanation = '程式執行完畢。';
-                break;
+                    break;
+                case PHASES.DONE: stopAutoplay(); return;
+            }
+        } else {
+            // --- Main Algorithm Logic ---
+            switch (state.phase) {
+                case PHASES.INIT: state.highlightedLine = 'line-1'; state.explanation = '初始化一個 3x3 的 pattern 陣列，所有值為 0。'; state.phase = PHASES.SET_R; break;
+                case PHASES.SET_R: state.highlightedLine = 'line-2'; state.R = 1; state.explanation = '設定起始邏輯位置的行 R 為 1。'; state.phase = PHASES.SET_C; break;
+                case PHASES.SET_C: state.highlightedLine = 'line-3'; state.C = 1; state.explanation = '設定起始邏輯位置的列 C 為 1。'; state.phase = PHASES.SET_DR; break;
+                case PHASES.SET_DR: state.highlightedLine = 'line-4'; state.DR = (currentVersion === 'b_i') ? 0 : 1; state.explanation = `設定初始垂直移動增量 DR 為 ${state.DR}。`; state.phase = PHASES.SET_DC; break;
+                case PHASES.SET_DC: state.highlightedLine = 'line-5'; state.DC = (currentVersion === 'b_i') ? 1 : 0; state.explanation = `設定初始水平移動增量 DC 為 ${state.DC}。`; state.phase = PHASES.SET_DIR; break;
+                case PHASES.SET_DIR: state.highlightedLine = 'line-6'; state.dir = (currentVersion === 'b_i') ? 1 : 2; state.explanation = `設定初始方向 dir 為 ${state.dir} (${getDirName(state.dir)})。初始設定完成。`; state.phase = PHASES.START_LOOP; break;
+                case PHASES.START_LOOP:
+                    if (isLoopFinished(state)) { state.phase = PHASES.DONE; nextStep(); return; }
+                    state.highlightedLine = 'line-7';
+                    let loopEnd = (currentVersion === 'c') ? state.num : 9; if (currentVersion === 'a') loopEnd = 1;
+                    state.explanation = `進入迴圈，i = ${state.i}。(迴圈條件: i ${currentVersion === 'a' ? '>=' : '<='} ${loopEnd})`;
+                    state.phase = PHASES.PLACE_NUMBER;
+                    break;
+                case PHASES.PLACE_NUMBER:
+                    state.highlightedLine = 'line-8';
+                    let writeR = state.R, writeC = state.C;
+                    if (currentVersion === 'b_iii') { writeR = 4 - state.R; writeC = 4 - state.C; state.explanation = `在邏輯位置 (${state.R}, ${state.C}) 操作，對應實際位置 (${writeR}, ${writeC})，填入數字 ${state.i}。`; }
+                    else { state.explanation = `在目前位置 (${state.R}, ${state.C}) 填入數字 ${state.i}。`; }
+                    state.pattern[writeR][writeC] = state.i;
+                    let isLastNumber = (currentVersion === 'a') ? (state.i === 1) : (state.i === (currentVersion === 'c' ? state.num : 9));
+                    state.phase = isLastNumber ? PHASES.END_LOOP : PHASES.CHECK_MOVE_START;
+                    break;
+                case PHASES.CHECK_MOVE_START: state.highlightedLine = 'line-9'; state.nextR = state.R + state.DR; state.nextC = state.C + state.DC; state.conditionMet = false; state.explanation = `檢查下個邏輯位置 (${state.nextR}, ${state.nextC}) 是否需要轉向。`; state.phase = PHASES.CHECK_MOVE_UP; break;
+                case PHASES.CHECK_MOVE_UP: res = state.nextR < 1; state.explanation = `1. 檢查向上越界 (R+DR < 1)? ${state.nextR} < 1 為 <strong class="${res}">${res}</strong>。`; if (res) { state.conditionMet = true; state.phase = PHASES.EVALUATE_CHECK_RESULT; } else { state.phase = PHASES.CHECK_MOVE_DOWN; } break;
+                case PHASES.CHECK_MOVE_DOWN: res = state.nextR > 3; state.explanation = `2. 檢查向下越界 (R+DR > 3)? ${state.nextR} > 3 為 <strong class="${res}">${res}</strong>。`; if (res) { state.conditionMet = true; state.phase = PHASES.EVALUATE_CHECK_RESULT; } else { state.phase = PHASES.CHECK_MOVE_LEFT; } break;
+                case PHASES.CHECK_MOVE_LEFT: res = state.nextC < 1; state.explanation = `3. 檢查向左越界 (C+DC < 1)? ${state.nextC} < 1 為 <strong class="${res}">${res}</strong>。`; if (res) { state.conditionMet = true; state.phase = PHASES.EVALUATE_CHECK_RESULT; } else { state.phase = PHASES.CHECK_MOVE_RIGHT; } break;
+                case PHASES.CHECK_MOVE_RIGHT: res = state.nextC > 3; state.explanation = `4. 檢查向右越界 (C+DC > 3)? ${state.nextC} > 3 為 <strong class="${res}">${res}</strong>。`; if (res) { state.conditionMet = true; state.phase = PHASES.EVALUATE_CHECK_RESULT; } else { state.phase = PHASES.CHECK_MOVE_OCCUPIED; } break;
+                case PHASES.CHECK_MOVE_OCCUPIED:
+                    let checkR = state.nextR, checkC = state.nextC, explanationPrefix = `5. 檢查 pattern[${checkR},${checkC}] 是否已被佔據?`;
+                    if (currentVersion === 'b_iii') { checkR = 4 - state.nextR; checkC = 4 - state.nextC; explanationPrefix = `5. 檢查轉換後位置 pattern[${checkR},${checkC}] 是否已被佔據?`; }
+                    const nextVal = state.pattern[checkR][checkC]; res = nextVal !== 0;
+                    state.explanation = `${explanationPrefix}\n   ${nextVal} != 0 為 <strong class="${res}">${res}</strong>。`;
+                    if (res) { state.conditionMet = true; } state.phase = PHASES.EVALUATE_CHECK_RESULT; break;
+                case PHASES.EVALUATE_CHECK_RESULT: if (state.conditionMet) { state.explanation = `條件成立，需要轉向。`; state.phase = PHASES.TURN; } else { state.explanation = `條件不成立，不需轉向，直接移動。`; state.phase = PHASES.MOVE_R; } break;
+                case PHASES.TURN: state.highlightedLine = 'line-10'; if (currentVersion === 'b_i') { state.dir = (state.dir + 1) % 4; state.explanation = `順時針轉向，新方向 dir=${state.dir} (${getDirName(state.dir)})。`; } else { state.dir = (state.dir - 1 + 4) % 4; state.explanation = `逆時針轉向，新方向 dir=${state.dir} (${getDirName(state.dir)})。`; } state.phase = PHASES.CHECK_DIR_0; break;
+                case PHASES.CHECK_DIR_0: state.highlightedLine = 'line-11'; res = state.dir === 0; state.explanation = `檢查 dir=0 (上)? <strong class="${res}">${res}</strong>。`; state.phase = res ? PHASES.SET_DIR_0 : PHASES.CHECK_DIR_1; break;
+                case PHASES.SET_DIR_0: state.highlightedLine = 'line-12'; state.DR = -1; state.DC = 0; state.explanation = `設定移動向量 (DR=${state.DR}, DC=${state.DC})。`; state.phase = PHASES.MOVE_R; break;
+                case PHASES.CHECK_DIR_1: state.highlightedLine = 'line-14'; res = state.dir === 1; state.explanation = `檢查 dir=1 (右)? <strong class="${res}">${res}</strong>。`; state.phase = res ? PHASES.SET_DIR_1 : PHASES.CHECK_DIR_2; break;
+                case PHASES.SET_DIR_1: state.highlightedLine = 'line-15'; state.DR = 0; state.DC = 1; state.explanation = `設定移動向量 (DR=${state.DR}, DC=${state.DC})。`; state.phase = PHASES.MOVE_R; break;
+                case PHASES.CHECK_DIR_2: state.highlightedLine = 'line-17'; res = state.dir === 2; state.explanation = `檢查 dir=2 (下)? <strong class="${res}">${res}</strong>。`; state.phase = res ? PHASES.SET_DIR_2 : PHASES.CHECK_DIR_3; break;
+                case PHASES.SET_DIR_2: state.highlightedLine = 'line-18'; state.DR = 1; state.DC = 0; state.explanation = `設定移動向量 (DR=${state.DR}, DC=${state.DC})。`; state.phase = PHASES.MOVE_R; break;
+                case PHASES.CHECK_DIR_3: state.highlightedLine = 'line-20'; state.explanation = `執行 else (左)。`; state.phase = PHASES.SET_DIR_3; break;
+                case PHASES.SET_DIR_3: state.highlightedLine = 'line-21'; state.DR = 0; state.DC = -1; state.explanation = `設定移動向量 (DR=${state.DR}, DC=${state.DC})。`; state.phase = PHASES.MOVE_R; break;
+                case PHASES.MOVE_R: state.highlightedLine = 'line-23'; state.R += state.DR; state.explanation = `更新邏輯 R: R ← R + DR = ${state.R}。`; state.phase = PHASES.MOVE_C; break;
+                case PHASES.MOVE_C: state.highlightedLine = 'line-24'; state.C += state.DC; state.explanation = `更新邏輯 C: C ← C + DC = ${state.C}。\n移動到新邏輯位置 (${state.R}, ${state.C})。`; state.phase = PHASES.END_LOOP; break;
+                case PHASES.END_LOOP: if (currentVersion === 'a') { state.i--; } else { state.i++; } state.highlightedLine = null; state.explanation = '完成本次迴圈，準備下一次。'; state.phase = PHASES.START_LOOP; break;
+                case PHASES.DONE: state.highlightedLine = null; state.explanation = '程式執行完畢。'; stopAutoplay(); break;
+            }
         }
         updateAllUI();
     }
 
-    // Initialize on load
-    window.onload = reset;
+    window.onload = () => {
+        switchVersion();
+        // Add resize listener to redraw SVG lines
+        window.addEventListener('resize', () => {
+            if (currentVersion === 'd') {
+                redrawAllLines();
+            }
+        });
+    };
 </script>
 
 </body>
