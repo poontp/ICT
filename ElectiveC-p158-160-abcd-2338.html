@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>堆疊演算法互動解說 (b), (c), (d)</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --background-color: #f8f9fa;
+            --container-bg: #ffffff;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --code-bg: #e9ecef;
+            --active-line-bg: #cce5ff;
+            --discard-color: #ffc107; /* 黃色 */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: auto;
+            background-color: var(--container-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        h3 {
+             border-bottom: none;
+             color: var(--text-color);
+        }
+
+        .problem-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .code-block {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.1em;
+            white-space: pre-wrap;
+            line-height: 1.2; /* 減少行高 */
+        }
+
+        .code-block div {
+            padding: 1px 5px; /* 減少垂直內距 */
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+
+        .code-block .answer {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        .active-line {
+            background-color: var(--active-line-bg) !important;
+            font-weight: bold;
+        }
+        
+        .explanation {
+            background-color: #f0f7ff;
+            border-left: 5px solid var(--primary-color);
+            padding: 15px;
+            margin-top: 20px;
+            min-height: 50px;
+        }
+
+        .variable-display {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #fffbe6;
+            border: 1px solid #ffe58f;
+            border-radius: 5px;
+        }
+        .variable-display h3 {
+            margin: 0 0 5px 0;
+            padding: 0;
+            border: none;
+            font-size: 1.1em;
+            color: #495057;
+        }
+        .variable-display p, .variable-display label {
+            margin: 0;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .variable-display span {
+            color: var(--danger-color);
+        }
+        .variable-display input {
+            font-size: 1.1em;
+            width: 60px;
+            padding: 2px 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+        }
+
+        .stack-visualization {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+
+        .stack-display-area {
+            position: relative;
+            width: 100px;
+            height: 350px;
+            text-align: center;
+        }
+
+        .stack-container {
+            border: 2px solid var(--secondary-color);
+            border-top: none;
+            width: 100%;
+            height: 300px;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
+            position: absolute;
+            bottom: 25px;
+            background-color: #fdfdfd;
+        }
+
+        .stack-label {
+            font-weight: bold;
+            color: var(--secondary-color);
+            position: absolute;
+            width: 100%;
+            bottom: 0;
+        }
+
+        .stack-item {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            padding: 10px;
+            border-top: 2px solid var(--container-bg);
+            box-sizing: border-box;
+            animation-duration: 0.6s;
+            animation-fill-mode: forwards;
+        }
+
+        .stack-item.discard-item {
+            background-color: var(--discard-color);
+            color: var(--text-color);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        button.secondary {
+             background-color: var(--secondary-color);
+        }
+
+        button:hover:not(:disabled) {
+            opacity: 0.8;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 40px 0;
+        }
+        
+        @keyframes push-animation {
+            from { transform: translateY(-50px) scale(0.8); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        
+        @keyframes pop-animation {
+            from { transform: translateY(0) scale(1); opacity: 1; background-color: var(--danger-color); }
+            to { transform: translateY(-50px) scale(0.8); opacity: 0; background-color: var(--danger-color); }
+        }
+
+        .push-effect { animation-name: push-animation; }
+        .pop-effect { animation-name: pop-animation; }
+
+        @media (max-width: 768px) {
+            .problem-container { flex-direction: column; }
+            body { padding: 10px; }
+            .main-container { padding: 15px; }
+            .stack-visualization { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <h1>堆疊演算法互動解說</h1>
+        <p>此頁面將逐步演示題目 (b), (c), (d) 的演算法執行過程與答案。請點擊「上一步」或「下一步」按鈕來觀看每一步的動畫和解說。</p>
+
+        <hr>
+
+        <!-- Problem (b) -->
+        <section id="problem-b">
+            <h2>(b) 執行演算法並找出 S1 和 S2 的最終內容</h2>
+            <div class="problem-container">
+                <div class="left-panel">
+                    <h3>執行程式碼</h3>
+                    <div class="code-block" id="code-b">
+                        <div id="b-line-0">temp ← 0</div>
+                        <div id="b-line-1">當 not isEmpty(S1)</div>
+                        <div id="b-line-2">  temp ← temp + pop(S1)</div>
+                        <div id="b-line-3">  如果 temp > 25 則</div>
+                        <div id="b-line-4">    push(S2, 25)</div>
+                        <div id="b-line-5">    temp ← temp - 25</div>
+                        <div id="b-line-6">push(S2, temp)</div>
+                    </div>
+                    <div class="controls">
+                        <button id="prev-b">上一步</button>
+                        <button id="next-b">下一步</button>
+                        <button id="reset-b" class="secondary">重設</button>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <h3>狀態顯示與解說</h3>
+                    <div class="variable-display">
+                        <h3>變數狀態</h3>
+                        <p>temp: <span id="temp-value-b">N/A</span></p>
+                    </div>
+                    <div class="explanation" id="explanation-b"></div>
+                    <div class="stack-visualization">
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-b-s1"></div>
+                            <div class="stack-label">堆疊 S1</div>
+                        </div>
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-b-s2"></div>
+                            <div class="stack-label">堆疊 S2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- Problem (c) -->
+        <section id="problem-c">
+            <h2>(c) 完成子程式 `reverse(A, B)`</h2>
+            <div class="problem-container">
+                <div class="left-panel">
+                    <h3>互動演示：執行 `reverse(S1, S2)`</h3>
+                    <div class="code-block" id="code-c">
+                        <div id="c-line-0">子程式 reverse(A, B)</div>
+                        <div id="c-line-1">  當 not isEmpty(A)</div>
+                        <div id="c-line-2">    <span class="answer">push(B, pop(A))</span></div>
+                    </div>
+                    <div class="controls">
+                        <button id="prev-c">上一步</button>
+                        <button id="next-c">下一步</button>
+                        <button id="reset-c" class="secondary">重設</button>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <h3>狀態顯示與解說</h3>
+                    <div class="explanation" id="explanation-c"></div>
+                    <div class="stack-visualization">
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-c-s1"></div>
+                            <div class="stack-label">堆疊 S1 (A)</div>
+                        </div>
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-c-s2"></div>
+                            <div class="stack-label">堆疊 S2 (B)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- Problem (d) -->
+        <section id="problem-d">
+            <h2>(d) 設計演算法捨棄 S1 底部的 N 個膠箱</h2>
+            <div class="problem-container">
+                <div class="left-panel">
+                    <h3>互動演示 (N 可由使用者設定)</h3>
+                    <div class="code-block" id="code-d">
+                        <div id="d-line-0">reverse(S1, S2)</div>
+                        <div id="d-line-1">設 i 由 1 至 N</div>
+                        <div id="d-line-2">  <span class="answer">pop(S2)</span></div>
+                        <div id="d-line-3">reverse(S2, S1)</div>
+                    </div>
+                    <div class="controls">
+                        <button id="prev-d">上一步</button>
+                        <button id="next-d">下一步</button>
+                        <button id="reset-d" class="secondary">重設</button>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <h3>狀態顯示與解說</h3>
+                    <div class="variable-display">
+                        <h3>參數設定</h3>
+                        <label for="n-input-d">N (捨棄數量): </label>
+                        <input type="number" id="n-input-d" value="2" min="0">
+                        <p style="font-size: 0.9em; font-weight: normal; margin-top: 5px;">目標是捨棄 S1 底部的 N 個元素 (以<span style="background-color: var(--discard-color); padding: 0 4px; border-radius: 3px; color: var(--text-color);">黃色</span>標示)。</p>
+                    </div>
+                    <div class="explanation" id="explanation-d"></div>
+                    <div class="stack-visualization">
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-d-s1"></div>
+                            <div class="stack-label">堆疊 S1</div>
+                        </div>
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-d-s2"></div>
+                            <div class="stack-label">堆疊 S2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- Helper function to create a stack item element ---
+        function createStackItemElement(itemData) {
+            const item = document.createElement('div');
+            item.className = 'stack-item';
+            // Handle both object format (for problem d) and primitive format (for b, c)
+            if (typeof itemData === 'object' && itemData !== null && itemData.value !== undefined) {
+                item.textContent = itemData.value;
+                if (itemData.discard) {
+                    item.classList.add('discard-item');
+                }
+            } else {
+                item.textContent = itemData;
+            }
+            return item;
+        }
+
+        // --- Generic Multi-Stack Controller ---
+        function createMultiStackController(config) {
+            let currentStep = 0;
+            const { steps, stackEls, explanationEl, codeLines, nextBtn, prevBtn, resetBtn, initialState, tempDisplayEl } = config;
+
+            function renderStack(stackId, data) {
+                const stackEl = stackEls[stackId];
+                if (!stackEl) return;
+                stackEl.innerHTML = '';
+                data.forEach(itemData => {
+                    const item = createStackItemElement(itemData);
+                    stackEl.appendChild(item);
+                });
+            }
+
+            function updateUI() {
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = currentStep >= steps.length;
+
+                if (codeLines && codeLines.length > 0) {
+                    codeLines.forEach(line => line.classList.remove('active-line'));
+                }
+                
+                let explanationText = '';
+                if (currentStep === 0) {
+                    explanationText = initialState.explanation;
+                } else if (currentStep > steps.length) {
+                    // This case should not happen with disabled button
+                } else if (currentStep === steps.length) {
+                    explanationText = steps[steps.length - 1].endText || '所有操作已完成。';
+                    const lastStep = steps[steps.length - 1];
+                    if (lastStep && lastStep.lineId) {
+                        document.getElementById(lastStep.lineId).classList.add('active-line');
+                    }
+                } else {
+                    const step = steps[currentStep];
+                    explanationText = step.text;
+                    if (step.lineId) {
+                        document.getElementById(step.lineId).classList.add('active-line');
+                    }
+                }
+                explanationEl.innerHTML = `<p>${explanationText}</p>`;
+
+                let stateToRender;
+                if (currentStep === 0) {
+                    stateToRender = initialState;
+                } else {
+                    stateToRender = steps[currentStep - 1];
+                }
+
+                if (tempDisplayEl) {
+                    let tempValue = stateToRender.tempAfter !== undefined ? stateToRender.tempAfter : 'N/A';
+                    tempDisplayEl.textContent = tempValue;
+                }
+            }
+
+            function applyState(stepIndex) {
+                let stacksState;
+                if (stepIndex === 0) {
+                    stacksState = initialState.stacks;
+                } else {
+                    stacksState = steps[stepIndex - 1].stacksAfter;
+                }
+                for (const stackId in stackEls) {
+                    renderStack(stackId, stacksState[stackId] || []);
+                }
+            }
+
+            function reset() {
+                currentStep = 0;
+                applyState(currentStep);
+                updateUI();
+            }
+
+            function nextStep() {
+                if (currentStep >= steps.length) return;
+
+                const step = steps[currentStep];
+                let uiUpdateDelay = 100;
+
+                if (step.op === 'push') {
+                    const stackEl = stackEls[step.stack];
+                    const newItem = createStackItemElement(step.value);
+                    newItem.classList.add('push-effect');
+                    stackEl.appendChild(newItem);
+                } else if (step.op === 'pop') {
+                    const stackEl = stackEls[step.stack];
+                    const itemToPop = stackEl.lastElementChild;
+                    if (itemToPop) {
+                        itemToPop.classList.add('pop-effect');
+                        uiUpdateDelay = 560;
+                        setTimeout(() => {
+                            applyState(currentStep + 1);
+                        }, 550);
+                    } else {
+                        applyState(currentStep + 1);
+                    }
+                } else if (step.op === 'move') { // *** DEBUG FIX: New operation for combined pop/push ***
+                    const fromEl = stackEls[step.fromStack];
+                    const toEl = stackEls[step.toStack];
+                    const itemToAnimate = fromEl.lastElementChild;
+                    if (itemToAnimate) {
+                        itemToAnimate.classList.add('pop-effect');
+                        uiUpdateDelay = 600; 
+                        setTimeout(() => {
+                            applyState(currentStep + 1);
+                            const newItem = toEl.lastElementChild;
+                            if (newItem) {
+                                newItem.classList.add('push-effect');
+                            }
+                        }, 550);
+                    } else {
+                        applyState(currentStep + 1);
+                    }
+                } else {
+                    applyState(currentStep + 1);
+                }
+                
+                currentStep++;
+                setTimeout(updateUI, uiUpdateDelay);
+            }
+
+            function prevStep() {
+                if (currentStep <= 0) return;
+                currentStep--;
+                applyState(currentStep);
+                updateUI();
+            }
+
+            // Detach any previous listeners to prevent duplicates
+            const newNextBtn = nextBtn.cloneNode(true);
+            nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+            newNextBtn.addEventListener('click', nextStep);
+
+            const newPrevBtn = prevBtn.cloneNode(true);
+            prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+            newPrevBtn.addEventListener('click', prevStep);
+            
+            const newResetBtn = resetBtn.cloneNode(true);
+            resetBtn.parentNode.replaceChild(newResetBtn, resetBtn);
+            newResetBtn.addEventListener('click', reset);
+            
+            reset();
+        }
+
+        // --- Configuration for Problem (b) ---
+        createMultiStackController({
+            initialState: {
+                stacks: { s1: [20, 20, 20], s2: [] },
+                tempAfter: 'N/A',
+                explanation: '初始狀態：S1 包含三個 20，S2 為空。點擊「下一步」開始執行。'
+            },
+            steps: [
+                { lineId: 'b-line-0', tempAfter: 0, stacksAfter: { s1: [20, 20, 20], s2: [] }, text: '執行 `temp ← 0`。初始化變數 `temp`。' },
+                { lineId: 'b-line-1', tempAfter: 0, stacksAfter: { s1: [20, 20, 20], s2: [] }, text: '進入迴圈。檢查 `not isEmpty(S1)`。S1 非空，條件為真。' },
+                { lineId: 'b-line-2', op: 'pop', stack: 's1', tempAfter: 0, stacksAfter: { s1: [20, 20], s2: [] }, text: '執行 `temp ← temp + pop(S1)`。首先 `pop(S1)`，從 S1 頂部取出 20。' },
+                { lineId: 'b-line-2', tempAfter: 20, stacksAfter: { s1: [20, 20], s2: [] }, text: '接著計算 `temp + 20`，並更新 `temp`。' },
+                { lineId: 'b-line-3', tempAfter: 20, stacksAfter: { s1: [20, 20], s2: [] }, text: '檢查 `如果 temp > 25`。`20 > 25` 為假，跳過 `if` 區塊。' },
+                { lineId: 'b-line-1', tempAfter: 20, stacksAfter: { s1: [20, 20], s2: [] }, text: '返回迴圈頂部。檢查 `not isEmpty(S1)`。S1 非空，條件為真。' },
+                { lineId: 'b-line-2', op: 'pop', stack: 's1', tempAfter: 20, stacksAfter: { s1: [20], s2: [] }, text: '執行 `pop(S1)`，從 S1 頂部取出 20。' },
+                { lineId: 'b-line-2', tempAfter: 40, stacksAfter: { s1: [20], s2: [] }, text: '計算 `temp + 20`，並更新 `temp`。' },
+                { lineId: 'b-line-3', tempAfter: 40, stacksAfter: { s1: [20], s2: [] }, text: '檢查 `如果 temp > 25`。`40 > 25` 為真，進入 `if` 區塊。' },
+                { lineId: 'b-line-4', op: 'push', stack: 's2', value: 25, tempAfter: 40, stacksAfter: { s1: [20], s2: [25] }, text: '執行 `push(S2, 25)`。將 25 推入 S2。' },
+                { lineId: 'b-line-5', tempAfter: 15, stacksAfter: { s1: [20], s2: [25] }, text: '執行 `temp ← temp - 25`，並更新 `temp`。' },
+                { lineId: 'b-line-1', tempAfter: 15, stacksAfter: { s1: [20], s2: [25] }, text: '返回迴圈頂部。檢查 `not isEmpty(S1)`。S1 非空，條件為真。' },
+                { lineId: 'b-line-2', op: 'pop', stack: 's1', tempAfter: 15, stacksAfter: { s1: [], s2: [25] }, text: '執行 `pop(S1)`，從 S1 頂部取出 20。' },
+                { lineId: 'b-line-2', tempAfter: 35, stacksAfter: { s1: [], s2: [25] }, text: '計算 `temp + 20`，並更新 `temp`。' },
+                { lineId: 'b-line-3', tempAfter: 35, stacksAfter: { s1: [], s2: [25] }, text: '檢查 `如果 temp > 25`。`35 > 25` 為真，進入 `if` 區塊。' },
+                { lineId: 'b-line-4', op: 'push', stack: 's2', value: 25, tempAfter: 35, stacksAfter: { s1: [], s2: [25, 25] }, text: '執行 `push(S2, 25)`。將 25 推入 S2。' },
+                { lineId: 'b-line-5', tempAfter: 10, stacksAfter: { s1: [], s2: [25, 25] }, text: '執行 `temp ← temp - 25`，並更新 `temp`。' },
+                { lineId: 'b-line-1', tempAfter: 10, stacksAfter: { s1: [], s2: [25, 25] }, text: '返回迴圈頂部。檢查 `not isEmpty(S1)`。S1 現在為空，條件為假，迴圈結束。' },
+                { lineId: 'b-line-6', op: 'push', stack: 's2', value: 10, tempAfter: 10, stacksAfter: { s1: [], s2: [25, 25, 10] }, text: '執行迴圈後的 `push(S2, temp)`。將 `temp` 的當前值推入 S2。', endText: '所有操作執行完畢。<br><b>最終結果：S1 為空，S2 內容由底至頂為 [25, 25, 10]。</b>' }
+            ],
+            stackEls: { s1: document.getElementById('stack-b-s1'), s2: document.getElementById('stack-b-s2') },
+            explanationEl: document.getElementById('explanation-b'),
+            tempDisplayEl: document.getElementById('temp-value-b'),
+            codeLines: document.querySelectorAll('#code-b div'),
+            nextBtn: document.getElementById('next-b'),
+            prevBtn: document.getElementById('prev-b'),
+            resetBtn: document.getElementById('reset-b')
+        });
+
+        // --- Configuration for Problem (c) ---
+        // *** DEBUG FIX: The steps are now combined into single 'move' operations ***
+        createMultiStackController({
+            initialState: {
+                stacks: { s1: [1, 2, 3, 4, 5], s2: [] },
+                explanation: '初始狀態：S1 (A) 包含 [1, 2, 3, 4, 5]，S2 (B) 為空。點擊「下一步」開始執行 `reverse(S1, S2)`。'
+            },
+            steps: [
+                { lineId: 'c-line-1', stacksAfter: { s1: [1, 2, 3, 4, 5], s2: [] }, text: '檢查 `not isEmpty(A)`。S1 非空，條件為真。' },
+                { lineId: 'c-line-2', op: 'move', fromStack: 's1', toStack: 's2', value: 5, stacksAfter: { s1: [1, 2, 3, 4], s2: [5] }, text: '執行 `push(B, pop(A))`。從 S1 彈出 5 並推入 S2。' },
+                { lineId: 'c-line-1', stacksAfter: { s1: [1, 2, 3, 4], s2: [5] }, text: '返回迴圈頂部。S1 非空，條件為真。' },
+                { lineId: 'c-line-2', op: 'move', fromStack: 's1', toStack: 's2', value: 4, stacksAfter: { s1: [1, 2, 3], s2: [5, 4] }, text: '執行 `push(B, pop(A))`。從 S1 彈出 4 並推入 S2。' },
+                { lineId: 'c-line-1', stacksAfter: { s1: [1, 2, 3], s2: [5, 4] }, text: '返回迴圈頂部。S1 非空，條件為真。' },
+                { lineId: 'c-line-2', op: 'move', fromStack: 's1', toStack: 's2', value: 3, stacksAfter: { s1: [1, 2], s2: [5, 4, 3] }, text: '執行 `push(B, pop(A))`。從 S1 彈出 3 並推入 S2。' },
+                { lineId: 'c-line-1', stacksAfter: { s1: [1, 2], s2: [5, 4, 3] }, text: '返回迴圈頂部。S1 非空，條件為真。' },
+                { lineId: 'c-line-2', op: 'move', fromStack: 's1', toStack: 's2', value: 2, stacksAfter: { s1: [1], s2: [5, 4, 3, 2] }, text: '執行 `push(B, pop(A))`。從 S1 彈出 2 並推入 S2。' },
+                { lineId: 'c-line-1', stacksAfter: { s1: [1], s2: [5, 4, 3, 2] }, text: '返回迴圈頂部。S1 非空，條件為真。' },
+                { lineId: 'c-line-2', op: 'move', fromStack: 's1', toStack: 's2', value: 1, stacksAfter: { s1: [], s2: [5, 4, 3, 2, 1] }, text: '執行 `push(B, pop(A))`。從 S1 彈出 1 並推入 S2。' },
+                { lineId: 'c-line-1', stacksAfter: { s1: [], s2: [5, 4, 3, 2, 1] }, text: '返回迴圈頂部。S1 為空，條件为假，迴圈結束。', endText: '所有操作執行完畢。<br><b>最終結果：S1 為空，S2 內容由底至頂為 [5, 4, 3, 2, 1]，完成了反序操作。</b>' }
+            ],
+            stackEls: { s1: document.getElementById('stack-c-s1'), s2: document.getElementById('stack-c-s2') },
+            explanationEl: document.getElementById('explanation-c'),
+            codeLines: document.querySelectorAll('#code-c div'),
+            nextBtn: document.getElementById('next-c'),
+            prevBtn: document.getElementById('prev-c'),
+            resetBtn: document.getElementById('reset-c')
+        });
+        
+        // --- Setup for Problem (d) with User-configurable N ---
+        const nInputD = document.getElementById('n-input-d');
+        const baseStackD = [1, 2, 3, 4, 5];
+        nInputD.max = baseStackD.length;
+
+        function getInitialStackD(N) {
+            return baseStackD.map((val, index) => ({
+                value: val,
+                discard: index < N
+            }));
+        }
+
+        function generateDSteps(N, stackWithObjects) {
+            const steps = [];
+            // 1. Reverse S1 -> S2
+            const s2AfterReverse = stackWithObjects.slice().reverse();
+            steps.push({
+                lineId: 'd-line-0',
+                stacksAfter: { s1: [], s2: s2AfterReverse },
+                text: `執行 \`reverse(S1, S2)\`。將 S1 所有元素反序移至 S2。S1 原本底部的元素現在位於 S2 的頂部。`
+            });
+
+            let s2Current = s2AfterReverse.slice();
+            // 2. Pop N items from S2
+            if (N > 0) {
+                steps.push({
+                    lineId: 'd-line-1',
+                    stacksAfter: { s1: [], s2: s2Current },
+                    text: `進入迴圈，準備捨棄 S2 頂部的 N=${N} 個元素。`
+                });
+            }
+            for (let i = 1; i <= N; i++) {
+                const valueToPop = s2Current[s2Current.length - 1];
+                const s2AfterPop = s2Current.slice(0, -1);
+                steps.push({
+                    lineId: 'd-line-2',
+                    op: 'pop',
+                    stack: 's2',
+                    stacksAfter: { s1: [], s2: s2AfterPop }, // State AFTER animation
+                    text: `執行 \`pop(S2)\` (i=${i})，捨棄 S2 頂部元素 ${valueToPop.value}。`
+                });
+                s2Current = s2AfterPop;
+            }
+            if (N > 0 && steps.length > 2) {
+                 steps[steps.length - 1].text += ' 迴圈結束。';
+            }
+            
+            // 3. Reverse S2 -> S1
+            const s1Final = s2Current.slice().reverse();
+            const finalS1Text = s1Final.length > 0 ? s1Final.map(item => item.value).join(', ') : '空';
+            steps.push({
+                lineId: 'd-line-3',
+                stacksAfter: { s1: s1Final, s2: [] },
+                text: `執行 \`reverse(S2, S1)\`。將 S2 中剩餘的元素反序移回 S1，恢復其原始順序。`,
+                endText: `所有操作執行完畢。<br><b>最終結果：S1 內容為 [${finalS1Text}]，成功捨棄了底部的 ${N} 個元素。S2 為空。</b>`
+            });
+
+            return steps;
+        }
+
+        function setupDController() {
+            let N = parseInt(nInputD.value, 10);
+            if (isNaN(N) || N < 0 || N > baseStackD.length) {
+                N = 2; // Default/fallback
+                nInputD.value = N;
+            }
+            
+            const initialStackD = getInitialStackD(N);
+            const initialStackValues = initialStackD.map(item => item.value);
+
+            const dConfig = {
+                initialState: {
+                    stacks: { s1: initialStackD, s2: [] },
+                    explanation: `初始狀態: S1=[${initialStackValues.join(',')}], S2 為空。已設定 N=${N}。`
+                },
+                steps: generateDSteps(N, initialStackD),
+                stackEls: { s1: document.getElementById('stack-d-s1'), s2: document.getElementById('stack-d-s2') },
+                explanationEl: document.getElementById('explanation-d'),
+                codeLines: document.querySelectorAll('#code-d div'),
+                nextBtn: document.getElementById('next-d'),
+                prevBtn: document.getElementById('prev-d'),
+                resetBtn: document.getElementById('reset-d')
+            };
+            
+            createMultiStackController(dConfig);
+        }
+
+        // Initial setup for (d)
+        setupDController();
+        // Add event listener to re-setup the controller when N changes
+        nInputD.addEventListener('input', setupDController);
+    </script>
+
+</body>
+</html>
