@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>例題 5.2 互動解說 (增強版 v14)</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f0f8ff;
+            --text-color: #333;
+            --border-color: #ccc;
+            --highlight-color: #dc3545;
+            --success-color: #28a745;
+            --bg-color: #fff;
+            --header-bg: #4a90e2;
+            --answer-color: #d9534f;
+            --animation-highlight: #fff3cd;
+        }
+        body {
+            font-family: 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', '蘋方-繁', sans-serif;
+            background-color: #f4f7f9;
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: var(--header-bg);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .tabs {
+            display: flex;
+            background-color: #e9ecef;
+            /* === MODIFIED: Removed flex-wrap to force single line by default === */
+        }
+        .tab-button {
+            /* === MODIFIED: Changed flex property for equal distribution === */
+            flex: 1; /* Each button will take up equal space */
+            padding: 1rem;
+            border: none;
+            background-color: transparent;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            border-bottom: 3px solid transparent;
+            text-align: center;
+            white-space: nowrap; /* Prevent text from wrapping inside the button */
+        }
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            background-color: var(--bg-color);
+        }
+        .tab-content {
+            display: none;
+            padding: 1.5rem;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        h2 {
+            color: var(--header-bg);
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        .explanation-box {
+            background-color: var(--secondary-color);
+            border: 1px solid #bde0ff;
+            border-left: 5px solid var(--primary-color);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 5px;
+            min-height: 120px;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Visualization and Code Styles */
+        .interactive-area {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        
+        #partC .interactive-area,
+        #partD .interactive-area {
+            flex-direction: column;
+        }
+        
+        #partC .visualization-pane,
+        #partD .visualization-pane {
+            flex: none; 
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        #partC .visualization-pane .queue-visualization,
+        #partD .visualization-pane .queue-visualization {
+            flex: 1;
+        }
+        
+        #partC .visualization-pane .visualization-pane-header,
+        #partD .visualization-pane .visualization-pane-header {
+            margin-top: 0;
+            flex-shrink: 0;
+        }
+
+        #partC .explanation-pane,
+        #partD .explanation-pane {
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+            width: 100%;
+        }
+
+        #partC .explanation-pane > *,
+        #partD .explanation-pane > * {
+            flex: 1;
+            margin-top: 0;
+        }
+        
+        .visualization-pane-header {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .pseudocode-pane {
+            flex: 1;
+            font-size: 1.1rem;
+        }
+        .queue-visualization {
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        .queue-container {
+            display: flex;
+            position: relative;
+            min-width: 500px;
+        }
+        .queue-cell-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 2px;
+        }
+        .queue-cell {
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background-color: #f8f9fa;
+            position: relative;
+            transition: background-color 0.4s;
+        }
+        .queue-item {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.6s ease-in-out, opacity 0.6s ease-in-out, background-color 0.3s;
+        }
+        .queue-index {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        #partA .final-answer .queue-item {
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+        .op-list { list-style: none; padding: 0; }
+        .op-list li { font-family: 'Courier New', Courier, monospace; padding: 0.5rem; margin: 0.2rem 0; border-radius: 4px; transition: background-color 0.3s; }
+        .op-list li.highlight-op { background-color: #ffd; font-weight: bold; }
+
+        /* Pseudocode Styles */
+        .pseudocode-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        .pseudocode-block h3 { margin-top: 0; font-size: 1.2rem; color: var(--text-color); border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
+        .pseudocode-block .line { transition: background-color 0.3s; padding: 2px 5px; border-radius: 3px; }
+        .pseudocode-block .line.highlight-code { background-color: var(--animation-highlight); }
+        .answer-code { color: var(--answer-color); font-weight: bold; }
+        
+        .item-counter, .temp-var-display {
+            font-weight: bold;
+            font-size: 1.1rem;
+            background-color: #e9ecef;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            display: inline-block;
+            transition: background-color 0.3s, color 0.3s;
+            white-space: nowrap;
+        }
+        .item-counter.updated {
+            background-color: var(--success-color);
+            color: white;
+        }
+        .temp-var-display {
+            background-color: #fff3cd;
+            color: #856404;
+            visibility: hidden;
+        }
+        .temp-var-display.visible {
+            visibility: visible;
+        }
+
+        /* Part (b) specific */
+        .pseudocode-comparison-container { display: flex; gap: 2rem; margin-top: 1.5rem; }
+        #partB .pseudocode-block .line { opacity: 0; transition: opacity 0.5s; max-height: 0; overflow: hidden; }
+        #partB .pseudocode-block .line.visible { opacity: 1; max-height: 50px; }
+        .highlight-code-red { color: var(--highlight-color); font-weight: bold; background-color: #fff0f1; padding: 2px 4px; border-radius: 3px; }
+        .highlight-code-green { color: var(--success-color); font-weight: bold; background-color: #f0fff4; padding: 2px 4px; border-radius: 3px; }
+        #queueContainerB .queue-item { opacity: 0; transition: opacity 0.5s; }
+        #queueContainerB .queue-item.visible { opacity: 1; }
+
+        @media (max-width: 992px) {
+            .container { max-width: 90%; }
+            #partC .explanation-pane,
+            #partD .explanation-pane {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            #partC .visualization-pane,
+            #partD .visualization-pane {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+        @media (max-width: 768px) {
+            /* === NEW: Responsive rules for tabs on mobile === */
+            .tabs {
+                flex-wrap: wrap; /* Allow tabs to wrap on small screens */
+            }
+            .tab-button {
+                flex-basis: 50%; /* Make tabs form a 2x2 grid on small screens */
+                white-space: normal; /* Allow text to wrap if necessary */
+            }
+            
+            .header { font-size: 1.2rem; }
+            .tab-content { padding: 1rem; }
+            .queue-cell { width: 40px; height: 40px; font-size: 1rem; }
+            .queue-container { min-width: 420px; }
+            .interactive-area { flex-direction: column; }
+            .pseudocode-comparison-container { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">例題 5.2 互動解說 (增強版 v14)</div>
+    <div class="tabs">
+        <button class="tab-button active" onclick="showTab('partA')">解說 (a) 佇列操作</button>
+        <button class="tab-button" onclick="showTab('partB')">解說 (b) isFull 偽代碼</button>
+        <button class="tab-button" onclick="showTab('partC')">解說 (c) enq 偽代碼</button>
+        <button class="tab-button" onclick="showTab('partD')">解說 (d) deq 偽代碼</button>
+    </div>
+
+    <!-- Part (a) Content -->
+    <div id="partA" class="tab-content active">
+        <h2>(a) 佇列操作動畫</h2>
+        <p>題目要求執行以下操作，並寫出佇列 Q 的最終內容：</p>
+        <ul class="op-list" id="opListA">
+            <li>enq(Q, 20)</li><li>deq(Q)</li><li>deq(Q)</li>
+        </ul>
+        <div class="queue-visualization"><div class="queue-container" id="queueContainerA"></div></div>
+        <div class="explanation-box" id="explanationA">點擊「下一步」開始動畫解說。</div>
+        <div class="controls"><button id="nextBtnA" class="btn">下一步</button><button id="resetBtnA" class="btn btn-secondary">重設</button></div>
+    </div>
+
+    <!-- Part (b) Content -->
+    <div id="partB" class="tab-content">
+        <h2>(b) `isEmpty(Q)` vs `isFull(Q)` 偽代碼比較</h2>
+        <p>題目要求參考 `isEmpty(Q)` 的偽代碼，試寫出 `isFull(Q)` 的偽代碼。讓我們並排比較它們的邏輯。</p>
+        <div class="explanation-box" id="explanationB">讓我們透過具體的佇列範例，一步步推導並比較這兩個函式的邏輯。點擊「下一步」開始。</div>
+        <div class="queue-visualization"><div class="queue-container" id="queueContainerB"></div></div>
+        <div class="pseudocode-comparison-container">
+            <div class="pseudocode-block" id="isEmpty-code">
+                <h3>isEmpty(Q)</h3>
+                <div class="line" id="isEmpty-line-1"><b>子程式</b> isEmpty(Q)</div>
+                <div class="line" id="isEmpty-line-2">&nbsp;&nbsp;如果 <span id="isEmptyLogic">item(Q) = 0</span> 則</div>
+                <div class="line" id="isEmpty-line-3">&nbsp;&nbsp;&nbsp;&nbsp;<span id="isEmptyTrue">傳回 True</span></div>
+                <div class="line" id="isEmpty-line-4">&nbsp;&nbsp;否則</div>
+                <div class="line" id="isEmpty-line-5">&nbsp;&nbsp;&nbsp;&nbsp;<span id="isEmptyFalse">傳回 False</span></div>
+            </div>
+            <div class="pseudocode-block" id="isFull-code">
+                <h3>isFull(Q)</h3>
+                <div class="line" id="isFull-line-1"><b>子程式</b> isFull(Q)</div>
+                <div class="line" id="isFull-line-2">&nbsp;&nbsp;如果 <span id="isFullLogic">item(Q) = 10</span> 則</div>
+                <div class="line" id="isFull-line-3">&nbsp;&nbsp;&nbsp;&nbsp;<span id="isFullTrue">傳回 True</span></div>
+                <div class="line" id="isFull-line-4">&nbsp;&nbsp;否則</div>
+                <div class="line" id="isFull-line-5">&nbsp;&nbsp;&nbsp;&nbsp;<span id="isFullFalse">傳回 False</span></div>
+            </div>
+        </div>
+        <div class="controls"><button id="nextBtnB" class="btn">下一步</button><button id="resetBtnB" class="btn btn-secondary">重設</button></div>
+    </div>
+
+    <!-- Part (c) Content -->
+    <div id="partC" class="tab-content">
+        <h2>(c) `enq(Q, num)` 偽代碼解說</h2>
+        <p>`enq` (enqueue) 操作負責將一個新項目 `num` 加入到佇列 `Q` 的末尾。</p>
+        <div class="interactive-area">
+            <div class="visualization-pane">
+                <div class="queue-visualization"><div class="queue-container" id="queueContainerC"></div></div>
+                <div class="visualization-pane-header">
+                    <div class="item-counter" id="itemCountC">項目數量: 0</div>
+                </div>
+            </div>
+            <div class="explanation-pane">
+                <div class="pseudocode-block">
+                    <h3>enq(Q, num)</h3>
+                    <div class="line" id="enq-line-1"><b>子程式</b> enq(Q, num)</div>
+                    <div class="line" id="enq-line-2">&nbsp;&nbsp;如果 <span class="answer-code">isFull(Q)</span> 則</div>
+                    <div class="line" id="enq-line-3">&nbsp;&nbsp;&nbsp;&nbsp;輸出 "不成功"</div>
+                    <div class="line" id="enq-line-4">&nbsp;&nbsp;否則</div>
+                    <div class="line" id="enq-line-5">&nbsp;&nbsp;&nbsp;&nbsp;Q[item(Q) + 1] ← num</div>
+                    <div class="line" id="enq-line-6">&nbsp;&nbsp;&nbsp;&nbsp;<span class="answer-code">item(Q) ← item(Q) + 1</span></div>
+                </div>
+                <div class="explanation-box" id="explanationC">點擊「下一步」開始逐步解說 `enq(Q, 55)` 的過程。</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="prevBtnC" class="btn btn-secondary">上一步</button>
+            <button id="nextBtnC" class="btn">下一步</button>
+            <button id="resetBtnC" class="btn btn-secondary">重設</button>
+        </div>
+    </div>
+
+    <!-- Part (d) Content -->
+    <div id="partD" class="tab-content">
+        <h2>(d) `deq(Q)` 偽代碼解說</h2>
+        <p>`deq` (dequeue) 操作負責從佇列 `Q` 的前端移除一個項目，並將其傳回。</p>
+        <div class="interactive-area">
+            <div class="visualization-pane">
+                <div class="queue-visualization"><div class="queue-container" id="queueContainerD"></div></div>
+                <div class="visualization-pane-header">
+                    <div class="item-counter" id="itemCountD">項目數量: 0</div>
+                    <div class="temp-var-display" id="tempVarDisplayD">temp: ?</div>
+                </div>
+            </div>
+            <div class="explanation-pane">
+                <div class="pseudocode-block">
+                    <h3>deq(Q)</h3>
+                    <div class="line" id="deq-line-1"><b>子程式</b> deq(Q)</div>
+                    <div class="line" id="deq-line-2">&nbsp;&nbsp;如果 isEmpty(Q) 則</div>
+                    <div class="line" id="deq-line-3">&nbsp;&nbsp;&nbsp;&nbsp;輸出 "不成功"</div>
+                    <div class="line" id="deq-line-4">&nbsp;&nbsp;否則</div>
+                    <div class="line" id="deq-line-5"><span class="answer-code">&nbsp;&nbsp;&nbsp;&nbsp;temp ← Q[1]</span></div>
+                    <div class="line" id="deq-line-6"><span class="answer-code">&nbsp;&nbsp;&nbsp;&nbsp;設 i 由 1 至 item(Q)-1</span></div>
+                    <div class="line" id="deq-line-7"><span class="answer-code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Q[i] ← Q[i+1]</span></div>
+                    <div class="line" id="deq-line-8"><span class="answer-code">&nbsp;&nbsp;&nbsp;&nbsp;Q[item(Q)] = ""</span></div>
+                    <div class="line" id="deq-line-9"><span class="answer-code">&nbsp;&nbsp;&nbsp;&nbsp;item(Q) ← item(Q) - 1</span></div>
+                    <div class="line" id="deq-line-10"><span class="answer-code">&nbsp;&nbsp;&nbsp;&nbsp;傳回 temp</span></div>
+                </div>
+                <div class="explanation-box" id="explanationD">點擊「下一步」開始逐步解說 `deq(Q)` 的過程。</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="prevBtnD" class="btn btn-secondary">上一步</button>
+            <button id="nextBtnD" class="btn">下一步</button>
+            <button id="resetBtnD" class="btn btn-secondary">重設</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Tab Management ---
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
+    }
+
+    // --- Common variables & functions ---
+    const capacity = 10;
+    function highlightCodeLine(partPrefix, lineId) {
+        document.querySelectorAll(`#${partPrefix} .pseudocode-block .line`).forEach(l => l.classList.remove('highlight-code'));
+        if (lineId) {
+            document.getElementById(lineId).classList.add('highlight-code');
+        }
+    }
+    function createQueueCells(container, count, data = [], options = {}) {
+        container.innerHTML = '';
+        for (let i = 1; i <= count; i++) {
+            const cellWrapper = document.createElement('div');
+            cellWrapper.className = 'queue-cell-wrapper';
+            const cell = document.createElement('div');
+            cell.className = 'queue-cell';
+            const index = document.createElement('div');
+            index.className = 'queue-index';
+            index.textContent = i;
+
+            if (options.highlightedCellIndex === i) {
+                cell.style.backgroundColor = 'var(--animation-highlight)';
+            }
+
+            if (i - 1 < data.length) {
+                const item = document.createElement('div');
+                item.className = 'queue-item';
+                item.textContent = data[i-1];
+                if (options.fadedItemIndex === i) {
+                    item.style.opacity = '0.3';
+                }
+                cell.appendChild(item);
+            }
+            
+            cellWrapper.appendChild(cell);
+            cellWrapper.appendChild(index);
+            container.appendChild(cellWrapper);
+        }
+    }
+
+    // --- Part (a) Logic ---
+    const nextBtnA = document.getElementById('nextBtnA');
+    const resetBtnA = document.getElementById('resetBtnA');
+    const explanationA = document.getElementById('explanationA');
+    const queueContainerA = document.getElementById('queueContainerA');
+    const opListItems = document.querySelectorAll('#opListA li');
+    let stepA = 0;
+    let queueItemsA = [];
+    const initialQueueA = [93, 44, 70, 77, 29];
+    
+    function resetA() {
+        stepA = 0;
+        createQueueCells(queueContainerA, capacity, initialQueueA);
+        queueItemsA = Array.from(queueContainerA.querySelectorAll('.queue-item'));
+        
+        explanationA.innerHTML = '點擊「下一步」開始動畫解說。';
+        nextBtnA.disabled = false;
+        opListItems.forEach(li => li.classList.remove('highlight-op'));
+        queueContainerA.parentElement.classList.remove('final-answer');
+        document.querySelectorAll('#queueContainerA .queue-item').forEach(item => {
+            item.style.color = '';
+            item.style.fontWeight = '';
+        });
+    }
+
+    function nextStepA() {
+        stepA++;
+        opListItems.forEach(li => li.classList.remove('highlight-op'));
+        switch (stepA) {
+            case 1:
+                explanationA.innerHTML = '<b>步驟 1: <code>enq(Q, 20)</code></b><br>此操作會將數字 20 加入到佇列的「末端」(rear)。目前佇列有 5 個項目，所以 20 會被放在索引 6 的位置。';
+                opListItems[0].classList.add('highlight-op');
+                const newCell = queueContainerA.children[5].querySelector('.queue-cell');
+                const newItem = document.createElement('div');
+                newItem.className = 'queue-item'; newItem.textContent = 20; newItem.style.opacity = '0';
+                newCell.appendChild(newItem);
+                queueItemsA.push(newItem);
+                setTimeout(() => { newItem.style.opacity = '1'; }, 100);
+                break;
+            case 2:
+                explanationA.innerHTML = '<b>步驟 2: <code>deq(Q)</code></b><br>此操作會移除並傳回佇列「最前端」(front) 的項目。目前最前端的項目是 93。我們將它標示為移除。';
+                opListItems[1].classList.add('highlight-op');
+                queueItemsA[0].style.backgroundColor = '#ffcdd2'; queueItemsA[0].style.opacity = '0.5';
+                break;
+            case 3:
+                explanationA.innerHTML = '<b>步驟 2 (續):</b> 移除 93 後，佇列中的所有剩餘項目會向前移動一個位置，填補空缺。';
+                queueItemsA[0].style.opacity = '0';
+                const cellWidth = queueContainerA.children[0].offsetWidth;
+                for (let i = 1; i < queueItemsA.length; i++) { queueItemsA[i].style.transform = `translateX(-${cellWidth + 4}px)`; }
+                setTimeout(() => {
+                    queueItemsA.shift().remove();
+                    for (let i = 0; i < queueItemsA.length; i++) {
+                        const newParentCell = queueContainerA.children[i].querySelector('.queue-cell');
+                        newParentCell.appendChild(queueItemsA[i]);
+                        queueItemsA[i].style.transform = 'translateX(0px)';
+                    }
+                }, 700);
+                break;
+            case 4:
+                explanationA.innerHTML = '<b>步驟 3: <code>deq(Q)</code></b><br>再次執行 <code>deq(Q)</code>。現在佇列最前端的項目是 44。我們將它標示為移除。';
+                opListItems[2].classList.add('highlight-op');
+                queueItemsA[0].style.backgroundColor = '#ffcdd2'; queueItemsA[0].style.opacity = '0.5';
+                break;
+            case 5:
+                explanationA.innerHTML = '<b>步驟 3 (續):</b> 移除 44 後，剩餘項目再次向前移動。';
+                queueItemsA[0].style.opacity = '0';
+                const cellWidth2 = queueContainerA.children[0].offsetWidth;
+                for (let i = 1; i < queueItemsA.length; i++) { queueItemsA[i].style.transform = `translateX(-${cellWidth2 + 4}px)`; }
+                setTimeout(() => {
+                    queueItemsA.shift().remove();
+                    for (let i = 0; i < queueItemsA.length; i++) {
+                        const newParentCell = queueContainerA.children[i].querySelector('.queue-cell');
+                        newParentCell.appendChild(queueItemsA[i]);
+                        queueItemsA[i].style.transform = 'translateX(0px)';
+                    }
+                }, 700);
+                break;
+            case 6:
+                explanationA.innerHTML = '<b>完成!</b><br>所有操作執行完畢。佇列 Q 的最終內容為 <code>[70, 77, 29, 20]</code>，這與題目提供的答案相符。';
+                document.querySelectorAll('#queueContainerA .queue-item').forEach(item => {
+                    item.style.color = 'var(--highlight-color)';
+                    item.style.fontWeight = 'bold';
+                });
+                nextBtnA.disabled = true;
+                break;
+        }
+    }
+    nextBtnA.addEventListener('click', nextStepA);
+    resetBtnA.addEventListener('click', resetA);
+
+
+    // --- Part (b) Logic ---
+    const nextBtnB = document.getElementById('nextBtnB');
+    const resetBtnB = document.getElementById('resetBtnB');
+    const explanationB = document.getElementById('explanationB');
+    const queueContainerB = document.getElementById('queueContainerB');
+    const linesB = document.querySelectorAll('#partB .pseudocode-block .line');
+    const highlightsB = {
+        isEmptyLogic: document.getElementById('isEmptyLogic'), isEmptyTrue: document.getElementById('isEmptyTrue'), isEmptyFalse: document.getElementById('isEmptyFalse'),
+        isFullLogic: document.getElementById('isFullLogic'), isFullTrue: document.getElementById('isFullTrue'), isFullFalse: document.getElementById('isFullFalse')
+    };
+    let stepB = 0;
+    function drawQueueB(dataArray) {
+        queueContainerB.innerHTML = '';
+        for (let i = 1; i <= capacity; i++) {
+            const cellWrapper = document.createElement('div'); cellWrapper.className = 'queue-cell-wrapper';
+            const cell = document.createElement('div'); cell.className = 'queue-cell';
+            const index = document.createElement('div'); index.className = 'queue-index'; index.textContent = i;
+            if (i - 1 < dataArray.length) {
+                const item = document.createElement('div'); item.className = 'queue-item'; item.textContent = dataArray[i-1];
+                cell.appendChild(item);
+                setTimeout(() => { item.classList.add('visible'); }, i * 50);
+            }
+            cellWrapper.appendChild(cell); cellWrapper.appendChild(index); queueContainerB.appendChild(cellWrapper);
+        }
+    }
+    function clearHighlightsB() { Object.values(highlightsB).forEach(el => el.classList.remove('highlight-code-red', 'highlight-code-green')); }
+    function resetB() {
+        stepB = 0; drawQueueB([]);
+        linesB.forEach(line => line.classList.remove('visible'));
+        clearHighlightsB();
+        explanationB.innerHTML = '讓我們透過具體的佇列範例，一步步推導並比較這兩個函式的邏輯。點擊「下一步」開始。';
+        nextBtnB.disabled = false;
+    }
+    function nextStepB() {
+        stepB++; clearHighlightsB();
+        switch (stepB) {
+            case 1:
+                explanationB.innerHTML = '<b>步驟 1: 觀察結構</b><br>首先，我們同時顯示兩個函式的偽代碼。請注意它們的結構是完全相同的：都是一個 `if-else` 判斷式。';
+                linesB.forEach(line => line.classList.add('visible'));
+                break;
+            case 2:
+                explanationB.innerHTML = '<b>步驟 2: 測試 `isEmpty` (非空情況)</b><br>假設佇列 Q 有 2 個項目。`item(Q)` 傳回 <b>2</b>。<br>在左側 `isEmpty` 中，`2 = 0` 為 `False`，因此執行 `else`，傳回 `False`。';
+                drawQueueB([12, 5]);
+                highlightsB.isEmptyFalse.classList.add('highlight-code-red');
+                break;
+            case 3:
+                explanationB.innerHTML = '<b>步驟 3: 測試 `isEmpty` (空佇列情況)</b><br>現在佇列是空的。`item(Q)` 傳回 <b>0</b>。<br>在左側 `isEmpty` 中，`0 = 0` 為 `True`，因此傳回 `True`。這證明了 `isEmpty` 的邏輯是正確的。';
+                drawQueueB([]);
+                highlightsB.isEmptyLogic.classList.add('highlight-code-green'); highlightsB.isEmptyTrue.classList.add('highlight-code-green');
+                break;
+            case 4:
+                explanationB.innerHTML = '<b>步驟 4: 測試 `isFull` (滿佇列情況)</b><br>現在，我们看右側的 `isFull`。假設佇列已滿，有 10 個項目。`item(Q)` 傳回 <b>10</b>。<br>判斷式 `10 = 10` 為 `True`，因此傳回 `True`。這正是我們想要的結果！';
+                drawQueueB(Array.from({length: 10}, (_, i) => Math.floor(Math.random() * 90) + 10));
+                highlightsB.isFullLogic.classList.add('highlight-code-green'); highlightsB.isFullTrue.classList.add('highlight-code-green');
+                break;
+            case 5:
+                explanationB.innerHTML = '<b>步驟 5: 測試 `isFull` (未滿情況)</b><br>最後，看一個未滿的佇列，有 4 個項目。`item(Q)` 傳回 <b>4</b>。<br>在右側 `isFull` 中，`4 = 10` 為 `False`，因此執行 `else`，傳回 `False`。';
+                drawQueueB([7, 88, 19, 42]);
+                highlightsB.isFullFalse.classList.add('highlight-code-red');
+                break;
+            case 6:
+                explanationB.innerHTML = '<b>結論</b><br>比較左右兩邊，你會發現 `isEmpty` 和 `isFull` 的唯一差別在於 `if` 條件式中的數字：<br>• `isEmpty` 檢查項目數是否為 <b>0</b>。<br>• `isFull` 檢查項目數是否為佇列容量 <b>10</b>。';
+                highlightsB.isEmptyLogic.classList.add('highlight-code-green'); highlightsB.isFullLogic.classList.add('highlight-code-green');
+                nextBtnB.disabled = true;
+                break;
+        }
+    }
+    nextBtnB.addEventListener('click', nextStepB);
+    resetBtnB.addEventListener('click', resetB);
+
+    // --- Part (c) Logic with State History ---
+    const prevBtnC = document.getElementById('prevBtnC');
+    const nextBtnC = document.getElementById('nextBtnC');
+    const resetBtnC = document.getElementById('resetBtnC');
+    const explanationC = document.getElementById('explanationC');
+    const queueContainerC = document.getElementById('queueContainerC');
+    const itemCountC = document.getElementById('itemCountC');
+    const initialQueueC = [11, 22, 33, 44];
+    let historyC = [];
+    let currentStateC = {};
+    const totalStepsC = 5;
+
+    function getInitialStateC() {
+        return {
+            step: 0,
+            queueData: [...initialQueueC],
+            explanationHTML: `點擊「下一步」開始逐步解說 <code>enq(Q, 55)</code> 的過程。`,
+            highlightedLineId: null,
+            isItemCountUpdated: false
+        };
+    }
+
+    function applyStateC(state) {
+        currentStateC = state;
+        createQueueCells(queueContainerC, capacity, state.queueData);
+        explanationC.innerHTML = state.explanationHTML;
+        highlightCodeLine('partC', state.highlightedLineId);
+        itemCountC.textContent = `項目數量: ${state.queueData.length}`;
+        itemCountC.classList.toggle('updated', state.isItemCountUpdated);
+        
+        prevBtnC.disabled = historyC.length === 0;
+        nextBtnC.disabled = state.step >= totalStepsC;
+    }
+
+    function resetC() {
+        historyC = [];
+        applyStateC(getInitialStateC());
+    }
+
+    function nextStepC() {
+        if (currentStateC.step >= totalStepsC) return;
+        historyC.push(JSON.parse(JSON.stringify(currentStateC))); // Deep copy for history
+
+        const nextState = JSON.parse(JSON.stringify(currentStateC));
+        nextState.step++;
+        nextState.isItemCountUpdated = false;
+
+        switch(nextState.step) {
+            case 1:
+                nextState.explanationHTML = `<b>步驟 1: 檢查佇列是否已滿</b><br>執行 <code>isFull(Q)</code> 檢查。目前佇列有 ${nextState.queueData.length} 個項目，未滿 (容量為 ${capacity})。所以條件為 False。`;
+                nextState.highlightedLineId = 'enq-line-2';
+                break;
+            case 2:
+                nextState.explanationHTML = `<b>步驟 2: 執行 else 區塊</b><br>因為佇列未滿，程式跳到 <code>else</code> 區塊準備加入新項目。`;
+                nextState.highlightedLineId = 'enq-line-4';
+                break;
+            case 3:
+                nextState.explanationHTML = `<b>步驟 3: 新增項目</b><br>執行 <code>Q[item(Q) + 1] ← num</code>。目前 <code>item(Q)</code> 是 ${currentStateC.queueData.length}，所以新項目 55 會被放入索引 ${currentStateC.queueData.length + 1} 的位置。`;
+                nextState.highlightedLineId = 'enq-line-5';
+                nextState.queueData.push('55');
+                break;
+            case 4:
+                nextState.explanationHTML = `<b>步驟 4: 更新項目數量</b><br>執行 <code>item(Q) ← item(Q) + 1</code>。將項目計數器加 1。`;
+                nextState.highlightedLineId = 'enq-line-6';
+                nextState.isItemCountUpdated = true;
+                break;
+            case 5:
+                nextState.explanationHTML = `<b>完成!</b><br><code>enq(Q, 55)</code> 操作已完成。新項目 55 已成功加入佇列，且項目數量已更新。`;
+                nextState.highlightedLineId = null;
+                break;
+        }
+        applyStateC(nextState);
+    }
+    
+    function prevStepC() {
+        if (historyC.length === 0) return;
+        const prevState = historyC.pop();
+        applyStateC(prevState);
+    }
+
+    prevBtnC.addEventListener('click', prevStepC);
+    nextBtnC.addEventListener('click', nextStepC);
+    resetBtnC.addEventListener('click', resetC);
+
+    // --- Part (d) Logic with State History ---
+    const prevBtnD = document.getElementById('prevBtnD');
+    const nextBtnD = document.getElementById('nextBtnD');
+    const resetBtnD = document.getElementById('resetBtnD');
+    const explanationD = document.getElementById('explanationD');
+    const queueContainerD = document.getElementById('queueContainerD');
+    const itemCountD = document.getElementById('itemCountD');
+    const tempVarDisplayD = document.getElementById('tempVarDisplayD');
+    const initialQueueD = [70, 77, 29, 20];
+    let historyD = [];
+    let currentStateD = {};
+    const totalStepsD = 6 + (initialQueueD.length - 1); // 6 main steps + loop iterations
+
+    function getInitialStateD() {
+        return {
+            step: 0,
+            loopIndex: 0, // 0 means loop hasn't started
+            queueData: [...initialQueueD],
+            explanationHTML: `點擊「下一步」開始逐步解說 <code>deq(Q)</code> 的過程。`,
+            highlightedLineId: null,
+            tempValue: null,
+            isItemCountUpdated: false,
+            fadedItemIndex: -1,
+            highlightedCellIndex: -1,
+        };
+    }
+
+    function applyStateD(state) {
+        currentStateD = state;
+        createQueueCells(queueContainerD, capacity, state.queueData, {
+            fadedItemIndex: state.fadedItemIndex,
+            highlightedCellIndex: state.highlightedCellIndex
+        });
+        explanationD.innerHTML = state.explanationHTML;
+        highlightCodeLine('partD', state.highlightedLineId);
+        itemCountD.textContent = `項目數量: ${state.isItemCountUpdated ? state.queueData.length : initialQueueD.length}`;
+        itemCountD.classList.toggle('updated', state.isItemCountUpdated);
+        
+        if (state.tempValue !== null) {
+            tempVarDisplayD.textContent = `temp: ${state.tempValue}`;
+            tempVarDisplayD.classList.add('visible');
+        } else {
+            tempVarDisplayD.classList.remove('visible');
+        }
+
+        const currentTotalStep = state.step + Math.max(0, state.loopIndex -1);
+        prevBtnD.disabled = historyD.length === 0;
+        nextBtnD.disabled = currentTotalStep >= totalStepsD;
+    }
+
+    function resetD() {
+        historyD = [];
+        applyStateD(getInitialStateD());
+    }
+
+    function nextStepD() {
+        const currentTotalStep = currentStateD.step + Math.max(0, currentStateD.loopIndex -1);
+        if (currentTotalStep >= totalStepsD) return;
+        historyD.push(JSON.parse(JSON.stringify(currentStateD)));
+
+        const nextState = JSON.parse(JSON.stringify(currentStateD));
+        nextState.isItemCountUpdated = false;
+        nextState.highlightedCellIndex = -1;
+
+        switch(nextState.step) {
+            case 0: // Check if empty
+                nextState.explanationHTML = `<b>步驟 1: 檢查佇列是否為空</b><br>執行 <code>isEmpty(Q)</code> 檢查。目前佇列有 ${initialQueueD.length} 個項目，不為空。所以條件為 False。`;
+                nextState.highlightedLineId = 'deq-line-2';
+                nextState.step = 1;
+                break;
+            case 1: // Store front item
+                nextState.explanationHTML = `<b>步驟 2: 儲存前端項目</b><br>執行 <code>temp ← Q[1]</code>。將佇列最前端的項目 (值為 ${nextState.queueData[0]}) 儲存到暫存變數 <code>temp</code> 中。`;
+                nextState.highlightedLineId = 'deq-line-5';
+                nextState.tempValue = nextState.queueData[0];
+                nextState.fadedItemIndex = 1;
+                nextState.step = 2;
+                break;
+            case 2: // Start loop
+                nextState.explanationHTML = `<b>步驟 3: 準備移動項目</b><br>執行迴圈 <code>設 i 由 1 至 item(Q)-1</code>。因為目前有 ${initialQueueD.length} 個項目，所以迴圈會執行 ${initialQueueD.length - 1} 次 (i 從 1 到 3)。`;
+                nextState.highlightedLineId = 'deq-line-6';
+                nextState.step = 3;
+                nextState.loopIndex = 1;
+                break;
+            case 3: // Inside the loop
+                const i = nextState.loopIndex;
+                if (i >= initialQueueD.length) { // Loop finished, move to next main step
+                    nextState.step = 4;
+                    // Fall-through to execute step 4 logic immediately
+                } else {
+                    nextState.explanationHTML = `<b>步驟 4 (迴圈 i=${i}): 執行項目移動</b><br>執行 <code>Q[i] ← Q[i+1]</code>，也就是 <code>Q[${i}] ← Q[${i + 1}]</code>。<br>將索引 ${i + 1} 的內容 (${nextState.queueData[i]}) 複製到索引 ${i}。`;
+                    nextState.highlightedLineId = 'deq-line-7';
+                    nextState.queueData[i - 1] = nextState.queueData[i];
+                    nextState.highlightedCellIndex = i;
+                    nextState.loopIndex++;
+                    break; // Stay in step 3 for the next loop iteration
+                }
+            case 4: // Clear old position
+                nextState.explanationHTML = `<b>步驟 5: 清除舊位置</b><br>迴圈結束。執行 <code>Q[item(Q)] = ""</code>。這一步是為了清除移動前最後一個項目位置 (索引 ${initialQueueD.length}) 的殘留資料。`;
+                nextState.highlightedLineId = 'deq-line-8';
+                nextState.queueData.pop(); // This visually removes the last item
+                nextState.step = 5;
+                break;
+            case 5: // Update item count
+                nextState.explanationHTML = `<b>步驟 6: 更新項目數量</b><br>執行 <code>item(Q) ← item(Q) - 1</code>。將項目計數器從 ${initialQueueD.length} 減為 ${initialQueueD.length - 1}。`;
+                nextState.highlightedLineId = 'deq-line-9';
+                nextState.isItemCountUpdated = true;
+                nextState.step = 6;
+                break;
+            case 6: // Return value
+                nextState.explanationHTML = `<b>步驟 7: 傳回項目</b><br>執行 <code>傳回 temp</code>。函式完成，並傳回我們一開始儲存的值 (${nextState.tempValue})。佇列的最終狀態如上所示。`;
+                nextState.highlightedLineId = 'deq-line-10';
+                nextState.step = 7;
+                break;
+        }
+        applyStateD(nextState);
+    }
+
+    function prevStepD() {
+        if (historyD.length === 0) return;
+        const prevState = historyD.pop();
+        applyStateD(prevState);
+    }
+
+    prevBtnD.addEventListener('click', prevStepD);
+    nextBtnD.addEventListener('click', nextStepD);
+    resetBtnD.addEventListener('click', resetD);
+
+    // Initial setup
+    window.onload = () => {
+        resetA();
+        resetB();
+        resetC();
+        resetD();
+        showTab('partA'); // Start on the first tab
+    };
+</script>
+
+</body>
+</html>
