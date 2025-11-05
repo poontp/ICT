@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>堆疊演算法互動解說 (e) 最終正確版 v7</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --warning-text-color: #343a40; /* For text on yellow background */
+            --background-color: #f8f9fa;
+            --container-bg: #ffffff;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --code-bg: #e9ecef;
+            --active-line-bg: #cce5ff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: auto;
+            background-color: var(--container-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        h3 {
+             border-bottom: none;
+             color: var(--text-color);
+        }
+
+        .problem-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .code-block {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.1em;
+            white-space: pre-wrap;
+        }
+
+        .code-block div {
+            padding: 2px 5px;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .active-line {
+            background-color: var(--active-line-bg) !important;
+            font-weight: bold;
+        }
+        
+        .explanation {
+            background-color: #f0f7ff;
+            border-left: 5px solid var(--primary-color);
+            padding: 15px;
+            margin-top: 20px;
+            min-height: 50px;
+        }
+
+        .variable-display {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #fffbe6;
+            border: 1px solid #ffe58f;
+            border-radius: 5px;
+        }
+        .variable-display h3 {
+            margin: 0 0 5px 0;
+            padding: 0;
+            border: none;
+            font-size: 1.1em;
+            color: #495057;
+        }
+        .variable-display p, .variable-display div {
+            margin: 5px 0;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .variable-display span {
+            color: var(--danger-color);
+        }
+        .variable-display input {
+            font-size: 1.1em;
+            width: 60px;
+            padding: 2px 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            margin-left: 5px;
+        }
+        .variable-display label {
+            font-weight: normal;
+            font-size: 1em;
+        }
+
+        .stack-visualization {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+
+        .stack-display-area {
+            position: relative;
+            width: 100px;
+            height: 350px;
+            text-align: center;
+        }
+
+        .stack-container {
+            border: 2px solid var(--secondary-color);
+            border-top: none;
+            width: 100%;
+            height: 300px;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
+            position: absolute;
+            bottom: 25px;
+            background-color: #fdfdfd;
+        }
+
+        .stack-label {
+            font-weight: bold;
+            color: var(--secondary-color);
+            position: absolute;
+            width: 100%;
+            bottom: 0;
+        }
+
+        .stack-item {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            padding: 10px;
+            border-top: 2px solid var(--container-bg);
+            box-sizing: border-box;
+            animation-duration: 0.6s;
+            animation-fill-mode: forwards;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .selected-item {
+            background-color: var(--warning-color);
+            color: var(--warning-text-color);
+        }
+        
+        @keyframes push-animation {
+            from { transform: translateY(-50px) scale(0.8); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        
+        @keyframes pop-animation {
+            from { 
+                transform: translateY(0) scale(1); 
+                opacity: 1; 
+            }
+            to { 
+                transform: translateY(-50px) scale(0.8); 
+                opacity: 0; 
+            }
+        }
+
+        .push-effect { animation-name: push-animation; }
+        .pop-effect { animation-name: pop-animation; }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        button.secondary {
+             background-color: var(--secondary-color);
+        }
+
+        button:hover:not(:disabled) {
+            opacity: 0.8;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .problem-container { flex-direction: column; }
+            body { padding: 10px; }
+            .main-container { padding: 15px; }
+            .stack-visualization { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <h1>(e) 正確邏輯演算法分析 (v7 - 流暢動畫版)</h1>
+        <p>此版本更新：實現了您的建議，將 `pop` 和 `push` 合併為單一的「轉移」動畫。現在只需點擊一次「下一步」即可看到膠箱從一個堆疊移動到另一個堆疊的完整過程。</p>
+
+        <section id="problem-e-modified">
+            <div class="problem-container">
+                <div class="left-panel">
+                    <h3>互動演示 (n, k 可由使用者設定)</h3>
+                    <div class="code-block" id="code-e-modified">
+                        <div id="em-line-0">子程式 get(n, k)</div>
+                        <div id="em-line-1">  t ← 堆疊 S1 的膠箱數量</div>
+                        <div id="em-line-2">  定義堆疊 S3</div>
+                        <div id="em-line-3">  設 i 由 t 下至 n</div>
+                        <div id="em-line-4">    push(S3, pop(S1))</div>
+                        <div id="em-line-5">  設 i 由 1 至 k</div>
+                        <div id="em-line-6">    push(S2, pop(S3))</div>
+                        <div id="em-line-7">  reverse(S3, S1)</div>
+                    </div>
+                    <div class="explanation" id="explanation-e-modified"></div>
+                    <div class="controls">
+                        <button id="prev-e-modified">上一步</button>
+                        <button id="next-e-modified">下一步</button>
+                        <button id="reset-e-modified" class="secondary">重設</button>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <h3>堆疊 S1, S2, S3 狀態</h3>
+                    <div class="variable-display">
+                        <h3>參數與變數</h3>
+                        <div>
+                            <label for="n-input-em">n (目標層數):</label>
+                            <input type="number" id="n-input-em" value="3" min="1">
+                        </div>
+                        <div>
+                            <label for="k-input-em">k (取出數量):</label>
+                            <input type="number" id="k-input-em" value="2" min="0">
+                        </div>
+                        <p>t: <span id="temp-value-e-modified">N/A</span></p>
+                    </div>
+                    <div class="stack-visualization">
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-em-s1"></div>
+                            <div class="stack-label">堆疊 S1</div>
+                        </div>
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-em-s2"></div>
+                            <div class="stack-label">堆疊 S2</div>
+                        </div>
+                        <div class="stack-display-area">
+                            <div class="stack-container" id="stack-em-s3"></div>
+                            <div class="stack-label">堆疊 S3</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    (function() {
+        // --- DOM Elements ---
+        const nInput = document.getElementById('n-input-em');
+        const kInput = document.getElementById('k-input-em');
+        const nextBtn = document.getElementById('next-e-modified');
+        const prevBtn = document.getElementById('prev-e-modified');
+        const resetBtn = document.getElementById('reset-e-modified');
+        const explanationEl = document.getElementById('explanation-e-modified');
+        const tempDisplayEl = document.getElementById('temp-value-e-modified');
+        const codeLines = document.querySelectorAll('#code-e-modified div');
+        const stackEls = {
+            s1: document.getElementById('stack-em-s1'),
+            s2: document.getElementById('stack-em-s2'),
+            s3: document.getElementById('stack-em-s3')
+        };
+
+        // --- State Variables ---
+        let currentStep = 0;
+        let steps = [];
+        let selectedItemsList = []; 
+        let initialState = {};
+        const initialStackData = [1, 2, 3, 4, 5, 6, 7];
+
+        // --- MODIFIED: generateEModifiedSteps now creates 'transfer' operations ---
+        function generateEModifiedSteps(n, k, stack) {
+            const localSteps = [];
+            const selectedValues = [];
+            let currentS1 = stack.slice();
+            let currentS2 = [];
+            let currentS3 = [];
+            const t = stack.length;
+
+            localSteps.push({ lineId: 'em-line-0', stacksAfter: { s1: currentS1.slice(), s2: [], s3: [] }, text: `子程式 \`get(n, k)\` 開始執行，傳入參數 n=${n}, k=${k}。` });
+            localSteps.push({ lineId: 'em-line-1', tempAfter: t, stacksAfter: { s1: currentS1.slice(), s2: [], s3: [] }, text: `計算 S1 的膠箱數量，存入變數 t。t = ${t}。` });
+            localSteps.push({ lineId: 'em-line-2', tempAfter: t, stacksAfter: { s1: currentS1.slice(), s2: [], s3: [] }, text: `定義一個空的輔助堆疊 S3。` });
+
+            const loopCount1 = t - n + 1;
+            if (loopCount1 > 0) {
+                localSteps.push({ lineId: 'em-line-3', tempAfter: t, stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() }, text: `進入迴圈，將 S1 中第 ${n} 層(從頂部算)及以上的元素移至 S3。` });
+            }
+            for (let i = 1; i <= loopCount1; i++) {
+                const val = currentS1.pop();
+                currentS3.push(val);
+                localSteps.push({
+                    lineId: 'em-line-4',
+                    op: 'transfer', from: 's1', to: 's3', value: val,
+                    tempAfter: t,
+                    stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() },
+                    text: `從 S1 彈出膠箱 ${val} 並推入 S3 (迴圈第 ${i} 次)。`
+                });
+            }
+            if (loopCount1 > 0) localSteps[localSteps.length - 1].text += ' 第一個迴圈結束。';
+
+            if (k > 0) {
+                 localSteps.push({ lineId: 'em-line-5', tempAfter: t, stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() }, text: `進入第二個迴圈，準備從 S3 中取出 k=${k} 個膠箱。` });
+            }
+            for (let i = 1; i <= k; i++) {
+                if (currentS3.length === 0) {
+                    localSteps.push({ lineId: 'em-line-6', tempAfter: t, stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() }, text: `嘗試從 S3 取出膠箱 (i=${i})，但 S3 已空！操作提前結束。` });
+                    break;
+                }
+                const val = currentS3.pop();
+                currentS2.push(val);
+                selectedValues.push(val);
+                localSteps.push({
+                    lineId: 'em-line-6',
+                    op: 'transfer', from: 's3', to: 's2', value: val,
+                    tempAfter: t,
+                    stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() },
+                    text: `從 S3 取出膠箱 ${val} 並推入 S2 (i=${i})。此膠箱被選中，標示為黃色。`
+                });
+            }
+            if (k > 0) localSteps[localSteps.length - 1].text += ' 第二個迴圈結束。';
+            
+            const s3ToReverse = currentS3.slice().reverse();
+            if (s3ToReverse.length > 0) {
+                localSteps.push({ lineId: 'em-line-7', tempAfter: t, stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() }, text: `準備執行 \`reverse(S3, S1)\`，將 S3 中剩餘的膠箱移回 S1。` });
+                while (currentS3.length > 0) {
+                    const val = currentS3.pop();
+                    currentS1.push(val);
+                     localSteps.push({
+                        lineId: 'em-line-7',
+                        op: 'transfer', from: 's3', to: 's1', value: val,
+                        tempAfter: t,
+                        stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() },
+                        text: `將膠箱 ${val} 從 S3 移回 S1。`
+                    });
+                }
+            }
+
+            const finalS1Text = currentS1.length > 0 ? currentS1.slice().reverse().join(', ') : '空';
+            const finalS2Text = currentS2.length > 0 ? currentS2.slice().reverse().join(', ') : '空';
+            const lastStepText = `所有操作執行完畢。<br><b>最終結果：S1=[${finalS1Text}], S2=[${finalS2Text}]。<br>成功從第 ${n} 層(頂部算起)開始，取出了 ${currentS2.length} 個膠箱。</b>`;
+
+            if (localSteps.length > 0) {
+                localSteps[localSteps.length - 1].endText = lastStepText;
+            } else {
+                 localSteps.push({ lineId: 'em-line-7', tempAfter: t, stacksAfter: { s1: currentS1.slice(), s2: currentS2.slice(), s3: currentS3.slice() }, text: lastStepText });
+            }
+            return { steps: localSteps, selected: selectedValues };
+        }
+
+        function renderStack(stackId, data, selectedItems, animation = {}) {
+            const stackEl = stackEls[stackId];
+            if (!stackEl) return;
+            
+            const createItem = (value) => {
+                const item = document.createElement('div');
+                item.className = 'stack-item';
+                if (selectedItems.includes(value)) {
+                    item.classList.add('selected-item');
+                }
+                item.textContent = value;
+                return item;
+            };
+
+            if (animation.op === 'push') {
+                const newItem = createItem(animation.value);
+                newItem.classList.add('push-effect');
+                stackEl.appendChild(newItem);
+            } else if (animation.op === 'pop') {
+                const itemToPop = stackEl.lastElementChild;
+                if (itemToPop) {
+                    itemToPop.classList.add('pop-effect');
+                    // Change color to danger on pop for better visibility
+                    itemToPop.style.backgroundColor = 'var(--danger-color)';
+                    itemToPop.style.color = 'white';
+                }
+            } else {
+                stackEl.innerHTML = '';
+                data.forEach(val => {
+                    const item = createItem(val);
+                    stackEl.appendChild(item);
+                });
+            }
+        }
+
+        function applyState(stepIndex) {
+            const stateToRender = stepIndex === 0 ? initialState : steps[stepIndex - 1];
+            const stacks = stateToRender.stacksAfter || stateToRender.stacks;
+            for (const stackId in stackEls) {
+                renderStack(stackId, stacks[stackId] || [], selectedItemsList);
+            }
+        }
+
+        function updateUI() {
+            prevBtn.disabled = currentStep === 0;
+            nextBtn.disabled = currentStep >= steps.length;
+
+            codeLines.forEach(line => line.classList.remove('active-line'));
+            
+            let explanationText = '';
+            let lineToHighlight = null;
+            let tempValue = 'N/A';
+            
+            if (currentStep === 0) {
+                explanationText = initialState.explanation;
+                tempValue = initialState.tempAfter !== undefined ? initialState.tempAfter : 'N/A';
+            } else {
+                const step = steps[currentStep - 1];
+                explanationText = step.text;
+                lineToHighlight = step.lineId;
+                tempValue = step.tempAfter !== undefined ? step.tempAfter : tempDisplayEl.textContent;
+
+                if (currentStep === steps.length && step.endText) {
+                    explanationText = step.endText;
+                }
+            }
+
+            explanationEl.innerHTML = `<p>${explanationText}</p>`;
+            if (lineToHighlight) {
+                document.getElementById(lineToHighlight).classList.add('active-line');
+            }
+            tempDisplayEl.textContent = tempValue;
+        }
+
+        // --- MODIFIED: nextStep now handles 'transfer' operations ---
+        function nextStep() {
+            if (currentStep >= steps.length) return;
+
+            const step = steps[currentStep];
+            const delay = (step.op) ? 600 : 0;
+
+            if (step.op === 'transfer') {
+                // Get the state *before* this step to correctly render animations
+                const stacksBefore = (currentStep === 0) ? initialState.stacks : steps[currentStep-1].stacksAfter;
+                
+                // Render the "before" state to ensure animations start from the correct visual state
+                for (const stackId in stackEls) {
+                     renderStack(stackId, stacksBefore[stackId] || [], selectedItemsList);
+                }
+
+                // Trigger the pop animation on the 'from' stack
+                renderStack(step.from, [], selectedItemsList, { op: 'pop', value: step.value });
+                
+                // Trigger the push animation on the 'to' stack
+                // Note: The data array passed here is empty because we are just adding one animated element.
+                renderStack(step.to, [], selectedItemsList, { op: 'push', value: step.value });
+
+            } else if (step.op) { // Fallback for any other potential operations
+                renderStack(step.stack, [], selectedItemsList, { op: step.op, value: step.value });
+            }
+            
+            currentStep++;
+            
+            setTimeout(() => {
+                applyState(currentStep);
+                updateUI();
+            }, delay);
+        }
+
+        function prevStep() {
+            if (currentStep <= 0) return;
+            currentStep--;
+            applyState(currentStep);
+            updateUI();
+        }
+
+        function initialize() {
+            let n = parseInt(nInput.value, 10);
+            let k = parseInt(kInput.value, 10);
+
+            nInput.max = initialStackData.length;
+            if (isNaN(n) || n < 1) n = 1;
+            if (n > initialStackData.length) n = initialStackData.length;
+            nInput.value = n;
+
+            const maxK = initialStackData.length - n + 1;
+            kInput.max = maxK < 0 ? 0 : maxK;
+            if (isNaN(k) || k < 0) k = 0;
+            if (k > kInput.max) k = kInput.max;
+            kInput.value = k;
+
+            const result = generateEModifiedSteps(n, k, initialStackData);
+            steps = result.steps;
+            selectedItemsList = result.selected;
+            
+            initialState = {
+                stacks: { s1: initialStackData.slice(), s2: [], s3: [] },
+                tempAfter: 'N/A',
+                explanation: `初始狀態: S1=[${initialStackData.slice().reverse().join(',')}], S2, S3 為空。參數 n=${n}, k=${k}。點擊“下一步”開始。`
+            };
+            
+            currentStep = 0;
+            applyState(currentStep);
+            updateUI();
+        }
+
+        // --- Event Listeners ---
+        nextBtn.addEventListener('click', nextStep);
+        prevBtn.addEventListener('click', prevStep);
+        resetBtn.addEventListener('click', initialize);
+        nInput.addEventListener('input', initialize);
+        kInput.addEventListener('input', initialize);
+
+        // --- Initial Run ---
+        initialize();
+
+    })();
+    </script>
+
+</body>
+</html>
