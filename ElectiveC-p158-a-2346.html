@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>堆疊操作互動解說 (含上一步/下一步)</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --container-bg: #ffffff;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --code-bg: #e9ecef;
+            --active-line-bg: #cce5ff;
+            --popped-color: #dc3545;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: auto;
+            background-color: var(--container-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .problem-section {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .code-panel, .stack-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .code-block {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1.1em;
+        }
+
+        .code-block div {
+            padding: 5px;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+
+        .active-line {
+            background-color: var(--active-line-bg) !important;
+            font-weight: bold;
+        }
+
+        /* New wrapper for stack and its labels for better positioning */
+        .stack-display-area {
+            position: relative;
+            width: 120px;
+            margin: 20px auto 0;
+            height: 400px; /* Increased height to accommodate labels */
+        }
+
+        .stack-container {
+            border: 2px solid var(--secondary-color);
+            border-top: none;
+            width: 100%;
+            height: 350px;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
+            position: absolute;
+            bottom: 25px; /* Position container to make space for top label */
+        }
+
+        .stack-label-top {
+            text-align: center;
+            font-weight: bold;
+            color: var(--secondary-color);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        .stack-label-bottom {
+            position: absolute;
+            bottom: 35px; /* Align with the first item's vertical center */
+            left: 130px; /* Position to the right of the container */
+            white-space: nowrap; /* Prevent text from wrapping */
+            font-size: 0.9em;
+            color: var(--secondary-color);
+        }
+
+        .stack-item {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            padding: 10px;
+            border-top: 2px solid var(--container-bg);
+            box-sizing: border-box;
+            animation-duration: 0.5s;
+            animation-fill-mode: forwards;
+        }
+        
+        .explanation {
+            background-color: #f0f7ff;
+            border-left: 5px solid var(--primary-color);
+            padding: 15px;
+            margin-top: 20px;
+            min-height: 80px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        button.secondary {
+             background-color: var(--secondary-color);
+        }
+
+        button:hover:not(:disabled) {
+            opacity: 0.8;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 40px 0;
+        }
+        
+        /* Animations */
+        @keyframes push-animation {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes pop-animation {
+            from { transform: translateY(0); opacity: 1; background-color: var(--popped-color); }
+            to { transform: translateY(-50px); opacity: 0; background-color: var(--popped-color); }
+        }
+
+        .push-effect {
+            animation-name: push-animation;
+        }
+
+        .pop-effect {
+            animation-name: pop-animation;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .problem-section {
+                flex-direction: column;
+            }
+            body {
+                padding: 10px;
+            }
+            .main-container {
+                padding: 15px;
+            }
+            .stack-display-area {
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <h1>堆疊 (Stack) 操作互動解說</h1>
+        <p>此頁面將逐步演示題目中對堆疊 S1 和 S2 的操作過程。請點擊「上一步」或「下一步」按鈕來觀看每一步的動畫和解說。</p>
+        <p>堆疊是一種「後進先出 (Last-In, First-Out, LIFO)」的資料結構，就像疊盤子一樣，最後放上去的盤子會最先被拿走。</p>
+
+        <hr>
+
+        <!-- Problem (a)(i) -->
+        <section id="problem-s1">
+            <h2>(a) (i) 堆疊 S1 的操作</h2>
+            <div class="problem-section">
+                <div class="code-panel">
+                    <h3>執行程式碼</h3>
+                    <div class="code-block" id="code-s1">
+                        <div id="s1-line-0">push(S1, 30)</div>
+                        <div id="s1-line-1">push(S1, 10)</div>
+                        <div id="s1-line-2">push(S1, 10)</div>
+                        <div id="s1-line-3">push(S1, pop(S1)+pop(S1))</div>
+                        <div id="s1-line-4">push(S1, 25)</div>
+                    </div>
+                    <div class="explanation" id="explanation-s1"></div>
+                    <div class="controls">
+                        <button id="prev-s1">上一步</button>
+                        <button id="next-s1">下一步</button>
+                        <button id="reset-s1" class="secondary">重設</button>
+                    </div>
+                </div>
+                <div class="stack-panel">
+                    <h3>堆疊 S1 狀態</h3>
+                    <div class="stack-display-area">
+                        <div class="stack-container" id="stack-s1"></div>
+                        <div class="stack-label-bottom">← 堆疊底部</div>
+                        <div class="stack-label-top">堆疊頂部 ↑</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- Problem (a)(ii) -->
+        <section id="problem-s2">
+            <h2>(a) (ii) 堆疊 S2 的操作</h2>
+            <div class="problem-section">
+                <div class="code-panel">
+                    <h3>執行程式碼</h3>
+                    <div class="code-block" id="code-s2">
+                        <div id="s2-line-0">push(S2, 20)</div>
+                        <div id="s2-line-1">push(S2, 10)</div>
+                        <div id="s2-line-2">pop(S2)</div>
+                        <div id="s2-line-3">如果 isEmpty(S2) 則</div>
+                        <div id="s2-line-4" style="padding-left: 20px;">push(S2, 15)</div>
+                        <div id="s2-line-5">否則</div>
+                        <div id="s2-line-6" style="padding-left: 20px;">push(S2, 25)</div>
+                    </div>
+                    <div class="explanation" id="explanation-s2"></div>
+                    <div class="controls">
+                        <button id="prev-s2">上一步</button>
+                        <button id="next-s2">下一步</button>
+                        <button id="reset-s2" class="secondary">重設</button>
+                    </div>
+                </div>
+                <div class="stack-panel">
+                    <h3>堆疊 S2 狀態</h3>
+                    <div class="stack-display-area">
+                        <div class="stack-container" id="stack-s2"></div>
+                        <div class="stack-label-bottom">← 堆疊底部</div>
+                        <div class="stack-label-top">堆疊頂部 ↑</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- Generic Stack Controller ---
+        function createStackController(config) {
+            let currentStep = 0;
+            const { steps, stackEl, explanationEl, codeLines, nextBtn, prevBtn, resetBtn } = config;
+
+            function updateUI() {
+                // Update buttons
+                prevBtn.disabled = currentStep === 0;
+                nextBtn.disabled = currentStep === steps.length;
+
+                // Update explanation and code highlight
+                codeLines.forEach(line => line.classList.remove('active-line'));
+                
+                if (currentStep === steps.length) {
+                    // End of sequence
+                    const lastStep = steps[steps.length - 1];
+                    explanationEl.innerHTML = `<p>${lastStep.endText}</p>`;
+                } else {
+                    const step = steps[currentStep];
+                    explanationEl.innerHTML = `<p>${step.text}</p>`;
+                    if (step.line !== -1) {
+                        document.getElementById(step.lineId).classList.add('active-line');
+                    }
+                }
+            }
+
+            function reset() {
+                currentStep = 0;
+                stackEl.innerHTML = '';
+                updateUI();
+            }
+
+            function nextStep() {
+                if (currentStep >= steps.length) return;
+
+                const step = steps[currentStep];
+                if (step.op === 'push') {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'stack-item push-effect';
+                    newItem.textContent = step.value;
+                    stackEl.appendChild(newItem);
+                } else if (step.op === 'pop') {
+                    const itemToPop = stackEl.lastElementChild;
+                    if (itemToPop) {
+                        itemToPop.classList.add('pop-effect');
+                        setTimeout(() => itemToPop.remove(), 500);
+                    }
+                }
+                
+                currentStep++;
+                // Use a timeout to sync UI update with animation
+                setTimeout(updateUI, 100);
+            }
+
+            function prevStep() {
+                if (currentStep <= 0) return;
+
+                currentStep--;
+                const stepToUndo = steps[currentStep];
+
+                if (stepToUndo.op === 'push') {
+                    const itemToPop = stackEl.lastElementChild;
+                    if (itemToPop) itemToPop.remove();
+                } else if (stepToUndo.op === 'pop') {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'stack-item'; // No animation on reverse
+                    newItem.textContent = stepToUndo.poppedValue;
+                    stackEl.appendChild(newItem);
+                }
+                updateUI();
+            }
+
+            nextBtn.addEventListener('click', nextStep);
+            prevBtn.addEventListener('click', prevStep);
+            resetBtn.addEventListener('click', reset);
+            
+            // Initial call
+            reset();
+        }
+
+        // --- Configuration for Stack S1 ---
+        const s1Config = {
+            steps: [
+                { line: 0, lineId: 's1-line-0', op: 'push', value: 30, text: '執行 `push(S1, 30)`。將一個儲存了 30 的膠箱放入堆疊 S1。' },
+                { line: 1, lineId: 's1-line-1', op: 'push', value: 10, text: '執行 `push(S1, 10)`。將一個儲存了 10 的膠箱放入堆疊 S1。' },
+                { line: 2, lineId: 's1-line-2', op: 'push', value: 10, text: '執行 `push(S1, 10)`。再次將一個儲存了 10 的膠箱放入堆疊 S1。' },
+                { line: 3, lineId: 's1-line-3', op: 'eval_pop1', text: '執行 `push(S1, pop(S1)+pop(S1))`。首先計算括號內的 `pop(S1)`。' },
+                { line: 3, lineId: 's1-line-3', op: 'pop', poppedValue: 10, text: '第一個 `pop(S1)`：從堆疊頂部取出膠箱，其值為 10。' },
+                { line: 3, lineId: 's1-line-3', op: 'pop', poppedValue: 10, text: '第二個 `pop(S1)`：再次從堆疊頂部取出膠箱，其值為 10。' },
+                { line: 3, lineId: 's1-line-3', op: 'eval_add', text: '計算兩個取出值之和：10 + 10 = 20。' },
+                { line: 3, lineId: 's1-line-3', op: 'push', value: 20, text: '將計算結果 20 存入堆疊 S1。`push(S1, 20)`' },
+                { line: 4, lineId: 's1-line-4', op: 'push', value: 25, text: '執行 `push(S1, 25)`。將一個儲存了 25 的膠箱放入堆疊 S1。', endText: '所有操作執行完畢。堆疊 S1 的最終內容由底至頂為：30, 20, 25。' }
+            ],
+            stackEl: document.getElementById('stack-s1'),
+            explanationEl: document.getElementById('explanation-s1'),
+            codeLines: document.querySelectorAll('#code-s1 div'),
+            nextBtn: document.getElementById('next-s1'),
+            prevBtn: document.getElementById('prev-s1'),
+            resetBtn: document.getElementById('reset-s1')
+        };
+        
+        // --- Configuration for Stack S2 ---
+        const s2Config = {
+            steps: [
+                { line: 0, lineId: 's2-line-0', op: 'push', value: 20, text: '執行 `push(S2, 20)`。將 20 存入堆疊 S2。' },
+                { line: 1, lineId: 's2-line-1', op: 'push', value: 10, text: '執行 `push(S2, 10)`。將 10 存入堆疊 S2。' },
+                { line: 2, lineId: 's2-line-2', op: 'pop', poppedValue: 10, text: '執行 `pop(S2)`。從堆疊頂部取出膠箱 (值為 10)，此處取出的值被捨棄。' },
+                { line: 3, lineId: 's2-line-3', op: 'eval_if', text: '執行 `如果 isEmpty(S2) 則`。檢查堆疊 S2 是否為空。' },
+                { line: 3, lineId: 's2-line-3', op: 'eval_if_result', text: '堆疊 S2 中還有一個元素 20，所以不為空。`isEmpty(S2)` 返回 False。' },
+                { line: 5, lineId: 's2-line-5', op: 'else', text: '條件為 False，跳到 `否則` 區塊。' },
+                { line: 6, lineId: 's2-line-6', op: 'push', value: 25, text: '執行 `push(S2, 25)`。將 25 存入堆疊 S2。', endText: '所有操作執行完畢。堆疊 S2 的最終內容由底至頂為：20, 25。' }
+            ],
+            stackEl: document.getElementById('stack-s2'),
+            explanationEl: document.getElementById('explanation-s2'),
+            codeLines: document.querySelectorAll('#code-s2 div'),
+            nextBtn: document.getElementById('next-s2'),
+            prevBtn: document.getElementById('prev-s2'),
+            resetBtn: document.getElementById('reset-s2')
+        };
+
+        // Initialize both controllers
+        createStackController(s1Config);
+        createStackController(s2Config);
+    </script>
+
+</body>
+</html>
