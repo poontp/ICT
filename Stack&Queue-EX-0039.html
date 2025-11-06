@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 堆疊和隊列練習</title>
+    <style>
+        :root {
+            --primary-bg: #f0f4f8;
+            --secondary-bg: #ffffff;
+            --text-color: #333;
+            --code-bg: #2d2d2d;
+            --code-color: #f8f8f2;
+            --accent-color: #007bff;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .quiz-container {
+            background-color: var(--secondary-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px;
+            overflow: hidden;
+        }
+
+        .quiz-header {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .quiz-header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        .quiz-body {
+            padding: 20px 30px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 10px;
+            background-color: var(--accent-color);
+            border-radius: 5px;
+            transition: width 0.3s ease-in-out;
+        }
+
+        #question-counter {
+            text-align: right;
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        #question-text {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-color);
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 1em;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            background-color: var(--primary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            text-align: left;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: #e2e6ea;
+        }
+        
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: var(--correct-color);
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .option-btn.incorrect {
+            background-color: #f8d7da;
+            border-color: var(--incorrect-color);
+            color: #721c24;
+            font-weight: bold;
+        }
+
+        .feedback-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none; /* Hidden by default */
+        }
+
+        .feedback-container.correct {
+            background-color: #d4edda;
+            border-left: 5px solid var(--correct-color);
+        }
+
+        .feedback-container.incorrect {
+            background-color: #f8d7da;
+            border-left: 5px solid var(--incorrect-color);
+        }
+
+        .feedback-container h3 {
+            margin-top: 0;
+        }
+
+        #explanation {
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: flex-end;
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        #next-btn {
+            padding: 10px 25px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+        }
+
+        #next-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .results-container {
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .results-container h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .results-container p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        #restart-btn {
+            padding: 12px 30px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-container">
+        <div class="quiz-header">
+            <h1>Python 堆疊和隊列練習</h1>
+        </div>
+
+        <div id="quiz-body" class="quiz-body">
+            <div class="progress-bar-container">
+                <div id="progress-bar"></div>
+            </div>
+            <p id="question-counter"></p>
+            <p id="question-text"></p>
+            <pre id="code-block" style="display:none;"></pre>
+            <div id="options-container" class="options-container"></div>
+            
+            <div id="feedback-container" class="feedback-container">
+                <h3 id="feedback-title"></h3>
+                <p id="explanation"></p>
+            </div>
+        </div>
+
+        <div id="results-container" class="results-container" style="display:none;">
+            <h2>測驗完成！</h2>
+            <p id="score-text"></p>
+            <button id="restart-btn">重新測驗</button>
+        </div>
+
+        <div id="navigation" class="navigation">
+            <button id="next-btn">下一題</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "1. 以下代碼的輸出是什麼？",
+                code: "stack = []\nstack.append(1)\nstack.append(2)\nstack.append(3)\nprint(stack.pop())",
+                options: ["A) 1", "B) 2", "C) 3", "D) 報錯"],
+                answer: "C) 3",
+                explanation: "這段代碼模擬了堆疊（Stack）的行為。堆疊是「後進先出」（LIFO）的資料結構。\n1. `stack.append(1)`: 堆疊內容為 `[1]`\n2. `stack.append(2)`: 堆疊內容為 `[1, 2]`\n3. `stack.append(3)`: 堆疊內容為 `[1, 2, 3]`\n4. `stack.pop()`: 移除並返回堆疊最頂端的元素，也就是最後加入的 `3`。因此，輸出為 `3`。"
+            },
+            {
+                question: "2. 執行以下代碼後，隊列中的內容是什麼？",
+                code: "queue = []\nqueue.append('X')\nqueue.append('Y')\nqueue.pop(0)\nqueue.append('Z')\nqueue.append('W')\nqueue.pop(0)",
+                options: ["A) ['Z', 'W']", "B) ['Y', 'Z', 'W']", "C) ['Z']", "D) ['W']"],
+                answer: "A) ['Z', 'W']",
+                explanation: "這段代碼模擬了隊列（Queue）的行為。隊列是「先進先出」（FIFO）的資料結構。我們使用 `append()` 來加入元素到隊列尾部，`pop(0)` 來從隊列頭部移除元素。\n1. `queue.append('X')`: 隊列為 `['X']`\n2. `queue.append('Y')`: 隊列為 `['X', 'Y']`\n3. `queue.pop(0)`: 移除 'X'，隊列為 `['Y']`\n4. `queue.append('Z')`: 隊列為 `['Y', 'Z']`\n5. `queue.append('W')`: 隊列為 `['Y', 'Z', 'W']`\n6. `queue.pop(0)`: 移除 'Y'，隊列為 `['Z', 'W']`\n最終隊列內容為 `['Z', 'W']`。"
+            },
+            {
+                question: "3. 以下哪個操作序列會產生堆疊下溢錯誤（stack underflow）？",
+                code: null,
+                options: ["A) stack = []; stack.pop()", "B) stack = [1]; stack.pop(); stack.pop()", "C) stack = []; stack.append(1)", "D) stack = [1]; stack.append(2)"],
+                answer: "A) stack = []; stack.pop()",
+                explanation: "堆疊下溢（Stack Underflow）指的是試圖從一個空的堆疊中彈出（pop）元素。在 Python 中，對一個空的 list 使用 `pop()` 方法會引發 `IndexError`。\n選項 A 和 B 都會引發錯誤，但 A 是最直接的例子：在一個剛建立的空堆疊上立即執行 `pop()`。\n選項 C 是正常的壓入操作。選項 D 也是正常的壓入操作。"
+            },
+            {
+                question: "4. 執行以下代碼後，輸出的結果是什麼？",
+                code: "queue = []\nfor i in range(5):\n    queue.append(i)\n\nwhile queue:\n    print(queue.pop(0), end=' ')",
+                options: ["A) 0 1 2 3 4", "B) 4 3 2 1 0", "C) 1 2 3 4 5", "D) 5 4 3 2 1"],
+                answer: "A) 0 1 2 3 4",
+                explanation: "這段代碼模擬了隊列的「先進先出」（FIFO）行為。\n1. `for` 迴圈依序將 0, 1, 2, 3, 4 加入隊列，隊列內容為 `[0, 1, 2, 3, 4]`。\n2. `while` 迴圈持續從隊列的前端（索引 0）取出元素並印出，直到隊列為空。\n3. 因此，元素的印出順序會和它們被加入的順序一樣：`0 1 2 3 4`。"
+            },
+            {
+                question: "5. 以下代碼類比了什麼資料結構？",
+                code: "data = []\ndata.append(10)\ndata.append(20)\ndata.append(30)\nprint(data.pop(0))",
+                options: ["A) 隊列", "B) 堆疊", "C) 鏈表", "D) 樹"],
+                answer: "A) 隊列",
+                explanation: "此代碼使用 `append()` 將元素添加到列表的末尾，並使用 `pop(0)` 從列表的開頭移除元素。這種「先進先出」（First-In, First-Out）的特性是隊列（Queue）的典型特徵。"
+            },
+            {
+                question: "6. 執行以下代碼後，堆疊中的內容是什麼？",
+                code: "stack = []\nstack.append('A')\nstack.append('B')\nstack.pop()\nstack.append('C')\nstack.append('D')\nstack.pop()",
+                options: ["A) ['A']", "B) ['A','C']", "C) ['A','B','C']", "D) ['B','C']"],
+                answer: "B) ['A','C']",
+                explanation: "這段代碼模擬了堆疊的「後進先出」（LIFO）行為。\n1. `stack.append('A')`: 堆疊為 `['A']`\n2. `stack.append('B')`: 堆疊為 `['A', 'B']`\n3. `stack.pop()`: 移除 'B'，堆疊為 `['A']`\n4. `stack.append('C')`: 堆疊為 `['A', 'C']`\n5. `stack.append('D')`: 堆疊為 `['A', 'C', 'D']`\n6. `stack.pop()`: 移除 'D'，堆疊為 `['A', 'C']`\n最終堆疊內容為 `['A', 'C']`。"
+            },
+            {
+                question: "7. 以下哪個是隊列的典型應用場景？",
+                code: null,
+                options: ["A) 撤銷操作功能（Undo）", "B) 瀏覽器歷史記錄", "C) 列印任務管理", "D) 運算式求值"],
+                answer: "C) 列印任務管理",
+                explanation: "隊列（Queue）的「先進先出」特性非常適合管理需要按順序處理的任務。\n- **C) 列印任務管理**: 先提交的列印請求會先被處理，這是典型的 FIFO 場景。\n- A) 撤銷操作：最後一個執行的操作最先被撤銷，這是堆疊（LIFO）的應用。\n- B) 瀏覽器歷史記錄的「上一頁」功能類似堆疊。\n- D) 運算式求值（如中序轉後序）通常使用堆疊。"
+            },
+            {
+                question: "8. 執行以下代碼後，變數 `result` 的值是多少？",
+                code: "stack = []\nstack.append(5)\nstack.append(3)\nstack.pop()\nstack.append(8)\nstack.pop()\nresult = stack.pop()",
+                options: ["A) 5", "B) 3", "C) 8", "D) 報錯"],
+                answer: "A) 5",
+                explanation: "我們來追蹤堆疊的狀態：\n1. `stack.append(5)`: 堆疊為 `[5]`\n2. `stack.append(3)`: 堆疊為 `[5, 3]`\n3. `stack.pop()`: 移除 3，堆疊為 `[5]`\n4. `stack.append(8)`: 堆疊為 `[5, 8]`\n5. `stack.pop()`: 移除 8，堆疊為 `[5]`\n6. `result = stack.pop()`: 移除 5 並賦值給 `result`。堆疊變為空 `[]`。\n因此 `result` 的值是 `5`。"
+            },
+            {
+                question: "9. 以下代碼的輸出是什麼？",
+                code: "queue = []\nqueue.append(10)\nqueue.append(20)\nqueue.pop(0)\nqueue.append(30)\nprint(queue.pop(0))",
+                options: ["A) 10", "B) 20", "C) 30", "D) 報錯"],
+                answer: "B) 20",
+                explanation: "我們來追蹤隊列的狀態：\n1. `queue.append(10)`: 隊列為 `[10]`\n2. `queue.append(20)`: 隊列為 `[10, 20]`\n3. `queue.pop(0)`: 移除 10，隊列為 `[20]`\n4. `queue.append(30)`: 隊列為 `[20, 30]`\n5. `print(queue.pop(0))`: 移除隊列最前端的元素 `20` 並印出。隊列剩下 `[30]`。\n因此，輸出為 `20`。"
+            },
+            {
+                question: "10. 以下代碼實現了什麼功能？",
+                code: "def reverse_string(s):\n    stack = []\n    for char in s:\n        stack.append(char)\n    result = \"\"\n    while stack:\n        result += stack.pop()\n    return result",
+                options: ["A) 字串排序", "B) 字串反轉", "C) 字串查找", "D) 字串替換"],
+                answer: "B) 字串反轉",
+                explanation: "此函數利用堆疊的「後進先出」（LIFO）特性。\n1. 它首先遍歷輸入的字串 `s`，並將每個字元依序壓入堆疊。\n2. 然後，它從堆疊中逐一彈出字元，並附加到 `result` 字串的末尾。\n3. 由於最後壓入的字元會最先被彈出，所以最終得到的 `result` 字串會是原字串 `s` 的反轉版本。"
+            },
+            {
+                question: "11. 執行以下代碼後，隊列中還剩幾個元素？",
+                code: "queue = [1, 2, 3, 4, 5]\nfor i in range(2):\n    queue.pop(0)\nqueue.append(6)",
+                options: ["A) 3", "B) 4", "C) 5", "D) 6"],
+                answer: "B) 4",
+                explanation: "我們來追蹤隊列的狀態：\n1. 初始隊列: `[1, 2, 3, 4, 5]` (5個元素)\n2. 第一次迴圈 `queue.pop(0)`: 移除 1，隊列為 `[2, 3, 4, 5]`\n3. 第二次迴圈 `queue.pop(0)`: 移除 2，隊列為 `[3, 4, 5]` (3個元素)\n4. `queue.append(6)`: 加入 6，隊列為 `[3, 4, 5, 6]`\n最終隊列中有 4 個元素。"
+            },
+            {
+                question: "12. 以下哪個是堆疊的典型應用場景？",
+                code: null,
+                options: ["A) 列印任務隊列", "B) 函式呼叫堆疊", "C) 訊息隊列", "D) 事件迴圈"],
+                answer: "B) 函式呼叫堆疊",
+                explanation: "堆疊（Stack）的「後進先出」特性在許多計算機科學領域中都有應用。\n- **B) 函式呼叫堆疊**: 當一個函式呼叫另一個函式時，返回地址和局部變數會被壓入一個系統堆疊中。當函式返回時，再從堆疊中彈出，回到呼叫它的地方。最後被呼叫的函式最先返回，這是典型的 LIFO 場景。\n- 其他選項（A, C, D）通常使用隊列（FIFO）來實現。"
+            },
+            {
+                question: "13. 執行以下代碼後，堆疊中剩餘幾個元素？",
+                code: "stack = [1, 2, 3, 4, 5]\nfor i in range(3):\n    stack.pop()\nstack.append(6)",
+                options: ["A) 1", "B) 2", "C) 3", "D) 4"],
+                answer: "C) 3",
+                explanation: "我們來追蹤堆疊的狀態：\n1. 初始堆疊: `[1, 2, 3, 4, 5]` (5個元素)\n2. 第一次迴圈 `stack.pop()`: 移除 5，堆疊為 `[1, 2, 3, 4]`\n3. 第二次迴圈 `stack.pop()`: 移除 4，堆疊為 `[1, 2, 3]`\n4. 第三次迴圈 `stack.pop()`: 移除 3，堆疊為 `[1, 2]` (2個元素)\n5. `stack.append(6)`: 加入 6，堆疊為 `[1, 2, 6]`\n最終堆疊中有 3 個元素。"
+            },
+            {
+                question: "14. 以下哪個操作序列會產生隊列下溢錯誤（queue underflow）？",
+                code: null,
+                options: ["A) queue = []; queue.pop(0)", "B) queue = [1]; queue.pop(0); queue.pop(0)", "C) queue = []; queue.append(1)", "D) queue = [1]; queue.append(2)"],
+                answer: "A) queue = []; queue.pop(0)",
+                explanation: "隊列下溢（Queue Underflow）指的是試圖從一個空的隊列中取出元素。在 Python 中，對一個空的 list 使用 `pop(0)` 方法會引發 `IndexError`。\n選項 A 和 B 都會引發錯誤，但 A 是最直接的例子：在一個剛建立的空隊列上立即執行 `pop(0)`。\n選項 C 和 D 都是正常的隊列操作。"
+            },
+            {
+                question: "15. 執行以下代碼後，輸出的結果是什麼？",
+                code: "stack = []\nfor i in range(5):\n    stack.append(i)\n\nwhile stack:\n    print(stack.pop(), end=' ')",
+                options: ["A) 0 1 2 3 4", "B) 4 3 2 1 0", "C) 1 2 3 4 5", "D) 5 4 3 2 1"],
+                answer: "B) 4 3 2 1 0",
+                explanation: "這段代碼模擬了堆疊的「後進先出」（LIFO）行為。\n1. `for` 迴圈依序將 0, 1, 2, 3, 4 加入堆疊，堆疊內容為 `[0, 1, 2, 3, 4]`。\n2. `while` 迴圈持續從堆疊的末端（頂部）取出元素並印出，直到堆疊為空。\n3. 因此，元素的印出順序會和它們被加入的順序相反：`4 3 2 1 0`。"
+            },
+            {
+                question: "16. 執行以下代碼後，變數 `result` 的值是多少？",
+                code: "queue = []\nqueue.append(5)\nqueue.append(3)\nqueue.pop(0)\nqueue.append(8)\nqueue.pop(0)\nresult = queue.pop(0)",
+                options: ["A) 5", "B) 3", "C) 8", "D) 報錯"],
+                answer: "C) 8",
+                explanation: "我們來追蹤隊列的狀態：\n1. `queue.append(5)`: 隊列為 `[5]`\n2. `queue.append(3)`: 隊列為 `[5, 3]`\n3. `queue.pop(0)`: 移除 5，隊列為 `[3]`\n4. `queue.append(8)`: 隊列為 `[3, 8]`\n5. `queue.pop(0)`: 移除 3，隊列為 `[8]`\n6. `result = queue.pop(0)`: 移除 8 並賦值給 `result`。隊列變為空 `[]`。\n因此 `result` 的值是 `8`。"
+            },
+            {
+                question: "17. 以下代碼類比了什麼資料結構？",
+                code: "data = []\ndata.append(10)\ndata.append(20)\ndata.append(30)\nprint(data.pop())",
+                options: ["A) 隊列", "B) 堆疊", "C) 鏈表", "D) 樹"],
+                answer: "B) 堆疊",
+                explanation: "此代碼使用 `append()` 將元素添加到列表的末尾，並使用 `pop()`（不帶參數）從列表的末尾移除元素。這種「後進先出」（Last-In, First-Out）的特性是堆疊（Stack）的典型特徵。"
+            },
+            {
+                question: "18. 以下哪個操作是隊列的正確表示？",
+                code: null,
+                options: ["A) 後進先出（LIFO）", "B) 先進先出（FIFO）", "C) 隨機存取", "D) 雙向存取"],
+                answer: "B) 先進先出（FIFO）",
+                explanation: "隊列（Queue）的核心特性是「先進先出」（First-In, First-Out, FIFO）。就像排隊一樣，最先進入隊列的元素會最先被處理和移除。\n「後進先出」（LIFO）是堆疊（Stack）的特性。"
+            },
+            {
+                question: "19. 執行以下代碼後，輸出的內容是什麼？",
+                code: "stack = []\nexpression = \"(a+b)*(c-d)\"\nfor char in expression:\n    if char == '(':\n        stack.append(char)\n    elif char == ')':\n        if stack:\n            stack.pop()\nprint(len(stack))",
+                options: ["A) 0", "B) 1", "C) 2", "D) 3"],
+                answer: "A) 0",
+                explanation: "這段代碼用堆疊來檢查括號是否匹配。它遍歷字串，遇到左括號 `(` 就壓入堆疊，遇到右括號 `)` 就彈出堆疊。\n1. 遇到第一個 `(`: 堆疊為 `['(']`\n2. 遇到第一個 `)`: 彈出 `(`，堆疊為 `[]`\n3. 遇到第二個 `(`: 堆疊為 `['(']`\n4. 遇到第二個 `)`: 彈出 `(`，堆疊為 `[]`\n迴圈結束後，堆疊是空的。`print(len(stack))` 會輸出 `0`，表示所有括號都成功匹配。"
+            },
+            {
+                question: "20. 執行以下代碼後，堆疊中的內容是什麼？",
+                code: "stack = []\nstack.append('P')\nstack.append('Q')\nstack.pop()\nstack.append('R')\nstack.pop()\nstack.append('S')",
+                options: ["A) ['P']", "B) ['P','R']", "C) ['P','S']", "D) ['Q','R']"],
+                answer: "C) ['P','S']",
+                explanation: "我們來追蹤堆疊的狀態：\n1. `stack.append('P')`: 堆疊為 `['P']`\n2. `stack.append('Q')`: 堆疊為 `['P', 'Q']`\n3. `stack.pop()`: 移除 'Q'，堆疊為 `['P']`\n4. `stack.append('R')`: 堆疊為 `['P', 'R']`\n5. `stack.pop()`: 移除 'R'，堆疊為 `['P']`\n6. `stack.append('S')`: 堆疊為 `['P', 'S']`\n最終堆疊內容為 `['P', 'S']`。"
+            }
+        ];
+
+        const questionTextEl = document.getElementById('question-text');
+        const codeBlockEl = document.getElementById('code-block');
+        const optionsContainerEl = document.getElementById('options-container');
+        const feedbackContainerEl = document.getElementById('feedback-container');
+        const feedbackTitleEl = document.getElementById('feedback-title');
+        const explanationEl = document.getElementById('explanation');
+        const nextBtn = document.getElementById('next-btn');
+        const questionCounterEl = document.getElementById('question-counter');
+        const progressBarEl = document.getElementById('progress-bar');
+        
+        const quizBodyEl = document.getElementById('quiz-body');
+        const resultsContainerEl = document.getElementById('results-container');
+        const navigationEl = document.getElementById('navigation');
+        const scoreTextEl = document.getElementById('score-text');
+        const restartBtn = document.getElementById('restart-btn');
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            quizBodyEl.style.display = 'block';
+            navigationEl.style.display = 'flex';
+            resultsContainerEl.style.display = 'none';
+            nextBtn.style.display = 'none';
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            resetState();
+            const currentQuestion = quizData[currentQuestionIndex];
+            
+            updateProgressBar();
+            questionCounterEl.textContent = `第 ${currentQuestionIndex + 1} / ${quizData.length} 題`;
+            questionTextEl.textContent = currentQuestion.question;
+
+            if (currentQuestion.code) {
+                codeBlockEl.textContent = currentQuestion.code;
+                codeBlockEl.style.display = 'block';
+            } else {
+                codeBlockEl.style.display = 'none';
+            }
+
+            currentQuestion.options.forEach(option => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.classList.add('option-btn');
+                button.addEventListener('click', () => selectAnswer(button, option));
+                optionsContainerEl.appendChild(button);
+            });
+        }
+
+        function resetState() {
+            feedbackContainerEl.style.display = 'none';
+            nextBtn.style.display = 'none';
+            while (optionsContainerEl.firstChild) {
+                optionsContainerEl.removeChild(optionsContainerEl.firstChild);
+            }
+        }
+        
+        function updateProgressBar() {
+            const progressPercentage = ((currentQuestionIndex) / quizData.length) * 100;
+            progressBarEl.style.width = `${progressPercentage}%`;
+        }
+
+        function selectAnswer(button, selectedOption) {
+            const currentQuestion = quizData[currentQuestionIndex];
+            const isCorrect = selectedOption === currentQuestion.answer;
+
+            if (isCorrect) {
+                score++;
+                button.classList.add('correct');
+                feedbackContainerEl.className = 'feedback-container correct';
+                feedbackTitleEl.textContent = '正確！';
+            } else {
+                button.classList.add('incorrect');
+                feedbackContainerEl.className = 'feedback-container incorrect';
+                feedbackTitleEl.textContent = '不正確';
+            }
+            
+            Array.from(optionsContainerEl.children).forEach(btn => {
+                if (btn.innerText === currentQuestion.answer) {
+                    btn.classList.add('correct');
+                }
+                btn.disabled = true;
+            });
+
+            explanationEl.textContent = currentQuestion.explanation;
+            feedbackContainerEl.style.display = 'block';
+            nextBtn.style.display = 'block';
+            
+            if (currentQuestionIndex === quizData.length - 1) {
+                nextBtn.textContent = '查看結果';
+            }
+        }
+
+        function showResults() {
+            updateProgressBar(); // Final update to 100%
+            progressBarEl.style.width = '100%';
+            quizBodyEl.style.display = 'none';
+            navigationEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            scoreTextEl.textContent = `您答對了 ${score} 題，共 ${quizData.length} 題。`;
+        }
+
+        nextBtn.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        restartBtn.addEventListener('click', startQuiz);
+
+        startQuiz();
+    </script>
+
+</body>
+</html>
