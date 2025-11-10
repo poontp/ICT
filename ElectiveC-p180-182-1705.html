@@ -14,6 +14,7 @@
             --dark-color: #343a40;
             --border-color: #dee2e6;
             --answer-color: #e63946;
+            --highlight-yellow: #fff9c4;
         }
 
         body {
@@ -111,11 +112,22 @@
             padding: 15px;
             border-radius: 5px;
             font-family: 'Courier New', Courier, monospace;
-            white-space: pre;
             overflow-x: auto;
             margin: 15px 0;
             font-size: 0.9rem;
             text-align: left;
+        }
+        
+        .code-block > div {
+            padding: 2px 4px;
+            margin: 1px 0;
+            border-radius: 3px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .highlight-line {
+            background-color: var(--highlight-yellow);
+            color: var(--dark-color) !important;
         }
 
         .control-panel {
@@ -210,7 +222,7 @@
         
         .highlight-pop { background-color: #ffcdd2; }
         .highlight-push { background-color: #c8e6c9; }
-        .highlight-check { background-color: #fff9c4; }
+        .highlight-check { background-color: var(--highlight-yellow); }
 
         .p-array-container { margin-top: 10px; }
         .p-array .queue-cell { height: 40px; }
@@ -279,16 +291,18 @@
         <div class="side-by-side-layout">
             <div class="code-column">
                 <h4>操作步驟</h4>
-                <div class="code-block" id="code-block-b">push(TAXI, AH1234)
-push(TAXI, HD764)
-push(TAXI, KL2510)
-push(TAXI, GC646)
-pop(TAXI)
-pop(TAXI)
-push(TAXI, SC343)
-push(TAXI, NN203)
-pop(TAXI)
-push(TAXI, ST546)</div>
+                <div class="code-block" id="code-block-b">
+                    <div id="line-b-0">push(TAXI, AH1234)</div>
+                    <div id="line-b-1">push(TAXI, HD764)</div>
+                    <div id="line-b-2">push(TAXI, KL2510)</div>
+                    <div id="line-b-3">push(TAXI, GC646)</div>
+                    <div id="line-b-4">pop(TAXI)</div>
+                    <div id="line-b-5">pop(TAXI)</div>
+                    <div id="line-b-6">push(TAXI, SC343)</div>
+                    <div id="line-b-7">push(TAXI, NN203)</div>
+                    <div id="line-b-8">pop(TAXI)</div>
+                    <div id="line-b-9">push(TAXI, ST546)</div>
+                </div>
             </div>
             <div class="viz-column">
                 <h4>隊列狀態</h4>
@@ -318,20 +332,24 @@ push(TAXI, ST546)</div>
         <h3>(c) 完成 push 和 pop 子程式的偽代碼</h3>
         <p>不論 N 數值為何，完成以下偽代碼。</p>
         <h4>子程式 push(TAXI, no)</h4>
-        <div class="code-block">如果 (next + 1) % N == start 則
-  輸出 "隊列已滿"
-否則
-  <span id="c-ans-1" class="answer" style="visibility:hidden;">TAXI[next]</span> &lt;- no
-  next &lt;- (next + 1) % N
-結束如果</div>
+        <div class="code-block">
+            <div>如果 (next + 1) % N == start 則</div>
+            <div style="padding-left: 1.5em;">輸出 "隊列已滿"</div>
+            <div>否則</div>
+            <div style="padding-left: 1.5em;"><span id="c-ans-1" class="answer" style="visibility:hidden;">TAXI[next]</span> &lt;- no</div>
+            <div style="padding-left: 1.5em;">next &lt;- (next + 1) % N</div>
+            <div>結束如果</div>
+        </div>
         <h4>子程式 pop(TAXI)</h4>
-        <div class="code-block">如果 start == next 則
-  傳回 "沒有計程車"
-否則
-  temp_val &lt;- <span id="c-ans-2" class="answer" style="visibility:hidden;">TAXI[start]</span>
-  start &lt;- (start + 1) % N
-  傳回 temp_val
-結束如果</div>
+        <div class="code-block">
+            <div>如果 start == next 則</div>
+            <div style="padding-left: 1.5em;">傳回 "沒有計程車"</div>
+            <div>否則</div>
+            <div style="padding-left: 1.5em;">temp_val &lt;- <span id="c-ans-2" class="answer" style="visibility:hidden;">TAXI[start]</span></div>
+            <div style="padding-left: 1.5em;">start &lt;- (start + 1) % N</div>
+            <div style="padding-left: 1.5em;">傳回 temp_val</div>
+            <div>結束如果</div>
+        </div>
         <div class="control-panel"><button class="btn" onclick="showAnswersC()">顯示答案</button></div>
         <div id="explanation-c" class="explanation" style="display:none;">
             <h4>push 解說：</h4>
@@ -345,12 +363,14 @@ push(TAXI, ST546)</div>
     <div id="tab-d" class="tab-content">
         <h3>(d) 完成 waiting 子程式的偽代碼</h3>
         <p>設計子程式 <code>waiting(TAXI)</code> 以傳回正等候乘客的計程車數量。</p>
-        <div class="code-block">子程式 waiting(TAXI)
-  如果 next >= start 則
-    傳回 <span id="d-ans-1" class="answer" style="visibility:hidden;">next - start</span>
-  否則
-    傳回 <span id="d-ans-2" class="answer" style="visibility:hidden;">N - start + next</span>
-  結束如果</div>
+        <div class="code-block">
+            <div>子程式 waiting(TAXI)</div>
+            <div style="padding-left: 1.5em;">如果 next >= start 則</div>
+            <div style="padding-left: 3em;">傳回 <span id="d-ans-1" class="answer" style="visibility:hidden;">next - start</span></div>
+            <div style="padding-left: 1.5em;">否則</div>
+            <div style="padding-left: 3em;">傳回 <span id="d-ans-2" class="answer" style="visibility:hidden;">N - start + next</span></div>
+            <div style="padding-left: 1.5em;">結束如果</div>
+        </div>
         <div class="control-panel"><button class="btn" onclick="showAnswersD()">顯示答案</button></div>
         <div id="explanation-d" class="explanation" style="display:none;">
             <h4>推理過程：</h4>
@@ -374,13 +394,15 @@ push(TAXI, ST546)</div>
         <div class="side-by-side-layout">
             <div class="code-column">
                 <h4>任務 (2) 的偽代碼</h4>
-                <div class="code-block">total &lt;- 0
-i &lt;- start
-當 i != next
-  如果 P[i] = 5 則
-    total &lt;- total + 1
-  i &lt;- (i + 1) % N
-輸出 total</div>
+                <div class="code-block" id="code-block-e">
+                    <div id="line-e-1">total &lt;- 0</div>
+                    <div id="line-e-2">i &lt;- start</div>
+                    <div id="line-e-3">當 i != next</div>
+                    <div id="line-e-4" style="padding-left: 1.5em;">如果 P[i] = 5 則</div>
+                    <div id="line-e-5" style="padding-left: 3em;">total &lt;- total + 1</div>
+                    <div id="line-e-6" style="padding-left: 1.5em;">i &lt;- (i + 1) % N</div>
+                    <div id="line-e-7">輸出 total</div>
+                </div>
                 <div class="variable-display">
                     <h4>執行追蹤 (for P[i]=5)</h4>
                     <p>i = <span id="var-i-e">-</span></p>
@@ -395,7 +417,7 @@ i &lt;- start
                     <div class="pointer start-pointer" id="start-e">start</div>
                     <div class="pointer next-pointer" id="next-e">next</div>
                 </div>
-                <div id="explanation-e" class="explanation">點擊「下一步」開始遍歷隊列並同步執行檢查。</div>
+                <div id="explanation-e" class="explanation">點擊「下一步」開始執行偽代碼。</div>
                 <div class="control-panel">
                     <button id="step-btn-e" class="btn" onclick="runStepE()">下一步</button>
                     <button id="reset-btn-e" class="btn" onclick="initE()" style="background-color: var(--secondary-color);">重設</button>
@@ -464,12 +486,24 @@ i &lt;- start
     let stateB = {};
     let currentStepB = 0;
 
+    function highlightLineB(index) {
+        const lines = document.querySelectorAll('#code-block-b > div');
+        lines.forEach(line => line.classList.remove('highlight-line'));
+        if (index !== null && index >= 0) {
+            const lineToHighlight = document.getElementById(`line-b-${index}`);
+            if (lineToHighlight) {
+                lineToHighlight.classList.add('highlight-line');
+            }
+        }
+    }
+
     function initB() {
         stateB = { start: 0, next: 0, queue: Array(N_B).fill('') };
         currentStepB = 0;
         document.getElementById('step-btn-b').disabled = false;
         document.getElementById('final-answer-b').style.display = 'none';
         document.getElementById('explanation-b').textContent = '點擊「下一步」開始逐步執行操作。';
+        highlightLineB(null);
         renderQueueB(true);
     }
 
@@ -498,9 +532,13 @@ i &lt;- start
 
     function runStepB() {
         if (currentStepB >= operationsB.length) return;
+        
+        highlightLineB(currentStepB);
         renderQueueB();
+
         const step = operationsB[currentStepB];
         document.getElementById('explanation-b').textContent = step.desc;
+
         if (step.op === 'push') {
             const pushIndex = stateB.next;
             setTimeout(() => {
@@ -524,12 +562,15 @@ i &lt;- start
                 }, 600);
             }, 100);
         }
+
         currentStepB++;
+
         if (currentStepB >= operationsB.length) {
             document.getElementById('step-btn-b').disabled = true;
             setTimeout(() => {
                 document.getElementById('explanation-b').textContent = '所有操作執行完畢。';
                 document.getElementById('final-answer-b').style.display = 'block';
+                highlightLineB(null); // Clear highlight at the end
             }, 1500);
         }
     }
@@ -553,21 +594,32 @@ i &lt;- start
         start: 4, next: 2, N: 6,
         taxi: ['HF646', 'SA978', '', '', 'IC9677', 'GF654'],
         p: [4, 5, '', '', 5, 5],
-        activeIndices: [4, 5, 0, 1], // The order of traversal
+        activeIndices: [4, 5, 0, 1],
         total: 0,
-        resultsE: []
     };
-    let currentStepE = 0;
+    let currentStepE = 0; // 0: initial, 1: setup done, 2-5: loop iterations, 6: end
+    const codeLinesE = ['line-e-1', 'line-e-2', 'line-e-3', 'line-e-4', 'line-e-5', 'line-e-6', 'line-e-7'];
+
+    function highlightLineE(lineId) {
+        codeLinesE.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('highlight-line');
+        });
+        if (lineId) {
+            const el = document.getElementById(lineId);
+            if (el) el.classList.add('highlight-line');
+        }
+    }
 
     function initE() {
         currentStepE = 0;
         stateE.total = 0;
-        stateE.resultsE = [];
         document.getElementById('step-btn-e').disabled = false;
         document.getElementById('final-analysis-e').style.display = 'none';
-        document.getElementById('explanation-e').innerHTML = `點擊「下一步」開始遍歷隊列並同步執行檢查。`;
+        document.getElementById('explanation-e').innerHTML = `點擊「下一步」開始執行偽代碼。`;
         document.getElementById('var-i-e').textContent = '-';
         document.getElementById('var-total-e').textContent = '0';
+        highlightLineE(null);
         renderQueueE(true);
     }
 
@@ -597,62 +649,110 @@ i &lt;- start
         const pointerWidth = startPointer.offsetWidth;
         startPointer.style.left = `${cellElements[stateE.start].offsetLeft + (cellWidth - pointerWidth) / 2}px`;
         nextPointer.style.left = `${cellElements[stateE.next].offsetLeft + (cellWidth - pointerWidth) / 2}px`;
-        document.querySelectorAll('#queue-wrapper-e .queue-cell').forEach(c => c.classList.remove('highlight-check'));
     }
 
     function runStepE() {
-        if (currentStepE === 0) {
-            const startIndex = stateE.start;
-            document.getElementById('var-i-e').textContent = startIndex;
-            document.getElementById('explanation-e').innerHTML = `<code>i &lt;- start</code>. 遍歷開始，i 初始化為 ${startIndex}。`;
+        const stepBtn = document.getElementById('step-btn-e');
+        stepBtn.disabled = true;
+
+        document.querySelectorAll('#queue-wrapper-e .queue-cell').forEach(c => c.classList.remove('highlight-check'));
+
+        if (currentStepE === 0) { // Phase 1: Initialization
+            document.getElementById('explanation-e').innerHTML = `初始化變數...`;
+            setTimeout(() => {
+                highlightLineE('line-e-1');
+                document.getElementById('var-total-e').textContent = '0';
+                document.getElementById('explanation-e').innerHTML = `<code>total &lt;- 0</code>. 計數器歸零。`;
+            }, 0);
+            setTimeout(() => {
+                highlightLineE('line-e-2');
+                document.getElementById('var-i-e').textContent = stateE.start;
+                document.getElementById('explanation-e').innerHTML = `<code>i &lt;- start</code>. 遍歷指標 i 設為起始位置 4。`;
+            }, 1200);
+            setTimeout(() => {
+                highlightLineE(null);
+                document.getElementById('explanation-e').innerHTML = `初始化完成。點擊「下一步」開始遍歷隊列。`;
+                stepBtn.disabled = false;
+            }, 2400);
+            currentStepE++;
+            return;
+        }
+
+        if (currentStepE > stateE.activeIndices.length) { // Phase 3: End of loop
+            const finalI = (stateE.activeIndices[stateE.activeIndices.length - 1] + 1) % stateE.N;
+            document.getElementById('var-i-e').textContent = finalI;
+            document.getElementById('explanation-e').innerHTML = `當前 i = ${finalI}，等於 next = ${stateE.next}。`;
+            setTimeout(() => {
+                highlightLineE('line-e-3');
+                document.getElementById('explanation-e').innerHTML = `檢查循環條件 <code>當 i != next</code> (${finalI} != ${stateE.next})，條件為假。`;
+            }, 0);
+            setTimeout(() => {
+                highlightLineE('line-e-7');
+                document.getElementById('explanation-e').innerHTML = `循環結束。<code>輸出 total</code>，其值為 ${stateE.total}。`;
+            }, 1500);
+            setTimeout(() => {
+                highlightLineE(null);
+                document.getElementById('final-analysis-e').style.display = 'block';
+                document.getElementById('reset-btn-e').focus();
+            }, 3000);
+            currentStepE++;
+            return;
         }
         
-        const currentIndex = stateE.activeIndices[currentStepE];
-        if (currentIndex === undefined) return;
-
-        renderQueueE();
-        document.getElementById('var-i-e').textContent = currentIndex;
+        // Phase 2: Loop iteration
+        const loopIndex = currentStepE - 1;
+        const currentIndex = stateE.activeIndices[loopIndex];
         const capacity = stateE.p[currentIndex];
-        let explanationText = `循環中... 當前 <code>i = ${currentIndex}</code>。檢查 <code>P[${currentIndex}]</code> 的值，即 ${capacity}。<br>`;
         
-        setTimeout(() => {
-            document.getElementById(`cell-e-taxi-${currentIndex}`).classList.add('highlight-check');
-            document.getElementById(`cell-e-p-${currentIndex}`).classList.add('highlight-check');
-            
-            let matchTask1 = false;
-            let matchTask2 = false;
+        document.getElementById(`cell-e-taxi-${currentIndex}`).classList.add('highlight-check');
+        document.getElementById(`cell-e-p-${currentIndex}`).classList.add('highlight-check');
+        document.getElementById('var-i-e').textContent = currentIndex;
 
-            if (capacity >= 5) {
-                matchTask1 = true;
-                stateE.resultsE.push(stateE.taxi[currentIndex]);
-            }
-            if (capacity === 5) {
-                matchTask2 = true;
+        let animDelay = 0;
+
+        setTimeout(() => {
+            highlightLineE('line-e-3');
+            document.getElementById('explanation-e').innerHTML = `<b>第 ${loopIndex + 1} 次循環:</b><br>檢查條件 <code>當 i != next</code> (${currentIndex} != ${stateE.next})，條件為真。`;
+        }, animDelay);
+        animDelay += 1500;
+
+        setTimeout(() => {
+            highlightLineE('line-e-4');
+            document.getElementById('explanation-e').innerHTML = `檢查 <code>P[${currentIndex}]</code> 是否等於 5。<br><code>P[${currentIndex}]</code> 的值是 ${capacity}。`;
+        }, animDelay);
+        animDelay += 1500;
+
+        if (capacity === 5) {
+            setTimeout(() => {
+                highlightLineE('line-e-5');
+                const oldTotal = stateE.total;
                 stateE.total++;
                 document.getElementById('var-total-e').textContent = stateE.total;
-            }
+                document.getElementById('explanation-e').innerHTML = `條件 ${capacity} = 5 為真。<br><code>total &lt;- total + 1</code>。 total 從 ${oldTotal} 變為 ${stateE.total}。`;
+            }, animDelay);
+            animDelay += 1500;
+        } else {
+            setTimeout(() => {
+                highlightLineE('line-e-4'); // Keep highlight on the if
+                document.getElementById('explanation-e').innerHTML = `條件 ${capacity} = 5 為假，跳過計數。`;
+            }, animDelay);
+            animDelay += 1500;
+        }
 
-            explanationText += `<strong>任務(1):</strong> 座位數 ${capacity} ${matchTask1 ? '>= 5，符合條件。' : '< 5，不符條件。'}<br>`;
-            explanationText += `<strong>任務(2):</strong> 座位數 ${capacity} ${matchTask2 ? '== 5，符合條件，total 變為 ' + stateE.total + '。' : '!= 5，不符條件，total 不變。'}`;
+        const nextIndex = (currentIndex + 1) % stateE.N;
+        setTimeout(() => {
+            highlightLineE('line-e-6');
+            document.getElementById('explanation-e').innerHTML = `更新遍歷指標：<code>i &lt;- (i + 1) % N</code>。<br>下一個 i 將是 ${nextIndex}。`;
+        }, animDelay);
+        animDelay += 1500;
 
-            const nextIndex = (currentIndex + 1) % stateE.N;
-            explanationText += `<br>更新 i：<code>i &lt;- (i + 1) % N</code>，下一個 i 將是 ${nextIndex}。`;
-            document.getElementById('explanation-e').innerHTML = explanationText;
-
-        }, 100);
+        setTimeout(() => {
+            highlightLineE(null);
+            document.getElementById('explanation-e').innerHTML = `第 ${loopIndex + 1} 次循環結束。點擊「下一步」繼續。`;
+            stepBtn.disabled = false;
+        }, animDelay);
 
         currentStepE++;
-        
-        if (currentStepE >= stateE.activeIndices.length) {
-            document.getElementById('step-btn-e').disabled = true;
-            const finalI = (stateE.activeIndices[stateE.activeIndices.length - 1] + 1) % stateE.N;
-            setTimeout(() => {
-                renderQueueE();
-                document.getElementById('var-i-e').textContent = finalI;
-                document.getElementById('explanation-e').innerHTML = `下一個 i 是 ${finalI}，等於 <code>next</code> (${stateE.next})。<br>循環條件 <code>i != next</code> 不再滿足，循環結束。`;
-                document.getElementById('final-analysis-e').style.display = 'block';
-            }, 2500);
-        }
     }
 
     window.onload = () => {
