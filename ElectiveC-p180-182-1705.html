@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>計程車召喚系統 - 互動解說</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-color: #dee2e6;
+            --answer-color: #e63946;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', '微軟正黑體', 'PingFang TC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: #f1f1f1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-button {
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: background-color 0.3s;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .tab-button:hover {
+            background-color: #ddd;
+        }
+
+        .tab-button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border-top: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        h3, h4 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+        h4 {
+            color: var(--dark-color);
+            border-bottom-color: var(--border-color);
+        }
+
+        .answer {
+            color: var(--answer-color);
+            font-weight: bold;
+        }
+
+        .explanation {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border-left: 5px solid var(--secondary-color);
+            min-height: 50px;
+        }
+        
+        .code-block {
+            background-color: #2d3748;
+            color: #f7fafc;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .control-panel {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: var(--success-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background-color: #218838;
+        }
+        
+        .btn:disabled {
+            background-color: var(--secondary-color);
+            cursor: not-allowed;
+        }
+
+        .side-by-side-layout {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        .code-column {
+            flex: 1;
+            min-width: 280px;
+        }
+        .viz-column {
+            flex: 2;
+        }
+        
+        .queue-wrapper {
+            position: relative;
+            margin: 20px auto;
+            width: fit-content;
+        }
+        
+        .queue-array {
+            display: flex;
+        }
+
+        .queue-cell {
+            border: 2px solid var(--dark-color);
+            width: 80px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 -1px;
+            background-color: white;
+            position: relative;
+            transition: background-color 0.5s;
+        }
+        
+        .cell-content {
+            font-weight: bold;
+            font-size: 0.9rem;
+            height: 20px;
+            word-break: break-all;
+        }
+
+        .cell-index {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+        }
+        
+        .pointer {
+            position: absolute;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: white;
+            transition: left 0.5s ease-in-out;
+            width: 50px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .start-pointer { background-color: var(--danger-color); bottom: -30px; }
+        .next-pointer { background-color: var(--primary-color); top: -30px; }
+        
+        .highlight-pop { background-color: #ffcdd2; }
+        .highlight-push { background-color: #c8e6c9; }
+        .highlight-check { background-color: #fff9c4; }
+
+        .p-array-container { margin-top: 10px; }
+        .p-array .queue-cell { height: 40px; }
+        .p-array .cell-content { font-size: 1.1rem; }
+        .array-label { font-weight: bold; margin-right: 10px; width: 50px; }
+        .array-row { display: flex; align-items: center; margin-bottom: 5px; }
+
+        .variable-display {
+            background: #f1f1f1;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .variable-display p { margin: 5px 0; }
+        .variable-display span { font-weight: bold; font-family: 'Courier New', Courier, monospace; }
+
+        @media (max-width: 900px) {
+            .side-by-side-layout { flex-direction: column; }
+            .viz-column { width: 100%; }
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 0.5rem; }
+            .container { max-width: 100%; }
+            .tab-button { font-size: 0.85rem; padding: 12px 5px; }
+            .queue-cell { width: 60px; height: 50px; }
+            .cell-content { font-size: 0.7rem; }
+            .pointer { width: 45px; }
+            .array-row { flex-direction: column; align-items: flex-start; }
+            .queue-wrapper { overflow-x: auto; padding-bottom: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'tab-a')">問題 (a)</button>
+        <button class="tab-button" onclick="openTab(event, 'tab-b')">問題 (b)</button>
+        <button class="tab-button" onclick="openTab(event, 'tab-c')">問題 (c)</button>
+        <button class="tab-button" onclick="openTab(event, 'tab-d')">問題 (d)</button>
+        <button class="tab-button" onclick="openTab(event, 'tab-e')">問題 (e)</button>
+    </div>
+
+    <!-- Tab (a) -->
+    <div id="tab-a" class="tab-content active">
+        <h3>(a) 此陣列最多可儲存多少個計程車車牌號碼？</h3>
+        <p>答案是： <span class="answer">N - 1</span></p>
+        <div class="explanation">
+            <h4>推理過程：</h4>
+            <p>這個系統使用一個大小為 N 的陣列來實作一個<strong>環形隊列 (Circular Queue)</strong>。</p>
+            <p>在環形隊列中，我們需要一種方法來區分「隊列已滿」和「隊列為空」這兩種狀態。</p>
+            <ul>
+                <li><strong>隊列為空</strong>的條件是 <code>start == next</code>。</li>
+                <li>如果我們允許隊列完全填滿 (儲存 N 個項目)，那麼在填滿後，<code>next</code> 指標會繞回並再次等於 <code>start</code> 指標。這將導致「已滿」和「為空」的條件完全相同，系統將無法區分。</li>
+                <li>為了解決這個問題，標準的作法是<strong>犧牲一個儲存空間</strong>。我們定義「隊列已滿」的條件為：當 <code>next</code> 指標的下一個位置是 <code>start</code> 指標時，即 <code>(next + 1) % N == start</code>。</li>
+                <li>這樣一來，隊列中始終至少會有一個空位，從而確保了「已滿」和「為空」的條件不會混淆。因此，一個大小為 N 的陣列最多只能儲存 <strong>N - 1</strong> 個項目。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tab (b) -->
+    <div id="tab-b" class="tab-content">
+        <h3>(b) 追蹤操作過程並找出最終狀態</h3>
+        <p>假設 N = 6，初始狀態 <code>start = 0</code>, <code>next = 0</code>。追蹤下列操作：</p>
+        <div class="side-by-side-layout">
+            <div class="code-column">
+                <h4>操作步驟</h4>
+                <div class="code-block" id="code-block-b">push(TAXI, AH1234)
+push(TAXI, HD764)
+push(TAXI, KL2510)
+push(TAXI, GC646)
+pop(TAXI)
+pop(TAXI)
+push(TAXI, SC343)
+push(TAXI, NN203)
+pop(TAXI)
+push(TAXI, ST546)</div>
+            </div>
+            <div class="viz-column">
+                <h4>隊列狀態</h4>
+                <div class="queue-wrapper" id="queue-wrapper-b">
+                    <div class="queue-array" id="queue-b"></div>
+                    <div class="pointer start-pointer" id="start-b">start</div>
+                    <div class="pointer next-pointer" id="next-b">next</div>
+                </div>
+                <div id="explanation-b" class="explanation">點擊「下一步」開始逐步執行操作。</div>
+                <div class="control-panel">
+                    <button id="step-btn-b" class="btn" onclick="runStepB()">下一步</button>
+                    <button id="reset-btn-b" class="btn" onclick="initB()" style="background-color: var(--secondary-color);">重設</button>
+                </div>
+            </div>
+        </div>
+        <div id="final-answer-b" style="display:none; margin-top: 20px;">
+            <h3>最終結果：</h3>
+            <p>陣列 TAXI 的內容 (僅顯示有效項目)：</p>
+            <ul><li>TAXI[0]: ST546</li><li>TAXI[3]: GC646</li><li>TAXI[4]: SC343</li><li>TAXI[5]: NN203</li></ul>
+            <p>變數值：</p>
+            <ul><li>start = <span class="answer">3</span></li><li>next = <span class="answer">1</span></li></ul>
+        </div>
+    </div>
+
+    <!-- Tab (c) -->
+    <div id="tab-c" class="tab-content">
+        <h3>(c) 完成 push 和 pop 子程式的偽代碼</h3>
+        <p>不論 N 數值為何，完成以下偽代碼。</p>
+        <h4>子程式 push(TAXI, no)</h4>
+        <div class="code-block">如果 (next + 1) % N == start 則
+  輸出 "隊列已滿"
+否則
+  <span id="c-ans-1" class="answer" style="visibility:hidden;">TAXI[next]</span> &lt;- no
+  next &lt;- (next + 1) % N
+結束如果</div>
+        <h4>子程式 pop(TAXI)</h4>
+        <div class="code-block">如果 start == next 則
+  傳回 "沒有計程車"
+否則
+  temp_val &lt;- <span id="c-ans-2" class="answer" style="visibility:hidden;">TAXI[start]</span>
+  start &lt;- (start + 1) % N
+  傳回 temp_val
+結束如果</div>
+        <div class="control-panel"><button class="btn" onclick="showAnswersC()">顯示答案</button></div>
+        <div id="explanation-c" class="explanation" style="display:none;">
+            <h4>push 解說：</h4>
+            <ul><li><strong><code>(next + 1) % N == start</code></strong>：這是判斷隊列是否已滿的條件。<code>next</code> 指向的是下一個可插入的位置，如果這個位置的再下一個位置 (環繞後) 就是 <code>start</code>，代表只剩下一個為區分「滿/空」而保留的空位，因此隊列已滿。</li><li><strong><code>TAXI[next] &lt;- no</code></strong>：如果隊列未滿，就把新的車牌號碼 <code>no</code> 存入 <code>next</code> 指標所指向的陣列位置。</li></ul>
+            <h4>pop 解說：</h4>
+            <ul><li><strong><code>start == next</code></strong>：這是判斷隊列是否為空的條件。</li><li><strong><code>TAXI[start]</code></strong>：如果隊列不為空，<code>start</code> 指標指向的就是隊列中第一輛計程車。我們需要傳回這個位置的車牌號碼。</li></ul>
+        </div>
+    </div>
+    
+    <!-- Tab (d) -->
+    <div id="tab-d" class="tab-content">
+        <h3>(d) 完成 waiting 子程式的偽代碼</h3>
+        <p>設計子程式 <code>waiting(TAXI)</code> 以傳回正等候乘客的計程車數量。</p>
+        <div class="code-block">子程式 waiting(TAXI)
+  如果 next >= start 則
+    傳回 <span id="d-ans-1" class="answer" style="visibility:hidden;">next - start</span>
+  否則
+    傳回 <span id="d-ans-2" class="answer" style="visibility:hidden;">N - start + next</span>
+  結束如果</div>
+        <div class="control-panel"><button class="btn" onclick="showAnswersD()">顯示答案</button></div>
+        <div id="explanation-d" class="explanation" style="display:none;">
+            <h4>推理過程：</h4>
+            <p>計算環形隊列中的元素數量需要考慮兩種情況：</p>
+            <ol>
+                <li><strong><code>next >= start</code> (隊列未環繞)</strong><br>這種情況很直觀，所有等待的計程車都連續地分佈在陣列中。數量就是兩個指標的差。<br><em>例如：N=6, start=2, next=5。計程車在索引 2, 3, 4。數量 = 5 - 2 = 3。</em></li>
+                <li><strong><code>next < start</code> (隊列已環繞)</strong><br>這種情況下，計程車隊伍分成了兩段：一段是從 <code>start</code> 到陣列末尾 (<code>N-1</code>)，另一段是從陣列開頭 (<code>0</code>) 到 <code>next-1</code>。<br>第一段的數量是 <code>N - start</code>。<br>第二段的數量是 <code>next</code>。<br>總數量就是 <strong><code>(N - start) + next</code></strong>。<br><em>例如：N=6, start=4, next=2。計程車在索引 4, 5, 0, 1。數量 = (6 - 4) + 2 = 4。</em></li>
+            </ol>
+        </div>
+    </div>
+    
+    <!-- Tab (e) - COMBINED from (e) & (f) -->
+    <div id="tab-e" class="tab-content">
+        <h3>(e) 計程車座位數分析與演算法驗證</h3>
+        <p><strong>情境：</strong>新增了陣列 P 儲存座位數目。在 <code>start = 4, next = 2</code> 的情況下：</p>
+        <ol style="margin-top:15px; margin-bottom:15px; padding-left: 25px;">
+            <li>找出所有座位數<strong>大於或等於 5</strong> 的計程車車牌號碼。</li>
+            <li>分析以下用於計算座位數<strong>正好等於 5</strong> 的計程車總數的偽代碼，判斷其是否正確，並追蹤其執行結果。</li>
+        </ol>
+        
+        <div class="side-by-side-layout">
+            <div class="code-column">
+                <h4>任務 (2) 的偽代碼</h4>
+                <div class="code-block">total &lt;- 0
+i &lt;- start
+當 i != next
+  如果 P[i] = 5 則
+    total &lt;- total + 1
+  i &lt;- (i + 1) % N
+輸出 total</div>
+                <div class="variable-display">
+                    <h4>執行追蹤 (for P[i]=5)</h4>
+                    <p>i = <span id="var-i-e">-</span></p>
+                    <p>total = <span id="var-total-e">0</span></p>
+                </div>
+            </div>
+            <div class="viz-column">
+                <h4>互動模擬</h4>
+                <div class="queue-wrapper" id="queue-wrapper-e">
+                    <div class="array-row"><span class="array-label">TAXI:</span><div class="queue-array" id="queue-e-taxi"></div></div>
+                    <div class="array-row p-array-container"><span class="array-label">P:</span><div class="queue-array p-array" id="queue-e-p"></div></div>
+                    <div class="pointer start-pointer" id="start-e">start</div>
+                    <div class="pointer next-pointer" id="next-e">next</div>
+                </div>
+                <div id="explanation-e" class="explanation">點擊「下一步」開始遍歷隊列並同步執行檢查。</div>
+                <div class="control-panel">
+                    <button id="step-btn-e" class="btn" onclick="runStepE()">下一步</button>
+                    <button id="reset-btn-e" class="btn" onclick="initE()" style="background-color: var(--secondary-color);">重設</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="final-analysis-e" style="display:none; margin-top: 20px;">
+            <h3>最終結果與分析</h3>
+            <h4>任務 1 結果：</h4>
+            <p>座位數大於或等於 5 的計程車車牌號碼為：<br><span class="answer">IC9677, GF654, SA978</span></p>
+            
+            <h4>任務 2 結果與分析：</h4>
+            <p>執行偽代碼後，最終 <code>total</code> 的值為 <span class="answer">3</span>。</p>
+            <p>這段偽代碼是<span class="answer"><strong>完全正確的</strong></span>。它能夠準確地計算出環形隊列中所有座位數正好為 5 的計程車數量。</p>
+            <div class="explanation">
+                <h4>逐行解說：</h4>
+                <ul>
+                    <li><code>total &lt;- 0</code>：初始化一個計數器 <code>total</code>，用於儲存結果。</li>
+                    <li><code>i &lt;- start</code>：設置一個循環變數 <code>i</code>，並將其初始值設為隊列的起始點 <code>start</code>。這是遍歷的開端。</li>
+                    <li><code>當 i != next</code>：這是循環的條件。只要遍歷指標 <code>i</code> 還沒有到達隊列的終點標記 <code>next</code>，循環就會繼續。這確保了所有在隊列中的元素都會被檢查一次。</li>
+                    <li><code>如果 P[i] = 5 則</code>：在循環內部，檢查當前索引 <code>i</code> 對應的座位數 <code>P[i]</code> 是否正好等於 5。</li>
+                    <li><code>total &lt;- total + 1</code>：如果條件成立，則將計數器 <code>total</code> 加 1。</li>
+                    <li><code><span class="answer">i &lt;- (i + 1) % N</span></code>：這是整個算法的核心。它將索引 <code>i</code>向前移動一位。關鍵在於 <span class="answer"><code>% N</code> (取模運算)</span>，它處理了「環形」的特性。當 <code>i</code> 到達陣列末端 (N-1) 時，<code>(N-1 + 1) % N</code> 的結果是 <code>0</code>，使索引能自動繞回陣列的開頭繼續遍歷。</li>
+                    <li><code>輸出 total</code>：循環結束後（當 <code>i</code> 等於 <code>next</code> 時），輸出最終的計數結果。</li>
+                </ul>
+                <p><strong>結論：</strong>該算法邏輯嚴謹，正確利用了環形隊列的特性，能夠在任何 N 值和任何 <code>start</code>、<code>next</code> 狀態下，完成計算任務。</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        let i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+        
+        if (tabName === 'tab-b') initB();
+        if (tabName === 'tab-e') initE();
+    }
+
+    // --- Logic for Tab (b) ---
+    const N_B = 6;
+    const operationsB = [
+        { op: 'push', val: 'AH1234', desc: '1. push(AH1234): 車輛加入索引 0。next 更新為 1。' },
+        { op: 'push', val: 'HD764',  desc: '2. push(HD764): 車輛加入索引 1。next 更新為 2。' },
+        { op: 'push', val: 'KL2510', desc: '3. push(KL2510): 車輛加入索引 2。next 更新為 3。' },
+        { op: 'push', val: 'GC646',  desc: '4. push(GC646): 車輛加入索引 3。next 更新為 4。' },
+        { op: 'pop',  val: 'AH1234', desc: '5. pop(): 派遣索引 0 的車輛。start 更新為 1。' },
+        { op: 'pop',  val: 'HD764',  desc: '6. pop(): 派遣索引 1 的車輛。start 更新為 2。' },
+        { op: 'push', val: 'SC343',  desc: '7. push(SC343): 車輛加入索引 4。next 更新為 5。' },
+        { op: 'push', val: 'NN203',  desc: '8. push(NN203): 車輛加入索引 5。next 更新為 0 (環繞)。' },
+        { op: 'pop',  val: 'KL2510', desc: '9. pop(): 派遣索引 2 的車輛。start 更新為 3。' },
+        { op: 'push', val: 'ST546',  desc: '10. push(ST546): 車輛加入索引 0。next 更新為 1。' },
+    ];
+    let stateB = {};
+    let currentStepB = 0;
+
+    function initB() {
+        stateB = { start: 0, next: 0, queue: Array(N_B).fill('') };
+        currentStepB = 0;
+        document.getElementById('step-btn-b').disabled = false;
+        document.getElementById('final-answer-b').style.display = 'none';
+        document.getElementById('explanation-b').textContent = '點擊「下一步」開始逐步執行操作。';
+        renderQueueB(true);
+    }
+
+    function renderQueueB(isInitial = false) {
+        const queueDiv = document.getElementById('queue-b');
+        if (isInitial) {
+            queueDiv.innerHTML = '';
+            stateB.queue.forEach((val, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'queue-cell';
+                cell.id = `cell-b-${index}`;
+                cell.innerHTML = `<div class="cell-content">${val}</div><div class="cell-index">${index}</div>`;
+                queueDiv.appendChild(cell);
+            });
+        }
+        const cellElements = queueDiv.querySelectorAll('.queue-cell');
+        if (cellElements.length === 0) return;
+        const cellWidth = cellElements[0].offsetWidth;
+        const startPointer = document.getElementById('start-b');
+        const nextPointer = document.getElementById('next-b');
+        const pointerWidth = startPointer.offsetWidth;
+        startPointer.style.left = `${cellElements[stateB.start].offsetLeft + (cellWidth - pointerWidth) / 2}px`;
+        nextPointer.style.left = `${cellElements[stateB.next].offsetLeft + (cellWidth - pointerWidth) / 2}px`;
+        document.querySelectorAll('#queue-b .queue-cell').forEach(c => c.classList.remove('highlight-push', 'highlight-pop'));
+    }
+
+    function runStepB() {
+        if (currentStepB >= operationsB.length) return;
+        renderQueueB();
+        const step = operationsB[currentStepB];
+        document.getElementById('explanation-b').textContent = step.desc;
+        if (step.op === 'push') {
+            const pushIndex = stateB.next;
+            setTimeout(() => {
+                const cell = document.getElementById(`cell-b-${pushIndex}`);
+                cell.classList.add('highlight-push');
+                cell.querySelector('.cell-content').textContent = step.val;
+                stateB.queue[pushIndex] = step.val;
+                stateB.next = (stateB.next + 1) % N_B;
+                setTimeout(() => renderQueueB(), 600);
+            }, 100);
+        } else if (step.op === 'pop') {
+            const popIndex = stateB.start;
+            setTimeout(() => {
+                const cell = document.getElementById(`cell-b-${popIndex}`);
+                cell.classList.add('highlight-pop');
+                setTimeout(() => {
+                    cell.querySelector('.cell-content').textContent = '';
+                    stateB.queue[popIndex] = '';
+                    stateB.start = (stateB.start + 1) % N_B;
+                    renderQueueB();
+                }, 600);
+            }, 100);
+        }
+        currentStepB++;
+        if (currentStepB >= operationsB.length) {
+            document.getElementById('step-btn-b').disabled = true;
+            setTimeout(() => {
+                document.getElementById('explanation-b').textContent = '所有操作執行完畢。';
+                document.getElementById('final-answer-b').style.display = 'block';
+            }, 1500);
+        }
+    }
+    
+    // --- Logic for Tab (c) ---
+    function showAnswersC() {
+        document.getElementById('c-ans-1').style.visibility = 'visible';
+        document.getElementById('c-ans-2').style.visibility = 'visible';
+        document.getElementById('explanation-c').style.display = 'block';
+    }
+    
+    // --- Logic for Tab (d) ---
+    function showAnswersD() {
+        document.getElementById('d-ans-1').style.visibility = 'visible';
+        document.getElementById('d-ans-2').style.visibility = 'visible';
+        document.getElementById('explanation-d').style.display = 'block';
+    }
+    
+    // --- Logic for Tab (e) ---
+    const stateE = {
+        start: 4, next: 2, N: 6,
+        taxi: ['HF646', 'SA978', '', '', 'IC9677', 'GF654'],
+        p: [4, 5, '', '', 5, 5],
+        activeIndices: [4, 5, 0, 1], // The order of traversal
+        total: 0,
+        resultsE: []
+    };
+    let currentStepE = 0;
+
+    function initE() {
+        currentStepE = 0;
+        stateE.total = 0;
+        stateE.resultsE = [];
+        document.getElementById('step-btn-e').disabled = false;
+        document.getElementById('final-analysis-e').style.display = 'none';
+        document.getElementById('explanation-e').innerHTML = `點擊「下一步」開始遍歷隊列並同步執行檢查。`;
+        document.getElementById('var-i-e').textContent = '-';
+        document.getElementById('var-total-e').textContent = '0';
+        renderQueueE(true);
+    }
+
+    function renderQueueE(isInitial = false) {
+        if (isInitial) {
+            const taxiDiv = document.getElementById('queue-e-taxi');
+            const pDiv = document.getElementById('queue-e-p');
+            taxiDiv.innerHTML = ''; pDiv.innerHTML = '';
+            for (let i = 0; i < stateE.N; i++) {
+                const taxiCell = document.createElement('div');
+                taxiCell.className = 'queue-cell';
+                taxiCell.id = `cell-e-taxi-${i}`;
+                taxiCell.innerHTML = `<div class="cell-content">${stateE.taxi[i]}</div><div class="cell-index">${i}</div>`;
+                taxiDiv.appendChild(taxiCell);
+                const pCell = document.createElement('div');
+                pCell.className = 'queue-cell p-array';
+                pCell.id = `cell-e-p-${i}`;
+                pCell.innerHTML = `<div class="cell-content">${stateE.p[i]}</div><div class="cell-index">${i}</div>`;
+                pDiv.appendChild(pCell);
+            }
+        }
+        const cellElements = document.getElementById('queue-e-taxi').querySelectorAll('.queue-cell');
+        if (cellElements.length === 0) return;
+        const cellWidth = cellElements[0].offsetWidth;
+        const startPointer = document.getElementById('start-e');
+        const nextPointer = document.getElementById('next-e');
+        const pointerWidth = startPointer.offsetWidth;
+        startPointer.style.left = `${cellElements[stateE.start].offsetLeft + (cellWidth - pointerWidth) / 2}px`;
+        nextPointer.style.left = `${cellElements[stateE.next].offsetLeft + (cellWidth - pointerWidth) / 2}px`;
+        document.querySelectorAll('#queue-wrapper-e .queue-cell').forEach(c => c.classList.remove('highlight-check'));
+    }
+
+    function runStepE() {
+        if (currentStepE === 0) {
+            const startIndex = stateE.start;
+            document.getElementById('var-i-e').textContent = startIndex;
+            document.getElementById('explanation-e').innerHTML = `<code>i &lt;- start</code>. 遍歷開始，i 初始化為 ${startIndex}。`;
+        }
+        
+        const currentIndex = stateE.activeIndices[currentStepE];
+        if (currentIndex === undefined) return;
+
+        renderQueueE();
+        document.getElementById('var-i-e').textContent = currentIndex;
+        const capacity = stateE.p[currentIndex];
+        let explanationText = `循環中... 當前 <code>i = ${currentIndex}</code>。檢查 <code>P[${currentIndex}]</code> 的值，即 ${capacity}。<br>`;
+        
+        setTimeout(() => {
+            document.getElementById(`cell-e-taxi-${currentIndex}`).classList.add('highlight-check');
+            document.getElementById(`cell-e-p-${currentIndex}`).classList.add('highlight-check');
+            
+            let matchTask1 = false;
+            let matchTask2 = false;
+
+            if (capacity >= 5) {
+                matchTask1 = true;
+                stateE.resultsE.push(stateE.taxi[currentIndex]);
+            }
+            if (capacity === 5) {
+                matchTask2 = true;
+                stateE.total++;
+                document.getElementById('var-total-e').textContent = stateE.total;
+            }
+
+            explanationText += `<strong>任務(1):</strong> 座位數 ${capacity} ${matchTask1 ? '>= 5，符合條件。' : '< 5，不符條件。'}<br>`;
+            explanationText += `<strong>任務(2):</strong> 座位數 ${capacity} ${matchTask2 ? '== 5，符合條件，total 變為 ' + stateE.total + '。' : '!= 5，不符條件，total 不變。'}`;
+
+            const nextIndex = (currentIndex + 1) % stateE.N;
+            explanationText += `<br>更新 i：<code>i &lt;- (i + 1) % N</code>，下一個 i 將是 ${nextIndex}。`;
+            document.getElementById('explanation-e').innerHTML = explanationText;
+
+        }, 100);
+
+        currentStepE++;
+        
+        if (currentStepE >= stateE.activeIndices.length) {
+            document.getElementById('step-btn-e').disabled = true;
+            const finalI = (stateE.activeIndices[stateE.activeIndices.length - 1] + 1) % stateE.N;
+            setTimeout(() => {
+                renderQueueE();
+                document.getElementById('var-i-e').textContent = finalI;
+                document.getElementById('explanation-e').innerHTML = `下一個 i 是 ${finalI}，等於 <code>next</code> (${stateE.next})。<br>循環條件 <code>i != next</code> 不再滿足，循環結束。`;
+                document.getElementById('final-analysis-e').style.display = 'block';
+            }, 2500);
+        }
+    }
+
+    window.onload = () => {
+        document.querySelector('.tab-button').click();
+    };
+
+</script>
+
+</body>
+</html>
