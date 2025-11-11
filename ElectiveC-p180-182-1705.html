@@ -679,8 +679,7 @@
         }
 
         if (currentStepE > stateE.activeIndices.length) { // Phase 3: End of loop
-            const finalI = (stateE.activeIndices[stateE.activeIndices.length - 1] + 1) % stateE.N;
-            document.getElementById('var-i-e').textContent = finalI;
+            const finalI = document.getElementById('var-i-e').textContent;
             document.getElementById('explanation-e').innerHTML = `當前 i = ${finalI}，等於 next = ${stateE.next}。`;
             setTimeout(() => {
                 highlightLineE('line-e-3');
@@ -742,7 +741,9 @@
         const nextIndex = (currentIndex + 1) % stateE.N;
         setTimeout(() => {
             highlightLineE('line-e-6');
-            document.getElementById('explanation-e').innerHTML = `更新遍歷指標：<code>i &lt;- (i + 1) % N</code>。<br>下一個 i 將是 ${nextIndex}。`;
+            // **修正點：立即更新 i 的顯示值，並修改解說文字**
+            document.getElementById('explanation-e').innerHTML = `更新遍歷指標：<code>i &lt;- (i + 1) % N</code>。<br>i 從 ${currentIndex} 更新為 ${nextIndex}。`;
+            document.getElementById('var-i-e').textContent = nextIndex;
         }, animDelay);
         animDelay += 1500;
 
