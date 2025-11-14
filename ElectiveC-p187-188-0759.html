@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鏈表解題動畫 (a) & (b)</title>
+    <style>
+        :root {
+            --primary-color: #0077c0;
+            --secondary-color: #f0f8ff;
+            --highlight-color: #ffeb3b; /* Kept for specific focus highlighting */
+            --answer-color: #e53935;
+            --text-color: #333;
+            --border-color: #ccc;
+            --deleted-color: #bbb;
+            --insert-color: #4caf50;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .main-content {
+            display: flex;
+            gap: 25px;
+            margin-top: 20px;
+        }
+        .left-column { flex: 3; min-width: 300px; }
+        .right-column { flex: 2; min-width: 280px; }
+        
+        .tab-container { display: flex; border-bottom: 2px solid var(--border-color); margin-bottom: 20px; }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            font-size: 1.1em;
+            position: relative;
+            bottom: -2px;
+        }
+        .tab.active {
+            border-color: var(--border-color);
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            background-color: #fff;
+            border-bottom: 2px solid #fff;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 1em; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: center; transition: background-color 0.5s ease, color 0.5s ease; }
+        th { background-color: var(--primary-color); color: white; }
+        
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .header-controls p {
+            margin: 0;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        
+        .explanation, .questions { padding: 15px; background-color: var(--secondary-color); border-left: 5px solid var(--primary-color); border-radius: 5px; margin-bottom: 20px; }
+        .questions { margin-bottom: 0; }
+        
+        button { background-color: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1em; transition: background-color 0.3s ease, transform 0.1s ease; }
+        button:hover { background-color: #005a9e; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #aaa; cursor: not-allowed; transform: none; }
+        
+        .answer, .final-answer { color: var(--answer-color); font-weight: bold; }
+        .question { margin-top: 15px; font-size: 1.1em; }
+        .question:first-child { margin-top: 0; }
+        
+        .highlight { background-color: var(--highlight-color) !important; }
+        .highlight-pointer { background-color: #ff9800 !important; color: white; border-radius: 5px; padding: 2px 6px; }
+        .highlight-insert { background-color: var(--insert-color) !important; color: white !important; }
+        .deleted { text-decoration: line-through; color: var(--deleted-color) !important; }
+        .deleted td { background-color: #f5f5f5 !important; }
+
+        #explanation-text-a, #explanation-text-b { min-height: 50px; transition: opacity 0.5s; }
+
+        /* --- UPDATED: Link Coloring Styles --- */
+        /* The background color for the pointer cell (-ptr) is now identical to the row color (-row) */
+        /* Color 1: Blue */
+        .link-color-0-row { background-color: #e3f2fd; }
+        .link-color-0-ptr { background-color: #e3f2fd; font-weight: bold; }
+        /* Color 2: Green */
+        .link-color-1-row { background-color: #e8f5e9; }
+        .link-color-1-ptr { background-color: #e8f5e9; font-weight: bold; }
+        /* Color 3: Orange */
+        .link-color-2-row { background-color: #fff3e0; }
+        .link-color-2-ptr { background-color: #fff3e0; font-weight: bold; }
+        /* Color 4: Purple */
+        .link-color-3-row { background-color: #f3e5f5; }
+        .link-color-3-ptr { background-color: #f3e5f5; font-weight: bold; }
+        /* Color 5: Red */
+        .link-color-4-row { background-color: #ffebee; }
+        .link-color-4-ptr { background-color: #ffebee; font-weight: bold; }
+        /* Color 6: Cyan */
+        .link-color-5-row { background-color: #e0f7fa; }
+        .link-color-5-ptr { background-color: #e0f7fa; font-weight: bold; }
+        
+        @media (max-width: 800px) {
+            .main-content { flex-direction: column; }
+            .header-controls { flex-direction: column; align-items: flex-start; }
+        }
+        @media (max-width: 600px) {
+            body { padding: 5px; }
+            .container { padding: 10px; }
+            th, td { padding: 8px; font-size: 0.9em; }
+            .controls { flex-wrap: wrap; width: 100%; }
+            .controls button { flex-grow: 1; min-width: 80px; margin-bottom: 5px; }
+            .tab { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>鏈表問題互動解答</h1>
+
+    <div class="tab-container">
+        <div class="tab active" onclick="showTab('a')">問題 (a)</div>
+        <div class="tab" onclick="showTab('b')">問題 (b)</div>
+    </div>
+
+    <!-- Tab A Content -->
+    <div id="tab-a" class="tab-content active">
+        <p>樂瑤利用鏈表來儲存港鐵站的英文名稱。鏈表中的首個節點內容儲存了「start」，而指示標儲存了下一個節點的索引。她將此鏈表以陣列顯示。</p>
+        <div class="main-content">
+            <div class="left-column">
+                <table id="linked-list-table-a">
+                    <thead><tr><th>索引</th><th>內容</th><th>指示標</th></tr></thead>
+                    <tbody>
+                        <tr data-index="0"><td>0</td><td>start</td><td>3</td></tr>
+                        <tr data-index="1"><td>1</td><td></td><td></td></tr>
+                        <tr data-index="2"><td>2</td><td>Yau Ma Tei</td><td>6</td></tr>
+                        <tr data-index="3"><td>3</td><td>Whampoa</td><td>5</td></tr>
+                        <tr data-index="4"><td>4</td><td></td><td></td></tr>
+                        <tr data-index="5"><td>5</td><td>Ho Man Tin</td><td>2</td></tr>
+                        <tr data-index="6"><td>6</td><td>Mong Kok</td><td>-1</td></tr>
+                        <tr data-index="7"><td>7</td><td></td><td></td></tr>
+                        <tr data-index="8"><td>8</td><td>Wong Tai Sin</td><td>-1</td></tr>
+                        <tr data-index="9"><td>9</td><td>Jordan</td><td>2</td></tr>
+                    </tbody>
+                </table>
+                <div class="controls">
+                    <button id="next-btn-a">開始動畫</button>
+                    <button id="reset-btn-a">重設</button>
+                </div>
+            </div>
+            <div class="right-column">
+                <div class="explanation">
+                    <h2>解題步驟</h2>
+                    <p id="explanation-text-a">點擊「開始動畫」按鈕以開始解題。</p>
+                </div>
+                <div class="questions">
+                    <h2>問題與答案</h2>
+                    <div class="question"><p>(a)(i) 樂瑤採用「-1」以表示一個空指示標。順序寫出此鏈表中節點的內容。</p><p id="answer-i-a">答案：</p></div>
+                    <div class="question"><p>(a)(ii) 包括首個節點，此鏈表共有多少個節點？</p><p id="answer-ii-a">答案：</p></div>
+                    <div class="question"><p>(a)(iii) 除了「-1」外，舉出樂瑤可用以表示空指示標的數值範圍。</p><p id="answer-iii-a">答案：</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab B Content -->
+    <div id="tab-b" class="tab-content">
+        <div class="header-controls">
+            <p>她執行以下程式碼：<br><code>insert(5, "Kowloon Tong")</code><br><code>insert(5, "Prince Edward")</code><br><code>delete(2)</code><br>試在下方更新鏈表。</p>
+            <div class="controls">
+                <button id="prev-btn-b">上一步</button>
+                <button id="next-btn-b">開始動畫</button>
+                <button id="reset-btn-b">重設</button>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="left-column">
+                <table id="linked-list-table-b">
+                    <thead><tr><th>索引</th><th>內容</th><th>指示標</th></tr></thead>
+                    <tbody>
+                        <tr data-index="0"><td>0</td><td id="content-0">start</td><td id="pointer-0">3</td></tr>
+                        <tr data-index="1"><td>1</td><td id="content-1"></td><td id="pointer-1"></td></tr>
+                        <tr data-index="2"><td>2</td><td id="content-2">Yau Ma Tei</td><td id="pointer-2">6</td></tr>
+                        <tr data-index="3"><td>3</td><td id="content-3">Whampoa</td><td id="pointer-3">5</td></tr>
+                        <tr data-index="4"><td>4</td><td id="content-4"></td><td id="pointer-4"></td></tr>
+                        <tr data-index="5"><td>5</td><td id="content-5">Ho Man Tin</td><td id="pointer-5">2</td></tr>
+                        <tr data-index="6"><td>6</td><td id="content-6">Mong Kok</td><td id="pointer-6">-1</td></tr>
+                        <tr data-index="7"><td>7</td><td id="content-7"></td><td id="pointer-7"></td></tr>
+                        <tr data-index="8"><td>8</td><td id="content-8">Wong Tai Sin</td><td id="pointer-8">-1</td></tr>
+                        <tr data-index="9"><td>9</td><td id="content-9">Jordan</td><td id="pointer-9">2</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="right-column">
+                <div class="explanation">
+                    <h2>解題步驟</h2>
+                    <p id="explanation-text-b">點擊「開始動畫」按鈕以開始執行三個操作。相同顏色的指示標和行，表示它們之間的連接。</p>
+                </div>
+                 <div class="questions">
+                    <h2>最終結果</h2>
+                    <p>在執行所有操作後，鏈表的最終狀態如下。紅色文字標示出已更新的數值。</p>
+                    <p id="final-answer-b">答案將在動畫完成後顯示。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- General Tab Logic ---
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+        if (tabId === 'b') {
+            document.getElementById('reset-btn-b').click();
+        }
+    }
+
+    // --- Tab A Logic ---
+    (function() {
+        const nextBtn = document.getElementById('next-btn-a');
+        const resetBtn = document.getElementById('reset-btn-a');
+        const explanationText = document.getElementById('explanation-text-a');
+        const answerI = document.getElementById('answer-i-a');
+        const answerII = document.getElementById('answer-ii-a');
+        const answerIII = document.getElementById('answer-iii-a');
+        const tableRows = document.querySelectorAll('#linked-list-table-a tbody tr');
+
+        const listData = [ { next: 3 }, {}, { next: 6 }, { next: 5 }, {}, { next: 2 }, { next: -1 }, {}, { next: -1 }, { next: 2 } ];
+        const contentData = ['start', '', 'Yau Ma Tei', 'Whampoa', '', 'Ho Man Tin', 'Mong Kok', '', 'Wong Tai Sin', 'Jordan'];
+        
+        let state = {};
+        const initialText = '點擊「開始動畫」按鈕以開始解題。';
+
+        function resetA() {
+            state = { step: 0, currentIndex: 0, nodeCount: 0, path: [], lastHighlightedRow: null, lastHighlightedPointer: null };
+            explanationText.innerHTML = initialText;
+            answerI.innerHTML = '答案：';
+            answerII.innerHTML = '答案：';
+            answerIII.innerHTML = '答案：';
+            tableRows.forEach(row => {
+                row.classList.remove('highlight');
+                row.style.backgroundColor = '';
+            });
+            document.querySelectorAll('#linked-list-table-a tbody tr:nth-child(even)').forEach(row => {
+                row.style.backgroundColor = 'var(--secondary-color)';
+            });
+
+            const pointerSpans = document.querySelectorAll('#linked-list-table-a .highlight-pointer');
+            pointerSpans.forEach(span => {
+                const parent = span.parentNode;
+                if (parent) parent.innerHTML = span.textContent;
+            });
+            nextBtn.disabled = false;
+            nextBtn.textContent = '開始動畫';
+        }
+
+        function highlightRowA(index) {
+            if (state.lastHighlightedRow !== null) {
+                const oldRow = document.querySelector(`#linked-list-table-a tr[data-index="${state.lastHighlightedRow}"]`);
+                if (oldRow) oldRow.classList.remove('highlight');
+            }
+            if (index !== null) {
+                const newRow = document.querySelector(`#linked-list-table-a tr[data-index="${index}"]`);
+                if (newRow) newRow.classList.add('highlight');
+                state.lastHighlightedRow = index;
+            }
+        }
+
+        function highlightPointerA(rowIndex, pointerValue) {
+            if (state.lastHighlightedPointer) {
+                const parent = state.lastHighlightedPointer.parentNode;
+                if(parent) parent.innerHTML = parent.textContent;
+            }
+            const row = document.querySelector(`#linked-list-table-a tr[data-index="${rowIndex}"]`);
+            if (!row) return;
+            const cell = row.cells[2];
+            cell.innerHTML = `<span class="highlight-pointer">${pointerValue}</span>`;
+            state.lastHighlightedPointer = cell.querySelector('.highlight-pointer');
+        }
+
+        function runStepA() {
+            if (state.step > 0) nextBtn.textContent = '下一步';
+            let text = '';
+            switch (state.step) {
+                case 0:
+                    text = '<strong>第 1 步：</strong>鏈表從索引 <strong>0</strong> 開始。內容是「start」。';
+                    highlightRowA(0);
+                    state.nodeCount = 1;
+                    state.path.push(contentData[0]);
+                    state.currentIndex = listData[0].next;
+                    answerI.innerHTML = `答案： <span class="answer">${state.path.join(', ')}</span>`;
+                    answerII.innerHTML = `答案： 目前計數：${state.nodeCount}`;
+                    highlightPointerA(0, state.currentIndex);
+                    text += ` 指示標是 <strong>${state.currentIndex}</strong>，所以下一個節點在索引 <strong>${state.currentIndex}</strong>。`;
+                    break;
+                case 1:
+                    text = '<strong>第 2 步：</strong>移動到索引 <strong>3</strong>。內容是「Whampoa」。';
+                    highlightRowA(3);
+                    state.nodeCount++; state.path.push(contentData[3]); state.currentIndex = listData[3].next;
+                    answerI.innerHTML = `答案： <span class="answer">${state.path.join(', ')}</span>`;
+                    answerII.innerHTML = `答案： 目前計數：${state.nodeCount}`;
+                    highlightPointerA(3, state.currentIndex);
+                    text += ` 指示標是 <strong>${state.currentIndex}</strong>，所以下一個節點在索引 <strong>${state.currentIndex}</strong>。`;
+                    break;
+                case 2:
+                    text = '<strong>第 3 步：</strong>移動到索引 <strong>5</strong>。內容是「Ho Man Tin」。';
+                    highlightRowA(5);
+                    state.nodeCount++; state.path.push(contentData[5]); state.currentIndex = listData[5].next;
+                    answerI.innerHTML = `答案： <span class="answer">${state.path.join(', ')}</span>`;
+                    answerII.innerHTML = `答案： 目前計數：${state.nodeCount}`;
+                    highlightPointerA(5, state.currentIndex);
+                    text += ` 指示標是 <strong>${state.currentIndex}</strong>，所以下一個節點在索引 <strong>${state.currentIndex}</strong>。`;
+                    break;
+                case 3:
+                    text = '<strong>第 4 步：</strong>移動到索引 <strong>2</strong>。內容是「Yau Ma Tei」。';
+                    highlightRowA(2);
+                    state.nodeCount++; state.path.push(contentData[2]); state.currentIndex = listData[2].next;
+                    answerI.innerHTML = `答案： <span class="answer">${state.path.join(', ')}</span>`;
+                    answerII.innerHTML = `答案： 目前計數：${state.nodeCount}`;
+                    highlightPointerA(2, state.currentIndex);
+                    text += ` 指示標是 <strong>${state.currentIndex}</strong>，所以下一個節點在索引 <strong>${state.currentIndex}</strong>。`;
+                    break;
+                case 4:
+                    text = '<strong>第 5 步：</strong>移動到索引 <strong>6</strong>。內容是「Mong Kok」。';
+                    highlightRowA(6);
+                    state.nodeCount++; state.path.push(contentData[6]); state.currentIndex = listData[6].next;
+                    answerI.innerHTML = `答案： <span class="answer">${state.path.join(', ')}</span>`;
+                    answerII.innerHTML = `答案： 目前計數：${state.nodeCount}`;
+                    highlightPointerA(6, state.currentIndex);
+                    text += ` 指示標是 <strong>${state.currentIndex}</strong>，這表示鏈表的結尾。`;
+                    break;
+                case 5:
+                    text = '<strong>完成追蹤：</strong>我們到達了鏈表的末端。現在可以總結答案。';
+                    answerI.innerHTML = `答案 (i)：<span class="answer">${state.path.join(', ')}</span>`;
+                    break;
+                case 6:
+                    text = '<strong>計算總數：</strong>在追蹤過程中，我們一共訪問了 5 個節點。';
+                    answerII.innerHTML = `答案 (ii)：<span class="answer">${state.nodeCount}</span>`;
+                    break;
+                case 7:
+                    text = `<strong>關於空指示標：</strong>陣列的有效索引是從 0 到 9 的整數。任何<strong>不在這個有效範圍內</strong>的數值都可以用來表示一個空指示標，因為它永遠不會指向一個有效的節點。`;
+                    answerIII.innerHTML = `答案 (iii)：<span class="answer">任何負數</span> (例如 -1, -2) 或 <span class="answer">任何大於或等於陣列大小的數字</span> (例如 10, 11)。`;
+                    nextBtn.disabled = true; nextBtn.textContent = '已完成';
+                    break;
+            }
+            explanationText.innerHTML = text;
+            state.step++;
+        }
+        nextBtn.addEventListener('click', runStepA);
+        resetBtn.addEventListener('click', resetA);
+        resetA();
+    })();
+
+    // --- Tab B Logic ---
+    (function() {
+        const prevBtn = document.getElementById('prev-btn-b');
+        const nextBtn = document.getElementById('next-btn-b');
+        const resetBtn = document.getElementById('reset-btn-b');
+        const explanationText = document.getElementById('explanation-text-b');
+        const finalAnswer = document.getElementById('final-answer-b');
+        const table = document.getElementById('linked-list-table-b');
+
+        const initialData = [
+            { content: 'start', pointer: '3' }, { content: '', pointer: '' }, { content: 'Yau Ma Tei', pointer: '6' },
+            { content: 'Whampoa', pointer: '5' }, { content: '', pointer: '' }, { content: 'Ho Man Tin', pointer: '2' },
+            { content: 'Mong Kok', pointer: '-1' }, { content: '', pointer: '' }, { content: 'Wong Tai Sin', pointer: '-1' },
+            { content: 'Jordan', pointer: '2' }
+        ];
+        
+        const maxSteps = 9;
+        let stateB = { step: 0 };
+        const linkColors = ['link-color-0', 'link-color-1', 'link-color-2', 'link-color-3', 'link-color-4', 'link-color-5'];
+
+        function getCell(type, index) { return document.getElementById(`${type}-${index}`); }
+        function getRow(index) { return table.querySelector(`tr[data-index="${index}"]`); }
+        
+        function clearAllStyles() {
+            for (let i = 0; i < 10; i++) {
+                const row = getRow(i);
+                // Clear all classes from the row and cells to reset them completely.
+                // IDs are not affected.
+                row.className = '';
+                row.cells[1].className = '';
+                row.cells[2].className = '';
+            }
+        }
+        
+        function applyLinkColors() {
+            let currentIndex = 0; // Start from 'start' node
+            let colorIndex = 0;
+            const visited = new Set();
+
+            while (currentIndex !== -1 && !visited.has(currentIndex) && currentIndex < initialData.length) {
+                visited.add(currentIndex);
+                const pointerValue = parseInt(getCell('pointer', currentIndex).textContent, 10);
+                
+                if (!isNaN(pointerValue) && pointerValue !== -1) {
+                    const colorClass = linkColors[colorIndex % linkColors.length];
+                    
+                    const pointerCell = getCell('pointer', currentIndex);
+                    const nextRow = getRow(pointerValue);
+                    
+                    if (pointerCell && nextRow) {
+                        pointerCell.classList.add(colorClass + '-ptr');
+                        nextRow.classList.add(colorClass + '-row');
+                    }
+                    
+                    currentIndex = pointerValue;
+                    colorIndex++;
+                } else {
+                    break; // End of list
+                }
+            }
+        }
+
+        function resetB() {
+            stateB.step = 0;
+            updateUI();
+        }
+        
+        function handleNext() {
+            if (stateB.step < maxSteps) {
+                stateB.step++;
+                updateUI();
+            }
+        }
+        
+        function handlePrev() {
+            if (stateB.step > 0) {
+                stateB.step--;
+                updateUI();
+            }
+        }
+
+        function updateUI() {
+            prevBtn.disabled = (stateB.step === 0);
+            nextBtn.disabled = (stateB.step === maxSteps);
+
+            if (stateB.step === 0) {
+                nextBtn.textContent = '開始動畫';
+            } else if (stateB.step === maxSteps) {
+                nextBtn.textContent = '已完成';
+            } else {
+                nextBtn.textContent = '下一步';
+            }
+            
+            renderStepB(stateB.step);
+        }
+
+        function renderStepB(step) {
+            // 1. Reset all styles and data to initial state
+            clearAllStyles();
+            initialData.forEach((d, i) => {
+                getCell('content', i).textContent = d.content;
+                getCell('pointer', i).textContent = d.pointer;
+                getRow(i).classList.remove('deleted');
+            });
+            finalAnswer.innerHTML = '答案將在動畫完成後顯示。';
+            
+            // 2. Apply data changes sequentially based on the current step
+            let text = '點擊「開始動畫」按鈕以開始執行三個操作。相同顏色的指示標和行，表示它們之間的連接。';
+            
+            // --- Apply data changes up to the current step ---
+            if (step >= 3) { // insert(5, "Kowloon Tong")
+                getCell('content', 1).textContent = 'Kowloon Tong';
+                getCell('pointer', 1).textContent = '-1';
+                getCell('pointer', 6).textContent = '1';
+            }
+            if (step >= 6) { // insert(5, "Prince Edward")
+                getCell('content', 4).textContent = 'Prince Edward';
+                getCell('pointer', 4).textContent = '1';
+                getCell('pointer', 6).textContent = '4';
+            }
+            if (step >= 8) { // delete(2)
+                getCell('pointer', 0).textContent = '5';
+                getRow(3).classList.add('deleted');
+            }
+
+            // 3. Apply link colors based on the current data state
+            applyLinkColors();
+            
+            // 4. Apply step-specific highlights and explanations
+            switch (step) {
+                case 0: break;
+                case 1: 
+                    text = "<h3>操作 1: <code>insert(5, \"Kowloon Tong\")</code></h3><strong>步驟 1/3：尋找第 5 個節點。</strong><br>根據顏色鏈接，我們追蹤鏈表：<br>1. start → 2. Whampoa → 3. Ho Man Tin → 4. Yau Ma Tei → <strong>5. Mong Kok (索引6)</strong>。";
+                    getRow(6).classList.add('highlight'); // Focus on the target node
+                    break;
+                case 2:
+                    text = "<h3>操作 1: <code>insert(5, \"Kowloon Tong\")</code></h3><strong>步驟 2/3：插入新節點。</strong><br>在第 5 個節點 'Mong Kok' 後面，找到第一個可用空間 (索引 1) 插入 'Kowloon Tong'。新節點的指示標設為 'Mong Kok' 原本的指示標 (-1)。";
+                    getRow(1).classList.add('highlight-insert');
+                    break;
+                case 3:
+                    text = "<h3>操作 1: <code>insert(5, \"Kowloon Tong\")</code></h3><strong>步驟 3/3：更新指示標。</strong><br>將 'Mong Kok' (索引6) 的指示標從 -1 更新為 1，使其指向新節點 'Kowloon Tong'。";
+                    getRow(6).classList.add('highlight');
+                    getCell('pointer', 6).classList.add('highlight-insert');
+                    break;
+                case 4:
+                    text = "<h3>操作 2: <code>insert(5, \"Prince Edward\")</code></h3><strong>步驟 1/3：尋找第 5 個節點。</strong><br>鏈表已更新，但前 5 個節點的順序不變。第 5 個節點仍然是 'Mong Kok' (索引6)。";
+                    getRow(6).classList.add('highlight'); // Focus on the target node
+                    break;
+                case 5:
+                    text = "<h3>操作 2: <code>insert(5, \"Prince Edward\")</code></h3><strong>步驟 2/3：插入新節點。</strong><br>在 'Mong Kok' 後面，找到下一個可用空間 (索引 4) 插入 'Prince Edward'。新節點的指示標設為 'Mong Kok' 原本的指示標 (1)。";
+                    getRow(4).classList.add('highlight-insert');
+                    break;
+                case 6:
+                    text = "<h3>操作 2: <code>insert(5, \"Prince Edward\")</code></h3><strong>步驟 3/3：更新指示標。</strong><br>將 'Mong Kok' (索引6) 的指示標從 1 更新為 4，使其指向新的 'Prince Edward' 節點。";
+                    getRow(6).classList.add('highlight');
+                    getCell('pointer', 6).classList.add('highlight-insert');
+                    break;
+                case 7:
+                    text = "<h3>操作 3: <code>delete(2)</code></h3><strong>步驟 1/2：尋找相關節點。</strong><br>我們要刪除第 2 個節點 ('Whampoa', 索引3)。為此，需要找到它前面的節點，即第 1 個節點 ('start', 索引0)。";
+                    getRow(0).classList.add('highlight'); // Predecessor node
+                    getRow(3).classList.add('highlight-insert'); // Node to be deleted
+                    break;
+                case 8:
+                    text = "<h3>操作 3: <code>delete(2)</code></h3><strong>步驟 2/2：更新指示標。</strong><br>將 'start' (索引0) 的指示標，從指向 'Whampoa' (索引3) 改為指向 'Whampoa' 原本指向的節點 ('Ho Man Tin', 索引5)。";
+                    getRow(0).classList.add('highlight');
+                    getCell('pointer', 0).classList.add('highlight-insert');
+                    break;
+                case 9:
+                    text = "<h3>所有操作完成</h3><p>所有指令均已執行完畢。下方的表格顯示了最終的鏈表狀態。紅色字體標示了與初始狀態相比發生變化的值。</p><p><strong>最終鏈表順序：</strong><br>start → Ho Man Tin → Yau Ma Tei → Mong Kok → Prince Edward → Kowloon Tong</p>";
+                    // Mark final answers
+                    getCell('pointer', 0).classList.add('final-answer');
+                    getCell('content', 1).classList.add('final-answer');
+                    getCell('pointer', 1).classList.add('final-answer');
+                    getCell('content', 4).classList.add('final-answer');
+                    getCell('pointer', 4).classList.add('final-answer');
+                    getCell('pointer', 6).classList.add('final-answer');
+                    
+                    finalAnswer.innerHTML = `
+                        <p>
+                        索引 0 (start) 的指示標更新為 <span class="final-answer">5</span>。<br>
+                        索引 1 加入內容 <span class="final-answer">Kowloon Tong</span>，指示標為 <span class="final-answer">-1</span>。<br>
+                        索引 4 加入內容 <span class="final-answer">Prince Edward</span>，指示標為 <span class="final-answer">1</span>。<br>
+                        索引 6 (Mong Kok) 的指示標更新為 <span class="final-answer">4</span>。<br>
+                        <br>
+                        <strong>注意：</strong> 索引 3 的節點 ('Whampoa') 已被刪除（從鏈表中斷開），但其數據可能仍保留在陣列中，直到該空間被重用。
+                        </p>
+                    `;
+                    break;
+            }
+            explanationText.innerHTML = text;
+        }
+
+        nextBtn.addEventListener('click', handleNext);
+        prevBtn.addEventListener('click', handlePrev);
+        resetBtn.addEventListener('click', resetB);
+        
+        // Initial render
+        resetB();
+    })();
+</script>
+
+</body>
+</html>
