@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鏈表設計問題解析</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #F5A623;
+            --text-color: #333;
+            --bg-color: #F4F7F9;
+            --header-bg: #D9534F;
+            --header-text: #FFF;
+            --answer-color: #D32F2F;
+            --highlight-bg: #FFF9C4;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            padding: 25px 30px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        h1 {
+            text-align: center;
+            border: none;
+        }
+
+        p, li {
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 30px;
+            background-color: #E9ECEF;
+            border-top: 1px solid #DEE2E6;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            background-color: #357ABD;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background-color: #B0C4DE;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .start-btn {
+            background-color: var(--secondary-color);
+        }
+        .start-btn:hover {
+            background-color: #D48E1C;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        th {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .answer {
+            color: var(--answer-color);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .code {
+            background-color: #EFEFEF;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            margin: 15px 0;
+            display: inline-block;
+        }
+        
+        .arrow {
+            font-size: 1.5em;
+            color: var(--secondary-color);
+            margin: 0 10px;
+        }
+        
+        .step {
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 3px solid var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Page 0: Title -->
+        <div class="page active" id="page0">
+            <h1>鏈表設計問題解析</h1>
+            <p>此互動教學將分頁解說關於鏈表設計的 (a)、(b)、(c) 三個子問題。</p>
+            <p>請點擊「開始解說」按鈕以進入第一題 (a)。</p>
+        </div>
+
+        <!-- Page 1: Question (a) -->
+        <div class="page" id="page1">
+            <h2>(a) 解答：建構鏈表 L2</h2>
+            <p>題目要求根據鏈表 L1 的設計，完成鏈表 L2。L2 的 `pointer` 值是 L1 中對應節點的 `prev` 和 `next` 值的總和。</p>
+            <p>計算公式為：<span class="code">pointer = prev + next</span></p>
+            
+            <h4>原鏈表 L1</h4>
+            <table>
+                <thead><tr><th>索引</th><th>內容</th><th>prev</th><th>next</th></tr></thead>
+                <tbody>
+                    <tr><td>0</td><td>start</td><td>-1</td><td>2</td></tr>
+                    <tr><td>2</td><td>Andy</td><td>0</td><td>5</td></tr>
+                    <tr><td>4</td><td>Tracy</td><td>5</td><td>-1</td></tr>
+                    <tr><td>5</td><td>Jessica</td><td>2</td><td>4</td></tr>
+                </tbody>
+            </table>
+            
+            <h4>計算過程：</h4>
+            <ul>
+                <li><b>索引 4 (Tracy):</b> L1 中 `prev` = 5, `next` = -1。<br>計算：<span class="code">pointer = 5 + (-1) = 4</span></li>
+                <li><b>索引 5 (Jessica):</b> L1 中 `prev` = 2, `next` = 4。<br>計算：<span class="code">pointer = 2 + 4 = 6</span></li>
+            </ul>
+            
+            <h4>完成後的鏈表 L2</h4>
+            <table>
+                <thead><tr><th>索引</th><th>內容</th><th>pointer</th></tr></thead>
+                <tbody>
+                    <tr><td>0</td><td>start</td><td>1</td></tr>
+                    <tr><td>1</td><td></td><td></td></tr>
+                    <tr><td>2</td><td>Andy</td><td>5</td></tr>
+                    <tr><td>3</td><td></td><td></td></tr>
+                    <tr><td>4</td><td>Tracy</td><td><span class="answer">4</span></td></tr>
+                    <tr><td>5</td><td>Jessica</td><td><span class="answer">6</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Page 2: Question (b) -->
+        <div class="page" id="page2">
+            <h2>(b) 解答：遍歷鏈表 L2</h2>
+            <p>題目要求根據給定的 L2 內容，從「start」節點開始，順序寫出後四個節點的內容。</p>
+            <h4>給定的鏈表 L2</h4>
+            <table>
+                <thead><tr><th>索引</th><th>內容</th><th>pointer</th></tr></thead>
+                <tbody>
+                    <tr><td>0</td><td>start</td><td>3</td></tr>
+                    <tr><td>1</td><td>Teresa</td><td>10</td></tr>
+                    <tr><td>2</td><td>Benson</td><td>13</td></tr>
+                    <tr><td>3</td><td>Joyce</td><td>6</td></tr>
+                    <tr><td>4</td><td>Kyle</td><td>6</td></tr>
+                    <tr><td>5</td><td>Vicky</td><td>2</td></tr>
+                    <tr><td>6</td><td>Daniel</td><td>6</td></tr>
+                    <tr><td>7</td><td>Mike</td><td>3</td></tr>
+                </tbody>
+            </table>
+            <p><b>遍歷規則：</b>我們需要知道前一個節點的索引 (`prev_index`) 和當前節點的 `pointer` 值，才能找到下一個節點的索引 (`next_index`)。</p>
+            <p>推導公式：<span class="code">next_index = pointer - prev_index</span></p>
+
+            <h4>遍歷步驟：</h4>
+            <div class="step">
+                <p><b>1. 第一個節點：</b><br>
+                從 `start` (索引 0) 開始，其 `prev_index` 視為 -1。<br>
+                `next_index` = 3 - (-1) = 4。索引 4 的內容是 <b>Kyle</b>。</p>
+            </div>
+            <div class="step">
+                <p><b>2. 第二個節點：</b><br>
+                目前在 `Kyle` (索引 4)，其 `prev_index` 是 0。<br>
+                `next_index` = 6 - 0 = 6。索引 6 的內容是 <b>Daniel</b>。</p>
+            </div>
+            <div class="step">
+                <p><b>3. 第三個節點：</b><br>
+                目前在 `Daniel` (索引 6)，其 `prev_index` 是 4。<br>
+                `next_index` = 6 - 4 = 2。索引 2 的內容是 <b>Benson</b>。</p>
+            </div>
+            <div class="step">
+                <p><b>4. 第四個節點：</b><br>
+                目前在 `Benson` (索引 2)，其 `prev_index` 是 6。<br>
+                `next_index` = 13 - 6 = 7。索引 7 的內容是 <b>Mike</b>。</p>
+            </div>
+
+            <h3>最終順序</h3>
+            <p style="text-align:center; font-size: 1.3em;">
+                <span class="answer">Kyle</span> <span class="arrow">→</span> 
+                <span class="answer">Daniel</span> <span class="arrow">→</span> 
+                <span class="answer">Benson</span> <span class="arrow">→</span> 
+                <span class="answer">Mike</span>
+            </p>
+        </div>
+        
+        <!-- Page 3: Question (c) -->
+        <div class="page" id="page3">
+            <h2>(c) 解答：鏈表 L2 設計的優點</h2>
+            <p>題目要求舉出使用鏈表 L2 設計的一個優點。</p>
+            
+            <h4>設計比較：</h4>
+            <ul>
+                <li><b>鏈表 L1 (傳統雙向鏈表):</b><br>每個節點需要兩個欄位來儲存指標：`prev` 和 `next`。</li>
+                <li><b>鏈表 L2 (XOR 鏈表變體):</b><br>每個節點只需要一個欄位 `pointer` 來儲存導航資訊。</li>
+            </ul>
+            
+            <h4>優點分析：</h4>
+            <p>通過將兩個指標資訊壓縮到一個欄位中，L2 的設計顯著減少了每個節點所需的儲存空間。在處理大量數據或記憶體受限的系統中，這種空間效率是一個重要的優勢。</p>
+            
+            <h3>答案</h3>
+            <p>鏈表 L2 設計的一個主要優點是：</p>
+            <p class="answer" style="font-size: 1.3em; text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">須要使用的記憶體 (儲存空間) 較少。</p>
+        </div>
+
+        <!-- Page 4: End -->
+        <div class="page" id="page4">
+            <h1>解說完成</h1>
+            <p>您已完成 (a)、(b)、(c) 三個子問題的詳細解說。</p>
+            <p>這種使用單一指標儲存前後節點資訊總和（或更常見的 XOR 值）的數據結構，被稱為「XOR鏈表」，它是一種在記憶體受限環境下節省空間的有效技巧。</p>
+            <p>點擊「重頭開始」可以再次瀏覽解題過程。</p>
+        </div>
+
+        <div class="navigation">
+            <button class="btn" id="prevBtn">上一頁</button>
+            <button class="btn" id="nextBtn">下一頁</button>
+        </div>
+    </div>
+
+    <script>
+        const pages = document.querySelectorAll('.page');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        let currentPageIndex = 0;
+        const totalPages = pages.length;
+
+        function showPage(index) {
+            pages.forEach(page => page.classList.remove('active'));
+            const targetPage = document.getElementById(`page${index}`);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+
+            prevBtn.disabled = (index === 0);
+            nextBtn.disabled = (index === totalPages - 1);
+            
+            if (index === 0) {
+                nextBtn.textContent = '開始解說';
+                nextBtn.classList.add('start-btn');
+            } else if (index === totalPages - 1) {
+                nextBtn.textContent = '重頭開始';
+                nextBtn.classList.remove('start-btn');
+            } else {
+                nextBtn.textContent = '下一頁';
+                nextBtn.classList.remove('start-btn');
+            }
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (currentPageIndex < totalPages - 1) {
+                currentPageIndex++;
+            } else {
+                currentPageIndex = 0;
+            }
+            showPage(currentPageIndex);
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                showPage(currentPageIndex);
+            }
+        });
+
+        showPage(currentPageIndex);
+    </script>
+
+</body>
+</html>
