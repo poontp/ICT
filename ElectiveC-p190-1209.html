@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雙向鏈表操作解答 (逐步版)</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --highlight-bg: #ffe0b3;
+            --update-bg: #cce5ff;
+            --delete-bg: #f8d7da;
+            --answer-color: #dc3545;
+            --font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            --prev-link-bg: #d0e1f9; /* 淡藍色 */
+            --next-link-bg: #d4edda; /* 淡綠色 */
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #f1f1f1;
+        }
+
+        .tab-button {
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 17px;
+            flex-grow: 1;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button:hover {
+            background-color: #ddd;
+        }
+
+        .tab-button.active {
+            background-color: #fff;
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border-top: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2, h3, h4 {
+            color: var(--primary-color);
+        }
+        h2 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        h4 {
+             text-align: center;
+             margin-bottom: 10px;
+        }
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        th {
+            background-color: #e9ecef;
+        }
+
+        .answer {
+            color: var(--answer-color);
+            font-weight: bold;
+        }
+
+        .explanation {
+            background-color: #eef;
+            border-left: 5px solid var(--primary-color);
+            padding: 15px;
+            margin: 20px 0;
+            min-height: 50px;
+        }
+        
+        .control-panel {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .action-button.reset {
+            background-color: #6c757d;
+        }
+
+        .action-button:hover {
+            opacity: 0.9;
+        }
+
+        .action-button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .highlight { background-color: var(--highlight-bg) !important; }
+        .updated { background-color: var(--update-bg) !important; }
+        .deleted > td { background-color: var(--delete-bg) !important; text-decoration: line-through; }
+        
+        .prev-link { background-color: var(--prev-link-bg) !important; }
+        .next-link { background-color: var(--next-link-bg) !important; }
+
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        ul {
+            list-style-type: square;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        /* [新增] 用於並排顯示最終結果的樣式 */
+        .final-comparison {
+            display: none; /* 預設隱藏 */
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .final-comparison.visible {
+            display: flex; /* 在最後一步時顯示為 flex 容器 */
+        }
+        .comparison-table-wrapper {
+            flex: 1; /* 讓兩個表格平分寬度 */
+            min-width: 0;
+        }
+        .comparison-table-wrapper table {
+            margin-top: 0;
+        }
+
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            /* [新增] 在窄螢幕上，並排比較改為垂直堆疊 */
+            .final-comparison.visible {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 0.5rem;
+            }
+            .tab-button {
+                font-size: 14px;
+                padding: 12px 8px;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 14px;
+            }
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            tr {
+                border: 1px solid var(--border-color);
+                margin-bottom: 10px;
+            }
+            td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+            td:before {
+                position: absolute;
+                top: 50%;
+                left: 10px;
+                transform: translateY(-50%);
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+            }
+            td:nth-of-type(1):before { content: "地址"; }
+            td:nth-of-type(2):before { content: "內容"; }
+            td:nth-of-type(3):before { content: "prev"; }
+            td:nth-of-type(4):before { content: "next"; }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-button active" onclick="openTab(event, 'partA')">問題 (a)</button>
+        <button class="tab-button" onclick="openTab(event, 'partB')">問題 (b)</button>
+        <button class="tab-button" onclick="openTab(event, 'partC')">問題 (c)</button>
+    </div>
+
+    <!-- Tab A Content -->
+    <div id="partA" class="tab-content">
+        <h2>(a) 順序寫出鏈表中節點的內容</h2>
+        <p>題目要求從鏈表的首個節點開始，依照 <code>next</code> 指標的順序，遍歷整個鏈表，並寫下每個節點的「內容」。</p>
+        
+        <div class="control-panel">
+            <button id="prevA" class="action-button" onclick="stepA(-1)">上一步</button>
+            <button id="nextA" class="action-button" onclick="stepA(1)">下一步</button>
+            <button class="action-button reset" onclick="resetA()">重置</button>
+        </div>
+
+        <div id="explanationA" class="explanation">點擊「下一步」開始遍歷。</div>
+
+        <table id="tableA">
+            <thead>
+                <tr><th>地址</th><th>內容</th><th>prev</th><th>next</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>0</td><td>physics</td><td>-1</td><td>2</td></tr>
+                <tr><td>1</td><td>20180125</td><td>4</td><td>-1</td></tr>
+                <tr><td>2</td><td>20180317</td><td>0</td><td>4</td></tr>
+                <tr><td>3</td><td></td><td></td><td></td></tr>
+                <tr><td>4</td><td>20180236</td><td>2</td><td>1</td></tr>
+            </tbody>
+        </table>
+        
+        <h3>最終答案：</h3>
+        <p id="finalAnswerA">遍歷順序為：</p>
+    </div>
+
+    <!-- Tab B Content -->
+    <div id="partB" class="tab-content">
+        <h2>(b) 更新鏈表</h2>
+        <p>根據指令依序執行 <code>delete(3)</code> 和 <code>insert(1, "20180322")</code> 操作。注意，這裡的 n 指的是鏈表中的第 n 個節點，而不是地址 n。</p>
+        
+        <div class="control-panel">
+            <button id="prevB" class="action-button" onclick="stepB(-1)">上一步</button>
+            <button id="nextB" class="action-button" onclick="stepB(1)">下一步</button>
+            <button class="action-button reset" onclick="resetB()">重置</button>
+        </div>
+
+        <div id="explanationB" class="explanation">點擊「下一步」開始執行操作。</div>
+
+        <table id="tableB">
+             <thead>
+                <tr><th>地址</th><th>內容</th><th>prev</th><th>next</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>0</td><td>physics</td><td>-1</td><td>2</td></tr>
+                <tr><td>1</td><td>20180125</td><td>4</td><td>-1</td></tr>
+                <tr><td>2</td><td>20180317</td><td>0</td><td>4</td></tr>
+                <tr><td>3</td><td></td><td></td><td></td></tr>
+                <tr><td>4</td><td>20180236</td><td>2</td><td>1</td></tr>
+            </tbody>
+        </table>
+        
+        <!-- [修改] 新增用於並排比較的容器 -->
+        <h3>最終鏈表狀態比較：</h3>
+        <div id="finalComparisonContainer" class="final-comparison">
+            <div class="comparison-table-wrapper">
+                <h4>原始狀態</h4>
+                <table id="initialTableFinalB">
+                    <thead>
+                        <tr><th>地址</th><th>內容</th><th>prev</th><th>next</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>0</td><td>physics</td><td>-1</td><td>2</td></tr>
+                        <tr><td>1</td><td>20180125</td><td>4</td><td>-1</td></tr>
+                        <tr><td>2</td><td>20180317</td><td>0</td><td>4</td></tr>
+                        <tr><td>3</td><td></td><td></td><td></td></tr>
+                        <tr><td>4</td><td>20180236</td><td>2</td><td>1</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="comparison-table-wrapper">
+                <h4>最終狀態</h4>
+                <table id="finalTableB">
+                    <thead>
+                        <tr><th>地址</th><th>內容</th><th>prev</th><th>next</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>0</td><td>physics</td><td>-1</td><td class="answer">3</td></tr>
+                        <tr><td>1</td><td>20180125</td><td class="answer">2</td><td>-1</td></tr>
+                        <tr><td>2</td><td>20180317</td><td class="answer">3</td><td class="answer">1</td></tr>
+                        <tr><td>3</td><td class="answer">20180322</td><td class="answer">0</td><td class="answer">2</td></tr>
+                        <tr><td>4</td><td style="text-decoration: line-through;">20180236</td><td style="text-decoration: line-through;">2</td><td style="text-decoration: line-through;">1</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab C Content -->
+    <div id="partC" class="tab-content">
+        <h2>(c) 雙向鏈表的好處與壞處</h2>
+        <p>雙向鏈表（Doubly Linked List）是鏈表的一種，相比於單向鏈表，它有其獨特的優點和缺點。</p>
+        
+        <h3>好處 (Advantage)</h3>
+        <ul>
+            <li>
+                <span class="answer">可以雙向遍歷：</span>
+                每個節點都有指向前一個和後一個節點的指標。這使得從任何節點開始，向前或向後遍歷都非常方便和高效。例如，在找到某個節點後，可以輕易地訪問其前驅節點，而單向鏈表需要從頭開始重新遍歷。
+            </li>
+            <li>
+                刪除操作更高效：當給定一個要刪除的節點的指標時，刪除操作非常簡單。我們可以直接透過該節點的 <code>prev</code> 指標找到前一個節點，並更新其 <code>next</code> 指標，無需像單向鏈表那樣需要額外遍歷來找到前驅節點。
+            </li>
+        </ul>
+
+        <h3>壞處 (Disadvantage)</h3>
+        <ul>
+            <li>
+                <span class="answer">需要更多的記憶體空間：</span>
+                每個節點都需要一個额外的指標（<code>prev</code>）來指向前一個節點。這意味著相較於單向鏈表，雙向鏈表會佔用更多的記憶體。
+            </li>
+            <li>
+                實作更複雜：由於需要維護兩個指標（<code>prev</code> 和 <code>next</code>），插入和刪除操作的步驟比單向鏈表更多，需要同時更新前後節點的指標，因此實作起來稍微複雜一些，也更容易出錯。
+            </li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // --- Global State and Tab Management ---
+    const state = {
+        a: { current: 0, max: 13 },
+        b: { current: 0, max: 15 }
+    };
+
+    function openTab(evt, tabName) {
+        let i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
+        }
+        tablinks = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+
+    // --- Part A: Traversal ---
+    const stepsA = [
+        { exp: "點擊「下一步」開始遍歷。", highlights: [] },
+        { exp: "鏈表的首節點是地址為 0 的節點，因為它的 <code>prev</code> 是 -1。我們從這裡開始。", highlights: [{r:0, c:'all'}] },
+        { exp: "讀取地址 0 的內容：<b>physics</b>。", highlights: [{r:0, c:1}], answer: ["physics"] },
+        { exp: "接著，查看地址 0 的 <code>next</code> 指標，其值為 2。下一個要訪問的節點在地址 2。", highlights: [{r:0, c:3}] },
+        { exp: "跳轉到地址為 2 的節點。", highlights: [{r:2, c:'all'}] },
+        { exp: "讀取地址 2 的內容：<b>20180317</b>。", highlights: [{r:2, c:1}], answer: ["physics", "20180317"] },
+        { exp: "查看地址 2 的 <code>next</code> 指標，其值為 4。下一個節點在地址 4。", highlights: [{r:2, c:3}] },
+        { exp: "跳轉到地址為 4 的節點。", highlights: [{r:4, c:'all'}] },
+        { exp: "讀取地址 4 的內容：<b>20180236</b>。", highlights: [{r:4, c:1}], answer: ["physics", "20180317", "20180236"] },
+        { exp: "查看地址 4 的 <code>next</code> 指標，其值為 1。下一個節點在地址 1。", highlights: [{r:4, c:3}] },
+        { exp: "跳轉到地址為 1 的節點。", highlights: [{r:1, c:'all'}] },
+        { exp: "讀取地址 1 的內容：<b>20180125</b>。", highlights: [{r:1, c:1}], answer: ["physics", "20180317", "20180236", "20180125"] },
+        { exp: "查看地址 1 的 <code>next</code> 指標，其值為 -1。這表示鏈表已到達末尾，遍歷結束。", highlights: [{r:1, c:3}] },
+        { exp: "遍歷完成！最終順序如答案所示。", highlights: [] }
+    ];
+    
+    const finalAnswerA = stepsA.slice().reverse().find(s => s.answer)?.answer;
+
+    function updateButtons(part) {
+        document.getElementById(`prev${part.toUpperCase()}`).disabled = state[part].current === 0;
+        document.getElementById(`next${part.toUpperCase()}`).disabled = state[part].current === state[part].max;
+    }
+
+    function clearHighlights(tableId) {
+        document.querySelectorAll(`#${tableId} td, #${tableId} tr`).forEach(el => el.classList.remove('highlight'));
+    }
+
+    function renderStepA() {
+        const step = state.a.current;
+        const stepData = stepsA[step];
+        const table = document.getElementById('tableA');
+        
+        document.getElementById('explanationA').innerHTML = stepData.exp;
+        clearHighlights('tableA');
+        
+        stepData.highlights.forEach(h => {
+            if (h.c === 'all') table.rows[h.r + 1].classList.add('highlight');
+            else table.rows[h.r + 1].cells[h.c].classList.add('highlight');
+        });
+
+        let answerToShow = null;
+        for (let i = 0; i <= step; i++) {
+            if (stepsA[i] && stepsA[i].answer) {
+                answerToShow = stepsA[i].answer;
+            }
+        }
+
+        let answerHTML = "遍歷順序為：";
+        if (answerToShow) {
+            answerHTML += `<span class="answer">${answerToShow.join(', ')}</span>`;
+            if (finalAnswerA && answerToShow.length < finalAnswerA.length) {
+                answerHTML += ", ...";
+            }
+        }
+        document.getElementById('finalAnswerA').innerHTML = answerHTML;
+
+        updateButtons('a');
+    }
+
+    function stepA(dir) {
+        const newStep = state.a.current + dir;
+        if (newStep >= 0 && newStep <= state.a.max) {
+            state.a.current = newStep;
+            renderStepA();
+        }
+    }
+    
+    function resetA() {
+        state.a.current = 0;
+        renderStepA();
+    }
+
+    // --- Part B: Update ---
+    const initialBState = [
+        ["0", "physics", "-1", "2"],
+        ["1", "20180125", "4", "-1"],
+        ["2", "20180317", "0", "4"],
+        ["3", "", "", ""],
+        ["4", "20180236", "2", "1"]
+    ];
+    
+    const stepsB = [
+        { exp: "點擊「下一步」開始執行操作。" },
+        { exp: "<b>第 1 步: 執行 <code>delete(3)</code></b><br>首先，需要找到鏈表中的第 3 個節點。遍歷順序: physics (1) -> 20180317 (2) -> <b>20180236 (3)</b>。" },
+        { exp: "第 3 個節點是位於地址 4 的 '20180236'。它的前一個節點在地址 2，後一個節點在地址 1。<br>（指標會與其指向的目標節點的<b>地址</b>和<b>內容</b>以相同顏色標示：<span style='background-color: var(--prev-link-bg);'>prev 連結</span>, <span style='background-color: var(--next-link-bg);'>next 連結</span>）", highlights: [{r:4, c:'all'}], linkHighlights: [{ sourceRow: 4 }] },
+        { exp: "要刪除它，需將其前驅節點 (地址 2) 的 <code>next</code> 指標，指向其後繼節點 (地址 1)。", highlights: [{r:2, c:3}], linkHighlights: [{ sourceRow: 4 }] },
+        { exp: "更新地址 2 的 <code>next</code> 為 <span class='answer'>1</span>。", changes: [{r:2, c:3, v:'1'}], highlights: [{r:2, c:3, class:'updated'}] },
+        { exp: "同時，將其後繼節點 (地址 1) 的 <code>prev</code> 指標，指向其前驅節點 (地址 2)。", highlights: [{r:1, c:2}]},
+        { exp: "更新地址 1 的 <code>prev</code> 為 <span class='answer'>2</span>。", changes: [{r:1, c:2, v:'2'}], highlights: [{r:1, c:2, class:'updated'}] },
+        { exp: "指標更新完畢，節點 '20180236' 已從鏈表中邏輯刪除。我們將其標示為已刪除。", changes: [{r:4, class:'deleted'}] },
+        { exp: "<b>第 2 步: 執行 <code>insert(1, \"20180322\")</code></b><br>此操作表示在第 1 個節點 ('physics') 之後插入新節點。" },
+        { exp: "找到插入點：在第 1 個節點 (地址 0) 和它現在的下一個節點 (地址 2) 之間。", highlights: [{r:0, c:'all'}, {r:2, c:'all'}], linkHighlights: [{ sourceRow: 0 }] },
+        { exp: "我們使用一個空閒位置（地址 3）來存放新節點。將新節點的內容和指標填入。", changes: [{r:3, c:1, v:'20180322'}, {r:3, c:2, v:'0'}, {r:3, c:3, v:'2'}], highlights: [{r:3, c:'all', class:'updated'}], linkHighlights: [{ sourceRow: 3 }] },
+        { exp: "現在更新周圍節點的指標。首先，將 'physics' (地址 0) 的 <code>next</code> 指標指向新節點 (地址 3)。", highlights: [{r:0, c:3}] },
+        { exp: "更新地址 0 的 <code>next</code> 為 <span class='answer'>3</span>。注意 'physics' 的 next 連結已改變。", changes: [{r:0, c:3, v:'3'}], highlights: [{r:0, c:3, class:'updated'}], linkHighlights: [{ sourceRow: 0 }] },
+        { exp: "最後，將 '20180317' (地址 2) 的 <code>prev</code> 指標指向新節點 (地址 3)。", highlights: [{r:2, c:2}] },
+        { exp: "更新地址 2 的 <code>prev</code> 為 <span class='answer'>3</span>。注意 '20180317' 的 prev 連結已改變。", changes: [{r:2, c:2, v:'3'}], highlights: [{r:2, c:2, class:'updated'}], linkHighlights: [{ sourceRow: 2 }] },
+        { exp: "所有操作完成！鏈表已更新至最終狀態。請參考下方的並排比較表格。", showFinal: true }
+    ];
+
+    function renderStepB() {
+        const step = state.b.current;
+        const interactiveTable = document.getElementById('tableB');
+        const rows = interactiveTable.rows;
+        // [修改] 獲取新加入的元素
+        const finalContainer = document.getElementById('finalComparisonContainer');
+        const explanation = document.getElementById('explanationB');
+        
+        // 1. 重置表格到初始狀態
+        for (let i = 0; i < initialBState.length; i++) {
+            rows[i+1].classList.remove('deleted', 'highlight');
+            const cells = rows[i+1].cells;
+            for (let j = 0; j < initialBState[i].length; j++) {
+                cells[j].innerHTML = initialBState[i][j];
+                cells[j].classList.remove('updated', 'highlight', 'prev-link', 'next-link');
+            }
+        }
+        
+        // 2. 根據當前步驟，累計應用所有變更
+        for (let i = 1; i <= step; i++) {
+            if (stepsB[i].changes) {
+                stepsB[i].changes.forEach(change => {
+                    if (change.class) {
+                        rows[change.r + 1].classList.add(change.class);
+                    } else {
+                        rows[change.r + 1].cells[change.c].innerHTML = change.v;
+                        rows[change.r + 1].cells[change.c].classList.add('updated');
+                    }
+                });
+            }
+        }
+        
+        // 3. 設置說明文字和當前步驟的高亮
+        const stepData = stepsB[step];
+        explanation.innerHTML = stepData.exp;
+
+        if (stepData.highlights) {
+            stepData.highlights.forEach(h => {
+                const targetRow = rows[h.r + 1];
+                if (h.c === 'all') {
+                    targetRow.classList.add(h.class || 'highlight');
+                } else {
+                    targetRow.cells[h.c].classList.add(h.class || 'highlight');
+                }
+            });
+        }
+        
+        // 4. 應用指標連結高亮
+        if (stepData.linkHighlights) {
+            const addressToRowIndex = (addr) => addr;
+            stepData.linkHighlights.forEach(link => {
+                const sourceRowIndex = link.sourceRow;
+                const sourceRow = rows[sourceRowIndex + 1];
+                
+                const prevCell = sourceRow.cells[2];
+                const nextCell = sourceRow.cells[3];
+                
+                const prevAddr = parseInt(prevCell.innerText, 10);
+                const nextAddr = parseInt(nextCell.innerText, 10);
+
+                if (!isNaN(prevAddr) && prevAddr !== -1) {
+                    const targetRowIndex = addressToRowIndex(prevAddr);
+                    if (rows[targetRowIndex + 1]) {
+                        prevCell.classList.add('prev-link');
+                        rows[targetRowIndex + 1].cells[0].classList.add('prev-link');
+                        rows[targetRowIndex + 1].cells[1].classList.add('prev-link');
+                    }
+                }
+                if (!isNaN(nextAddr) && nextAddr !== -1) {
+                    const targetRowIndex = addressToRowIndex(nextAddr);
+                    if (rows[targetRowIndex + 1]) {
+                        nextCell.classList.add('next-link');
+                        rows[targetRowIndex + 1].cells[0].classList.add('next-link');
+                        rows[targetRowIndex + 1].cells[1].classList.add('next-link');
+                    }
+                }
+            });
+        }
+
+        // 5. [修改] 根據是否為最後一步，切換顯示動態表格或最終比較表格
+        if (step === state.b.max) {
+            finalContainer.classList.add('visible');
+            interactiveTable.style.display = 'none';
+        } else {
+            finalContainer.classList.remove('visible');
+            interactiveTable.style.display = ''; // 恢復預設 display 樣式
+        }
+
+        updateButtons('b');
+    }
+
+    function stepB(dir) {
+        const newStep = state.b.current + dir;
+        if (newStep >= 0 && newStep <= state.b.max) {
+            state.b.current = newStep;
+            renderStepB();
+        }
+    }
+
+    function resetB() {
+        state.b.current = 0;
+        renderStepB();
+    }
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('partA').classList.add('active');
+        resetA();
+        resetB();
+    });
+
+</script>
+
+</body>
+</html>
