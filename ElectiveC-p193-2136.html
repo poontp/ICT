@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鏈表問題互動解析</title>
+    <style>
+        :root {
+            --primary-color: #DC143C; /* Crimson */
+            --secondary-color: #F8F8F8;
+            --border-color: #DDD;
+            --text-color: #333;
+            --highlight-current: #FFFACD; /* LemonChiffon */
+            --highlight-prev: #EFEFEF;
+            --highlight-next: #90EE90; /* LightGreen */
+            --answer-bg: #90EE90;
+            --red-text: #FF0000;
+        }
+        body {
+            font-family: 'Helvetica Neue', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: bold;
+            color: #777;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: center;
+            transition: background-color 0.5s ease;
+        }
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .tables-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .table-wrapper {
+            flex: 1;
+            min-width: 300px;
+        }
+        .explanation {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 5px solid var(--primary-color);
+            min-height: 150px;
+        }
+        .explanation code {
+            background-color: #e0e0e0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .control-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .control-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .control-button:hover:not(:disabled) {
+            background-color: #a5102f;
+        }
+        .highlight-calc { background-color: var(--highlight-current); }
+        .final-answer { background-color: var(--answer-bg); font-weight: bold; }
+        .highlight-prev { background-color: var(--highlight-prev); }
+        .highlight-next { background-color: var(--highlight-next); }
+        .arrow { color: var(--primary-color); font-weight: bold; font-size: 20px; margin: 0 10px; }
+        #traversal-path { font-size: 18px; font-weight: bold; margin-top: 15px; }
+        .red-text { color: var(--red-text); font-weight: bold; }
+        .conclusion { margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--border-color); }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .tables-container { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>鏈表問題互動解析</h1>
+
+    <div class="tabs">
+        <button class="tab-button active" onclick="showTab('page1')">題目 (a) 解析</button>
+        <button class="tab-button" onclick="showTab('page2')">題目 (b) & (c) 解析</button>
+    </div>
+
+    <!-- Page 1: Explanation for (a) -->
+    <div id="page1" class="tab-content active">
+        <h2>(a) 計算 L2 的 pointer 值</h2>
+        <p>題目要求將鏈表 L1 的設計修改為 L2。在 L2 中，節點內的指標 `pointer` 儲存的是 L1 中 `prev` 和 `next` 的總和。我們需要根據 L1 的資料來填寫 L2 的表格。</p>
+        <div class="tables-container">
+            <div class="table-wrapper">
+                <h3>原始鏈表 L1</h3>
+                <table id="table-l1">
+                    <thead><tr><th>索引</th><th>內容</th><th>prev</th><th>next</th></tr></thead>
+                    <tbody>
+                        <tr id="l1-row-0"><td>0</td><td>start</td><td>-1</td><td>2</td></tr>
+                        <tr id="l1-row-1"><td>1</td><td></td><td></td><td></td></tr>
+                        <tr id="l1-row-2"><td>2</td><td>Andy</td><td>0</td><td>5</td></tr>
+                        <tr id="l1-row-3"><td>3</td><td></td><td></td><td></td></tr>
+                        <tr id="l1-row-4"><td>4</td><td>Tracy</td><td>5</td><td>-1</td></tr>
+                        <tr id="l1-row-5"><td>5</td><td>Jessica</td><td>2</td><td>4</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-wrapper">
+                <h3>目標鏈表 L2</h3>
+                <table id="table-l2a">
+                    <thead><tr><th>索引</th><th>內容</th><th>pointer</th></tr></thead>
+                    <tbody>
+                        <tr><td>0</td><td>start</td><td id="l2a-ptr-0" class="red-text">1</td></tr>
+                        <tr><td>1</td><td></td><td id="l2a-ptr-1"></td></tr>
+                        <tr><td>2</td><td>Andy</td><td id="l2a-ptr-2" class="red-text">5</td></tr>
+                        <tr><td>3</td><td></td><td id="l2a-ptr-3"></td></tr>
+                        <tr><td>4</td><td>Tracy</td><td id="l2a-ptr-4" class="red-text">4</td></tr>
+                        <tr><td>5</td><td>Jessica</td><td id="l2a-ptr-5" class="red-text">6</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="explanation-a" class="explanation">
+            <p><strong>計算規則：</strong> <code>pointer = prev + next</code></p>
+            <ul>
+                <li><b>索引 0:</b> <code>-1 + 2 = 1</code></li>
+                <li><b>索引 2:</b> <code>0 + 5 = 5</code></li>
+                <li><b>索引 5:</b> <code>2 + 4 = 6</code></li>
+                <li><b>索引 4:</b> <code>5 + (-1) = 4</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Page 2: Explanation for (b) and (c) -->
+    <div id="page2" class="tab-content">
+        <h2>(b) 遍歷鏈表 L2</h2>
+        <p>假設 L2 的內容如下表。我們要從首個節點 `start` 開始，依序寫出後四個節點的內容。遍歷的關鍵公式是：<code>下一個節點索引 = 當前節點的 pointer - 上一個節點的索引</code>。</p>
+        
+        <div class="tables-container">
+            <div class="table-wrapper">
+                <h3>鏈表 L2 (XOR 鏈表)</h3>
+                <table id="table-l2b">
+                    <thead><tr><th>索引</th><th>內容</th><th>pointer</th></tr></thead>
+                    <tbody>
+                        <tr id="l2b-row-0"><td>0</td><td>start</td><td>3</td></tr>
+                        <tr id="l2b-row-1"><td>1</td><td>Teresa</td><td>10</td></tr>
+                        <tr id="l2b-row-2"><td>2</td><td>Benson</td><td>13</td></tr>
+                        <tr id="l2b-row-3"><td>3</td><td>Joyce</td><td>6</td></tr>
+                        <tr id="l2b-row-4"><td>4</td><td>Kyle</td><td>6</td></tr>
+                        <tr id="l2b-row-5"><td>5</td><td>Vicky</td><td>2</td></tr>
+                        <tr id="l2b-row-6"><td>6</td><td>Daniel</td><td>6</td></tr>
+                        <tr id="l2b-row-7"><td>7</td><td>Mike</td><td>3</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-wrapper">
+                <h3>對應的 L1 (雙向鏈表)</h3>
+                <table id="table-l1-ref">
+                    <thead><tr><th>索引</th><th>內容</th><th>prev</th><th>next</th></tr></thead>
+                    <tbody>
+                        <tr id="l1ref-row-0"><td>0</td><td>start</td><td>-1</td><td>4</td></tr>
+                        <tr id="l1ref-row-1"><td>1</td><td>Teresa</td><td>7</td><td>3</td></tr>
+                        <tr id="l1ref-row-2"><td>2</td><td>Benson</td><td>6</td><td>7</td></tr>
+                        <tr id="l1ref-row-3"><td>3</td><td>Joyce</td><td>1</td><td>5</td></tr>
+                        <tr id="l1ref-row-4"><td>4</td><td>Kyle</td><td>0</td><td>6</td></tr>
+                        <tr id="l1ref-row-5"><td>5</td><td>Vicky</td><td>3</td><td>-1</td></tr>
+                        <tr id="l1ref-row-6"><td>6</td><td>Daniel</td><td>4</td><td>2</td></tr>
+                        <tr id="l1ref-row-7"><td>7</td><td>Mike</td><td>2</td><td>1</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="explanation-b" class="explanation"></div>
+        <div id="traversal-path"><strong>遍歷路徑：</strong> <span id="path-output"></span></div>
+        <div class="controls">
+            <button id="btn-b-prev" class="control-button" onclick="handlePrevious()">上一步</button>
+            <button id="btn-b-next" class="control-button" onclick="handleNext()">下一步</button>
+        </div>
+
+        <div class="conclusion">
+            <h2>(c) 鏈表 L2 設計的優點</h2>
+            <p>使用鏈表 L2 設計的一個主要優點是：</p>
+            <div class="explanation">
+                <p><strong>須要使用的記憶體（儲存空間）較少。</strong></p>
+                <ul>
+                    <li>在傳統的雙向鏈表 L1 設計中，每個節點都需要儲存兩個指標：`prev` 和 `next`。</li>
+                    <li>在鏈表 L2 的設計中（這種技術稱為 XOR 鏈表，此處用加法簡化），每個節點只需要儲存一個 `pointer` 值。</li>
+                    <li>因此，L2 的設計減少了一個指標欄位所需的儲存空間，在處理大量節點時，可以顯著節省記憶體。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Tab Navigation Logic ---
+    function showTab(pageId) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        document.querySelector(`.tab-button[onclick="showTab('${pageId}')"]`).classList.add('active');
+    }
+
+    // --- Animation Logic for Part (b) ---
+    const l2bData = [
+        { index: 0, content: 'start', pointer: 3 }, { index: 1, content: 'Teresa', pointer: 10 },
+        { index: 2, content: 'Benson', pointer: 13 }, { index: 3, content: 'Joyce', pointer: 6 },
+        { index: 4, content: 'Kyle', pointer: 6 }, { index: 5, content: 'Vicky', pointer: 2 },
+        { index: 6, content: 'Daniel', pointer: 6 }, { index: 7, content: 'Mike', pointer: 3 },
+    ];
+    const l1RefData = [
+        { index: 0, prev: -1, next: 4 }, { index: 1, prev: 7, next: 3 },
+        { index: 2, prev: 6, next: 7 }, { index: 3, prev: 1, next: 5 },
+        { index: 4, prev: 0, next: 6 }, { index: 5, prev: 3, next: -1 },
+        { index: 6, prev: 4, next: 2 }, { index: 7, prev: 2, next: 1 },
+    ];
+
+    let currentStep = 0;
+    const steps = [];
+
+    function initializeTraversal() {
+        // Step 0: Initial state
+        steps.push({
+            step: 0,
+            prevIndex: -1,
+            currentIndex: 0,
+            nextIndex: null, // Not yet calculated
+            path: 'start',
+            explanation: `
+                <p><strong>初始狀態</strong></p>
+                <p>我們從索引 <code>0</code> 的 <code>start</code> 節點開始。</p>
+                <p>在遍歷開始時，我們需要兩個初始值：</p>
+                <ul>
+                    <li>當前節點索引：<code>0</code></li>
+                    <li>上一個節點索引：<code>-1</code> (因為 start 是第一個節點，沒有前驅)</li>
+                </ul>
+                <p>點擊「下一步」開始尋找第一個後續節點。</p>
+            `
+        });
+
+        let pIndex = -1;
+        let cIndex = 0;
+        let pathArr = ['start'];
+
+        // Calculate steps 1 through 4
+        for (let i = 1; i <= 4; i++) {
+            const currentNodeData = l2bData.find(d => d.index === cIndex);
+            const currentL1RefData = l1RefData.find(d => d.index === cIndex);
+            const pointer = currentNodeData.pointer;
+            const nIndex = pointer - pIndex;
+            const nextNodeData = l2bData.find(d => d.index === nIndex);
+
+            pathArr.push(`<span class="red-text">${nextNodeData.content}</span>`);
+
+            steps.push({
+                step: i,
+                prevIndex: pIndex,
+                currentIndex: cIndex,
+                nextIndex: nIndex,
+                path: pathArr.join('<span class="arrow">&rarr;</span>'),
+                explanation: `
+                    <p><strong>步驟 ${i}: 尋找第 ${i} 個後續節點</strong></p>
+                    <p>上一個節點索引是 <code>${pIndex}</code>。</p>
+                    <p>當前節點是 <span class="red-text">${currentNodeData.content}</span> (索引 <code>${cIndex}</code>)，其 <code>pointer</code> 值為 <code>${pointer}</code>。</p>
+                    <p>根據公式 <code>下一個索引 = pointer - 上一個索引</code>：</p>
+                    <p><code>下一個索引 = ${pointer} - (${pIndex}) = ${nIndex}</code></p>
+                    <p>所以，下一個節點位於索引 <strong>${nIndex}</strong>，內容是 <strong class="red-text">${nextNodeData.content}</strong>。</p>
+                    <hr>
+                    <p><em>驗證：</em>在右邊的 L1 表格中，索引 ${cIndex} 的 <code>prev</code> 是 ${currentL1RefData.prev}，<code>next</code> 是 ${currentL1RefData.next}。它們的和 <code>${currentL1RefData.prev} + ${currentL1RefData.next} = ${currentL1RefData.prev + currentL1RefData.next}</code>，這與 L2 中的 <code>pointer</code> 值 ${pointer} 相符。</p>
+                    ${i === 4 ? '<br><strong>遍歷完成！已找到 start 後的四個節點。</strong>' : ''}
+                `
+            });
+            
+            // Prepare for next iteration
+            pIndex = cIndex;
+            cIndex = nIndex;
+        }
+    }
+
+    function renderStep(stepIndex) {
+        const state = steps[stepIndex];
+        const { prevIndex, currentIndex, nextIndex, path, explanation } = state;
+
+        // Clear all highlights
+        document.querySelectorAll('#table-l2b tr, #table-l1-ref tr, #table-l1-ref td').forEach(el => {
+            el.classList.remove('highlight-prev', 'highlight-calc', 'highlight-next');
+        });
+
+        // Apply new highlights
+        if (prevIndex !== -1) {
+            document.getElementById(`l2b-row-${prevIndex}`).classList.add('highlight-prev');
+            document.getElementById(`l1ref-row-${prevIndex}`).classList.add('highlight-prev');
+        }
+        if (currentIndex !== null) {
+            document.getElementById(`l2b-row-${currentIndex}`).classList.add('highlight-calc');
+            document.getElementById(`l1ref-row-${currentIndex}`).classList.add('highlight-calc');
+            const l1refRow = document.getElementById(`l1ref-row-${currentIndex}`);
+            l1refRow.cells[2].classList.add('highlight-calc'); // prev
+            l1refRow.cells[3].classList.add('highlight-calc'); // next
+        }
+        if (nextIndex !== null) {
+            document.getElementById(`l2b-row-${nextIndex}`).classList.add('highlight-next');
+            document.getElementById(`l1ref-row-${nextIndex}`).classList.add('highlight-next');
+        }
+
+        // Update text content
+        document.getElementById('explanation-b').innerHTML = explanation;
+        document.getElementById('path-output').innerHTML = path;
+
+        // Update button states
+        document.getElementById('btn-b-prev').disabled = (stepIndex === 0);
+        document.getElementById('btn-b-next').disabled = (stepIndex === steps.length - 1);
+        document.getElementById('btn-b-next').textContent = (stepIndex === steps.length - 1) ? "完成" : "下一步";
+    }
+
+    function handleNext() {
+        if (currentStep < steps.length - 1) {
+            currentStep++;
+            renderStep(currentStep);
+        }
+    }
+
+    function handlePrevious() {
+        if (currentStep > 0) {
+            currentStep--;
+            renderStep(currentStep);
+        }
+    }
+
+    // Initial setup on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        showTab('page1'); // Set the default tab to page1
+        initializeTraversal();
+        renderStep(0); // Initialize the state for the animation on page2
+    });
+</script>
+
+</body>
+</html>
