@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鏈表操作互動解答</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f0f8ff;
+            --border-color: #dee2e6;
+            --highlight-bg-current: #ffc107; /* Yellow */
+            --highlight-bg-data: #28a745; /* Green */
+            --highlight-bg-pointer: #17a2b8; /* Teal */
+            --text-color: #333;
+            --final-answer-color: #dc3545; /* Red */
+            --bg-color: #f8f9fa;
+            --pseudo-highlight-bg: yellow;
+        }
+        body {
+            font-family: 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+        }
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .tabs button {
+            padding: 10px 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: bold;
+            color: var(--primary-color);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .tabs button.active {
+            border-bottom-color: var(--primary-color);
+        }
+        .tabs button:hover {
+            background-color: var(--secondary-color);
+        }
+        .content {
+            display: none;
+        }
+        .content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 25px 0;
+            font-size: 1em;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: center;
+            min-width: 60px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        th {
+            background-color: var(--secondary-color);
+        }
+        td.index {
+            font-weight: bold;
+            background-color: #e9ecef;
+        }
+        .animation-controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .animation-controls button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        .animation-controls button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        .animation-controls button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        .output-log {
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            min-height: 50px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .highlight-current { background-color: var(--highlight-bg-current) !important; color: black !important; }
+        .highlight-data { background-color: var(--highlight-bg-data) !important; color: white !important; }
+        .highlight-pointer { background-color: var(--highlight-bg-pointer) !important; color: white !important; }
+        .final-answer { color: var(--final-answer-color); font-weight: bold; }
+        .explanation {
+            background-color: var(--secondary-color);
+            padding: 15px;
+            border-left: 5px solid var(--primary-color);
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .pseudocode {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: auto;
+        }
+        .pseudocode > div {
+            padding: 2px 4px;
+            margin: 0;
+            border-radius: 3px;
+            white-space: pre-wrap; /* 改為 pre-wrap 以允許長行文字換行 */
+        }
+        .pseudocode-highlight {
+            background-color: var(--pseudo-highlight-bg);
+        }
+        .answer-block {
+            display: none;
+            margin-top: 30px;
+        }
+        .side-by-side-container {
+            display: flex;
+            gap: 25px;
+        }
+        .left-column {
+            flex: 1; /* 調整左欄比例 */
+        }
+        .right-column {
+            flex: 2; /* 調整右欄比例 */
+        }
+        .variable-display {
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .variable-display h3 {
+            margin-top: 0;
+            font-size: 1.1em;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        .variable-display p {
+            margin: 5px 0;
+            font-size: 1em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px 15px;
+            align-items: center;
+        }
+        .var-item { white-space: nowrap; }
+        .variable-display code {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            display: inline-block;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 850px) {
+            .side-by-side-container { flex-direction: column; }
+        }
+        @media (max-width: 768px) {
+            th, td { padding: 6px; font-size: 0.9em; min-width: 40px; }
+            .tabs button { font-size: 0.95em; padding: 8px 10px; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>鏈表操作互動解答</h1>
+    <div class="tabs">
+        <button class="tab-btn active" data-target="part-a-content">問題 (a)</button>
+        <button class="tab-btn" data-target="part-bi-content">問題 (b)(i) delete</button>
+        <button class="tab-btn" data-target="part-bii-content">問題 (b)(ii) insert</button>
+        <button class="tab-btn" data-target="part-c-content">問題 (c) length()</button>
+        <button class="tab-btn" data-target="part-d-content">問題 (d) delete(n)</button>
+        <button class="tab-btn" data-target="part-e-content">(挑戰題) insert()</button>
+    </div>
+
+    <div class="content-container">
+        <!-- Part A Content -->
+        <div id="part-a-content" class="content active">
+            <h2>問題 (a)</h2>
+            <div class="explanation">
+                <p><strong>(i) 假設鏈表中的首個節點的索引是 5，順序寫出此鏈表中節點的內容。</strong></p>
+                <p><strong>(ii) 此鏈表共有多少個節點？</strong></p>
+                <p><strong>(iii) 卓峰採用了什麼數值以表示一個空指示標？</strong></p>
+            </div>
+            <h3>動畫演示：遍歷鏈表</h3>
+            <p>使用下方按鈕逐步觀察如何從起始索引 5 開始遍歷整個鏈表。</p>
+            <div class="animation-controls">
+                <button id="prev-a-btn">上一步</button>
+                <button id="next-a-btn">下一步</button>
+                <button id="reset-a-btn">重置</button>
+            </div>
+            <div class="output-log" id="output-a">點擊「下一步」開始動畫。</div>
+            <strong>陣列 D (內容)</strong>
+            <table id="table-a-d">
+                <tbody>
+                    <tr><th>D</th><td id="a-d-1">Iris</td><td id="a-d-2">Ada</td><td id="a-d-3">Peter</td><td id="a-d-4"></td><td id="a-d-5">Ben</td><td id="a-d-6"></td></tr>
+                    <tr><th>索引</th><td class="index" id="a-d-idx-1">1</td><td class="index" id="a-d-idx-2">2</td><td class="index" id="a-d-idx-3">3</td><td class="index" id="a-d-idx-4">4</td><td class="index" id="a-d-idx-5">5</td><td class="index" id="a-d-idx-6">6</td></tr>
+                </tbody>
+            </table>
+            <strong>陣列 NP (下一個索引)</strong>
+            <table id="table-a-np">
+                <tbody>
+                    <tr><th>NP</th><td id="a-np-1">2</td><td id="a-np-2">10</td><td id="a-np-3">1</td><td id="a-np-4"></td><td id="a-np-5">3</td><td id="a-np-6"></td></tr>
+                    <tr><th>索引</th><td class="index" id="a-np-idx-1">1</td><td class="index" id="a-np-idx-2">2</td><td class="index" id="a-np-idx-3">3</td><td class="index" id="a-np-idx-4">4</td><td class="index" id="a-np-idx-5">5</td><td class="index" id="a-np-idx-6">6</td></tr>
+                </tbody>
+            </table>
+            <div id="answer-block-a" class="answer-block">
+                <h3>答案</h3>
+                <div class="explanation">
+                    <p><strong>(i) 節點內容順序:</strong> <span class="final-answer">Ben, Peter, Iris, Ada</span></p>
+                    <p><strong>(ii) 節點總數:</strong> <span class="final-answer">4</span></p>
+                    <p><strong>(iii) 空指示標 (Null Pointer) 的值:</strong> <span class="final-answer">10</span> (因為在最後一個節點 Ada (索引2) 之後，下一個指針是 10，表示鏈表結束)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part B(i) Content -->
+        <div id="part-bi-content" class="content">
+            <h2>問題 (b)(i): 執行 delete(3)</h2>
+            <div class="explanation">
+                <p><strong>執行 delete(3) 後，陣列 D 和 NP 的內容會變成什麼？</strong></p>
+                <p>此操作的目標是刪除鏈表中的第 3 個節點。根據 (a) 的結果，鏈表順序為 Ben → Peter → <strong>Iris</strong> → Ada。所以我們要刪除的是 'Iris'。</p>
+            </div>
+            <h3>動畫演示：刪除第 3 個節點</h3>
+            <p>鏈表初始順序為: Ben (索引5) → Peter (索引3) → Iris (索引1) → Ada (索引2)。</p>
+            <div class="animation-controls">
+                <button id="prev-bi-btn">上一步</button>
+                <button id="next-bi-btn">下一步</button>
+                <button id="reset-bi-btn">重置</button>
+            </div>
+            <div class="output-log" id="output-bi">點擊「下一步」開始動畫。</div>
+            <strong>陣列 D (內容)</strong>
+            <table id="table-bi-d">
+                <tbody>
+                    <tr><th>D</th><td id="bi-d-1">Iris</td><td id="bi-d-2">Ada</td><td id="bi-d-3">Peter</td><td id="bi-d-4"></td><td id="bi-d-5">Ben</td><td id="bi-d-6"></td></tr>
+                    <tr><th>索引</th><td class="index">1</td><td class="index">2</td><td class="index">3</td><td class="index">4</td><td class="index">5</td><td class="index">6</td></tr>
+                </tbody>
+            </table>
+            <strong>陣列 NP (下一個索引)</strong>
+            <table id="table-bi-np">
+                <tbody>
+                    <tr><th>NP</th><td id="bi-np-1">2</td><td id="bi-np-2">10</td><td id="bi-np-3">1</td><td id="bi-np-4"></td><td id="bi-np-5">3</td><td id="bi-np-6"></td></tr>
+                    <tr><th>索引</th><td class="index">1</td><td class="index">2</td><td class="index">3</td><td class="index">4</td><td class="index">5</td><td class="index">6</td></tr>
+                </tbody>
+            </table>
+            <div id="answer-block-bi" class="answer-block">
+                <h3>答案 (b)(i)</h3>
+                <div class="explanation">
+                    <p>刪除第 3 個節點 (Iris, 索引1)。需要將第 2 個節點 (Peter, 索引3) 的指針從 1 改為 Iris 的下一個指針 (即 NP[1] 的值, 2)。</p>
+                    <p>陣列 D 保持不變，陣列 NP 的 `NP[3]` 變為 <span class="final-answer">2</span>。</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Part B(ii) Content -->
+        <div id="part-bii-content" class="content">
+            <h2>問題 (b)(ii): 執行 insert(2, Brian, 4)</h2>
+            <div class="explanation">
+                <p><strong>在 (b)(i) 的操作後，接著執行 insert(2, Brian, 4)，陣列 D 和 NP 的內容會變成什麼？</strong></p>
+                <p>此操作的目標是在鏈表的第 2 個位置插入一個新節點。操作前的鏈表順序為 Ben → Peter → Ada。</p>
+            </div>
+            <h3>動畫演示：插入新節點</h3>
+            <p>鏈表當前順序: Ben (索引5) → Peter (索引3) → Ada (索引2)。</p>
+            <div class="animation-controls">
+                <button id="prev-bii-btn">上一步</button>
+                <button id="next-bii-btn">下一步</button>
+                <button id="reset-bii-btn">重置</button>
+            </div>
+            <div class="output-log" id="output-bii">點擊「下一步」開始動畫。</div>
+            <strong>陣列 D (內容)</strong>
+            <table id="table-bii-d">
+                <tbody>
+                    <tr><th>D</th><td id="bii-d-1">Iris</td><td id="bii-d-2">Ada</td><td id="bii-d-3">Peter</td><td id="bii-d-4"></td><td id="bii-d-5">Ben</td><td id="bii-d-6"></td></tr>
+                    <tr><th>索引</th><td class="index">1</td><td class="index">2</td><td class="index">3</td><td class="index">4</td><td class="index">5</td><td class="index">6</td></tr>
+                </tbody>
+            </table>
+            <strong>陣列 NP (下一個索引)</strong>
+            <table id="table-bii-np">
+                <tbody>
+                    <tr><th>NP</th><td id="bii-np-1">2</td><td id="bii-np-2">10</td><td id="bii-np-3">1</td><td id="bii-np-4"></td><td id="bii-np-5">3</td><td id="bii-np-6"></td></tr>
+                    <tr><th>索引</th><td class="index">1</td><td class="index">2</td><td class="index">3</td><td class="index">4</td><td class="index">5</td><td class="index">6</td></tr>
+                </tbody>
+            </table>
+            <div id="answer-block-bii" class="answer-block">
+                <h3>答案 (b)(ii)</h3>
+                <div class="explanation">
+                    <p>在第 2 個位置插入新節點 (Brian, 索引4)。插入後鏈表應為 Ben → Brian → Peter → Ada。</p>
+                    <ol>
+                        <li>將新內容 `Brian` 放入 `D[4]`。</li>
+                        <li>將第 1 個節點 (Ben, 索引5) 的指針 `NP[5]` 從 3 改為新節點的索引 <span class="final-answer">4</span>。</li>
+                        <li>將新節點 (Brian, 索引4) 的指針 `NP[4]` 設為原先第 2 個節點 (Peter) 的索引 <span class="final-answer">3</span>。</li>
+                    </ol>
+                    <p>最終，`D[4]` 變為 <span class="final-answer">Brian</span>，`NP[4]` 變為 <span class="final-answer">3</span>，`NP[5]` 變為 <span class="final-answer">4</span>。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part C Content -->
+        <div id="part-c-content" class="content">
+            <h2>問題 (c): 完成子程式 length()</h2>
+            <div class="side-by-side-container">
+                <div class="left-column">
+                    <div class="explanation">
+                        <p><strong>題目要求完成 `length()` 子程式的偽代碼。</strong></p>
+                        <p>此子程式的目的是計算鏈表中的節點總數。它從頭節點開始，沿著指針遍歷，直到遇到空指針為止，每經過一個節點，計數器就加一。</p>
+                        <h3>完整偽代碼 (答案以紅色標示)</h3>
+                        <div class="pseudocode" id="pseudo-c-container">
+                            <div id="c-line-1">子程式 length()</div>
+                            <div id="c-line-2">  l ← 0</div>
+                            <div id="c-line-3">  next ← start</div>
+                            <div id="c-line-4">  當 next != <span class="final-answer">10</span></div>
+                            <div id="c-line-5">    l ← <span class="final-answer">l + 1</span></div>
+                            <div id="c-line-6">    next ← <span class="final-answer">NP[next]</span></div>
+                            <div id="c-line-7">  傳回 <span class="final-answer">l</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="right-column">
+                    <h3>動畫演示：執行 length()</h3>
+                    <p>使用下方按鈕逐步觀察 `length()` 子程式的執行流程。假設 `start` 為 5。</p>
+                    <div class="animation-controls">
+                        <button id="prev-c-btn">上一步</button>
+                        <button id="next-c-btn">下一步</button>
+                        <button id="reset-c-btn">重置</button>
+                    </div>
+                    <div class="variable-display">
+                        <h3>變數值</h3>
+                        <p>
+                            <span class="var-item">l: <code id="var-c-l">?</code></span>
+                            <span class="var-item">next: <code id="var-c-next">?</code></span>
+                        </p>
+                    </div>
+                    <div class="output-log" id="output-c">點擊「下一步」開始動畫。</div>
+                    <strong>陣列 D (內容)</strong>
+                    <table id="table-c-d">
+                        <tbody>
+                            <tr><th>D</th><td id="c-d-1">Iris</td><td id="c-d-2">Ada</td><td id="c-d-3">Peter</td><td id="c-d-4"></td><td id="c-d-5">Ben</td><td id="c-d-6"></td></tr>
+                            <tr><th>索引</th><td class="index" id="c-d-idx-1">1</td><td class="index" id="c-d-idx-2">2</td><td class="index" id="c-d-idx-3">3</td><td class="index" id="c-d-idx-4">4</td><td class="index" id="c-d-idx-5">5</td><td class="index" id="c-d-idx-6">6</td></tr>
+                        </tbody>
+                    </table>
+                    <strong>陣列 NP (下一個索引)</strong>
+                    <table id="table-c-np">
+                        <tbody>
+                            <tr><th>NP</th><td id="c-np-1">2</td><td id="c-np-2">10</td><td id="c-np-3">1</td><td id="c-np-4"></td><td id="c-np-5">3</td><td id="c-np-6"></td></tr>
+                            <tr><th>索引</th><td class="index" id="c-np-idx-1">1</td><td class="index" id="c-np-idx-2">2</td><td class="index" id="c-np-idx-3">3</td><td class="index" id="c-np-idx-4">4</td><td class="index" id="c-np-idx-5">5</td><td class="index" id="c-np-idx-6">6</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part D Content -->
+        <div id="part-d-content" class="content">
+            <h2>問題 (d): 完成子程式 delete(n)</h2>
+            <div class="side-by-side-container">
+                <div class="left-column">
+                    <div class="explanation">
+                        <p><strong>題目要求完成 `delete(n)` 子程式的偽代碼。</strong></p>
+                        <p>此子程式的目的是刪除鏈表中的第 `n` 個節點。它需要處理兩種情況：刪除頭節點 (`n=1`) 和刪除其他節點。刪除非頭節點時，需要找到第 `n-1` 個節點 (`prev`) 和第 `n` 個節點 (`current`)，然後修改 `prev` 的指針以跳過 `current`。</p>
+                        <h3>完整偽代碼 (答案以紅色標示)</h3>
+                        <div class="pseudocode" id="pseudo-d-container">
+                            <div id="d-line-1">子程式 delete(n)</div>
+                            <div id="d-line-2">  如果 n = 1 則</div>
+                            <div id="d-line-3">    start ← <span class="final-answer">NP[start]</span></div>
+                            <div id="d-line-4">  否則</div>
+                            <div id="d-line-5">    prev ← start</div>
+                            <div id="d-line-6">    current ← NP[start]</div>
+                            <div id="d-line-7">    # 使用 for 循環將當前節點指示標 current 移動至第 n 個節點</div>
+                            <div id="d-line-8">    設 k 由 2 至 n-1</div>
+                            <div id="d-line-9">      prev ← <span class="final-answer">current</span></div>
+                            <div id="d-line-10">      current ← <span class="final-answer">NP[current]</span></div>
+                            <div id="d-line-11">    NP[prev] ← <span class="final-answer">NP[current]</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="right-column">
+                    <h3>動畫演示：執行 delete(3)</h3>
+                    <p>使用下方按鈕逐步觀察 `delete(3)` 的執行流程，即刪除第 3 個節點 'Iris'。</p>
+                    <div class="animation-controls">
+                        <button id="prev-d-btn">上一步</button>
+                        <button id="next-d-btn">下一步</button>
+                        <button id="reset-d-btn">重置</button>
+                    </div>
+                    <div class="variable-display">
+                        <h3>變數值</h3>
+                        <p>
+                            <span class="var-item">n: <code id="var-d-n">3</code></span>
+                            <span class="var-item">k: <code id="var-d-k">?</code></span>
+                            <span class="var-item">prev: <code id="var-d-prev">?</code></span>
+                            <span class="var-item">current: <code id="var-d-current">?</code></span>
+                        </p>
+                    </div>
+                    <div class="output-log" id="output-d">點擊「下一步」開始動畫。</div>
+                    <strong>陣列 D (內容)</strong>
+                    <table id="table-d-d">
+                        <tbody>
+                            <tr><th>D</th><td id="d-d-1">Iris</td><td id="d-d-2">Ada</td><td id="d-d-3">Peter</td><td id="d-d-4"></td><td id="d-d-5">Ben</td><td id="d-d-6"></td></tr>
+                            <tr><th>索引</th><td class="index" id="d-d-idx-1">1</td><td class="index" id="d-d-idx-2">2</td><td class="index" id="d-d-idx-3">3</td><td class="index" id="d-d-idx-4">4</td><td class="index" id="d-d-idx-5">5</td><td class="index" id="d-d-idx-6">6</td></tr>
+                        </tbody>
+                    </table>
+                    <strong>陣列 NP (下一個索引)</strong>
+                    <table id="table-d-np">
+                        <tbody>
+                            <tr><th>NP</th><td id="d-np-1">2</td><td id="d-np-2">10</td><td id="d-np-3">1</td><td id="d-np-4"></td><td id="d-np-5">3</td><td id="d-np-6"></td></tr>
+                            <tr><th>索引</th><td class="index" id="d-np-idx-1">1</td><td class="index" id="d-np-idx-2">2</td><td class="index" id="d-np-idx-3">3</td><td class="index" id="d-np-idx-4">4</td><td class="index" id="d-np-idx-5">5</td><td class="index" id="d-np-idx-6">6</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part E (Challenge) Content -->
+        <div id="part-e-content" class="content">
+            <h2>(挑戰題): 完成子程式 insert()</h2>
+            <div class="side-by-side-container">
+                <div class="left-column">
+                    <div class="explanation">
+                        <p><strong>題目要求完成 `insert(n, name, i)` 子程式的偽代碼。</strong></p>
+                        <p>此子程式旨在將一個新節點插入到鏈表的第 `n` 個位置。它處理兩種情況：插入為頭節點 (`n=1`)，或插入到鏈表中間/末尾 (`n>1`)。對於後者，它需要遍歷到第 `n-1` 個節點，然後調整指針以鏈入新節點。</p>
+                        <h3>完整偽代碼 (答案以紅色標示)</h3>
+                        <div class="pseudocode" id="pseudo-e-container">
+                            <div id="e-line-1">子程式 insert(n, name, i)</div>
+                            <div id="e-line-2">  D[i] ← name</div>
+                            <div id="e-line-3">  如果 n = 1 則</div>
+                            <div id="e-line-4">    NP[i] ← <span class="final-answer">start</span></div>
+                            <div id="e-line-5">    start ← <span class="final-answer">i</span></div>
+                            <div id="e-line-6">  否則</div>
+                            <div id="e-line-7">    prev ← start</div>
+                            <div id="e-line-8">    current ← NP[start]</div>
+                            <div id="e-line-9">    設 k 由 2 至 n-1</div>
+                            <div id="e-line-10">      prev ← current</div>
+                            <div id="e-line-11">      current ← NP[current]</div>
+                            <div id="e-line-12">    NP[i] ← <span class="final-answer">current</span></div>
+                            <div id="e-line-13">    NP[prev] ← <span class="final-answer">i</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="right-column">
+                    <h3>動畫演示：執行 insert(2, "Brian", 4)</h3>
+                    <p>使用下方按鈕逐步觀察在原始鏈表的第 2 個位置插入新節點的流程。</p>
+                    <div class="animation-controls">
+                        <button id="prev-e-btn">上一步</button>
+                        <button id="next-e-btn">下一步</button>
+                        <button id="reset-e-btn">重置</button>
+                    </div>
+                    <div class="variable-display">
+                        <h3>變數值</h3>
+                        <p>
+                            <span class="var-item">n: <code id="var-e-n">2</code></span>
+                            <span class="var-item">name: <code id="var-e-name">"Brian"</code></span>
+                            <span class="var-item">i: <code id="var-e-i">4</code></span>
+                            <span class="var-item">start: <code id="var-e-start">5</code></span>
+                            <span class="var-item">k: <code id="var-e-k">?</code></span>
+                            <span class="var-item">prev: <code id="var-e-prev">?</code></span>
+                            <span class="var-item">current: <code id="var-e-current">?</code></span>
+                        </p>
+                    </div>
+                    <div class="output-log" id="output-e">點擊「下一步」開始動畫。</div>
+                    <strong>陣列 D (內容)</strong>
+                    <table id="table-e-d">
+                        <tbody>
+                            <tr><th>D</th><td id="e-d-1">Iris</td><td id="e-d-2">Ada</td><td id="e-d-3">Peter</td><td id="e-d-4"></td><td id="e-d-5">Ben</td><td id="e-d-6"></td></tr>
+                            <tr><th>索引</th><td class="index">1</td><td class="index">2</td><td class="index">3</td><td class="index">4</td><td class="index">5</td><td class="index">6</td></tr>
+                        </tbody>
+                    </table>
+                    <strong>陣列 NP (下一個索引)</strong>
+                    <table id="table-e-np">
+                        <tbody>
+                            <tr><th>NP</th><td id="e-np-1">2</td><td id="e-np-2">10</td><td id="e-np-3">1</td><td id="e-np-4"></td><td id="e-np-5">3</td><td id="e-np-6"></td></tr>
+                            <tr><th>索引</th><td class="index">1</td><td class="index">2</td><td class="index">3</td><td class="index">4</td><td class="index">5</td><td class="index">6</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const contentBlocks = document.querySelectorAll('.content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            contentBlocks.forEach(content => content.classList.remove('active'));
+            document.getElementById(button.dataset.target).classList.add('active');
+        });
+    });
+
+    function createAnimationEngine(config) {
+        let currentStep = -1;
+        const { steps, initialData, tablePrefix, outputEl, prevBtn, nextBtn, resetBtn, answerBlockId, varSelectors, pseudoContainerId } = config;
+        const answerBlock = answerBlockId ? document.getElementById(answerBlockId) : null;
+
+        function resetUI() {
+            outputEl.innerHTML = '點擊「下一步」開始動畫。';
+            if (initialData) {
+                for (let i = 1; i <= 6; i++) {
+                    const dCell = document.getElementById(`${tablePrefix}-d-${i}`);
+                    const npCell = document.getElementById(`${tablePrefix}-np-${i}`);
+                    if(dCell && initialData.d) dCell.textContent = initialData.d[i] || '';
+                    if(npCell && initialData.np) npCell.textContent = initialData.np[i] || '';
+                    if (dCell) dCell.className = '';
+                    if (npCell) npCell.className = '';
+                    const dIdxCell = document.getElementById(`${tablePrefix}-d-idx-${i}`);
+                    const npIdxCell = document.getElementById(`${tablePrefix}-np-idx-${i}`);
+                    if(dIdxCell) dIdxCell.className = 'index';
+                    if(npIdxCell) npIdxCell.className = 'index';
+                }
+            }
+            if (varSelectors) {
+                varSelectors.forEach(selector => {
+                    const el = document.getElementById(selector.id);
+                    if (el) el.textContent = selector.initialValue;
+                });
+            }
+            if (pseudoContainerId) {
+                const pseudoLines = document.querySelectorAll(`#${pseudoContainerId} > div`);
+                pseudoLines.forEach(line => line.classList.remove('pseudocode-highlight'));
+            }
+        }
+
+        function renderStep() {
+            resetUI();
+            if (answerBlock) answerBlock.style.display = 'none';
+
+            if (currentStep < 0) {
+                updateButtonStates();
+                return;
+            }
+
+            // Apply cumulative data changes from all steps up to the current one
+            for (let i = 0; i <= currentStep; i++) {
+                const step = steps[i];
+                if (step.updates) {
+                    step.updates.forEach(update => {
+                        const el = document.getElementById(update.id);
+                        if (el) el.textContent = update.content;
+                    });
+                }
+                if (step.varUpdates) {
+                    step.varUpdates.forEach(update => {
+                        const el = document.getElementById(update.id);
+                        if (el) el.textContent = update.value;
+                    });
+                }
+            }
+            
+            // Apply highlights and description for the CURRENT step only
+            const currentStepData = steps[currentStep];
+            outputEl.innerHTML = currentStepData.description;
+
+            if (currentStepData.highlights) {
+                currentStepData.highlights.forEach(hl => {
+                    const el = document.getElementById(hl.id);
+                    if (el) el.classList.add(hl.class);
+                });
+            }
+            
+            if (pseudoContainerId && currentStepData.pseudoLineId) {
+                const lineToHighlight = document.getElementById(currentStepData.pseudoLineId);
+                if (lineToHighlight) {
+                    lineToHighlight.classList.add('pseudocode-highlight');
+                }
+            }
+
+            updateButtonStates();
+            if (currentStep === steps.length - 1 && answerBlock) {
+                answerBlock.style.display = 'block';
+            }
+        }
+
+        function updateButtonStates() {
+            prevBtn.disabled = currentStep < 0;
+            nextBtn.disabled = currentStep >= steps.length - 1;
+        }
+
+        nextBtn.addEventListener('click', () => { if (currentStep < steps.length - 1) { currentStep++; renderStep(); } });
+        prevBtn.addEventListener('click', () => { if (currentStep >= 0) { currentStep--; renderStep(); } });
+        resetBtn.addEventListener('click', () => { currentStep = -1; renderStep(); });
+        
+        renderStep();
+    }
+
+    const initialD = { 1: 'Iris', 2: 'Ada', 3: 'Peter', 4: '', 5: 'Ben', 6: '' };
+    const initialNP = { 1: '2', 2: '10', 3: '1', 4: '', 5: '3', 6: '' };
+
+    createAnimationEngine({
+        steps: [
+            { description: "遍歷開始。首節點索引為 5。高亮當前索引。", highlights: [{ id: 'a-d-idx-5', class: 'highlight-current' }, { id: 'a-np-idx-5', class: 'highlight-current' }] },
+            { description: "讀取 D[5] 的內容 'Ben'。", highlights: [{ id: 'a-d-idx-5', class: 'highlight-current' }, { id: 'a-np-idx-5', class: 'highlight-current' }, { id: 'a-d-5', class: 'highlight-data' }] },
+            { description: "讀取 NP[5] 的下一個索引 3。", highlights: [{ id: 'a-d-5', class: 'highlight-data' }, { id: 'a-np-5', class: 'highlight-pointer' }] },
+            { description: "移動到下一個節點，索引為 3。", highlights: [{ id: 'a-d-idx-3', class: 'highlight-current' }, { id: 'a-np-idx-3', class: 'highlight-current' }] },
+            { description: "讀取 D[3] 的內容 'Peter'。", highlights: [{ id: 'a-d-idx-3', class: 'highlight-current' }, { id: 'a-np-idx-3', class: 'highlight-current' }, { id: 'a-d-3', class: 'highlight-data' }] },
+            { description: "讀取 NP[3] 的下一個索引 1。", highlights: [{ id: 'a-d-3', class: 'highlight-data' }, { id: 'a-np-3', class: 'highlight-pointer' }] },
+            { description: "移動到下一個節點，索引為 1。", highlights: [{ id: 'a-d-idx-1', class: 'highlight-current' }, { id: 'a-np-idx-1', class: 'highlight-current' }] },
+            { description: "讀取 D[1] 的內容 'Iris'。", highlights: [{ id: 'a-d-idx-1', class: 'highlight-current' }, { id: 'a-np-idx-1', class: 'highlight-current' }, { id: 'a-d-1', class: 'highlight-data' }] },
+            { description: "讀取 NP[1] 的下一個索引 2。", highlights: [{ id: 'a-d-1', class: 'highlight-data' }, { id: 'a-np-1', class: 'highlight-pointer' }] },
+            { description: "移動到下一個節點，索引為 2。", highlights: [{ id: 'a-d-idx-2', class: 'highlight-current' }, { id: 'a-np-idx-2', class: 'highlight-current' }] },
+            { description: "讀取 D[2] 的內容 'Ada'。", highlights: [{ id: 'a-d-idx-2', class: 'highlight-current' }, { id: 'a-np-idx-2', class: 'highlight-current' }, { id: 'a-d-2', class: 'highlight-data' }] },
+            { description: "讀取 NP[2] 的下一個索引 10。這是空指示標。", highlights: [{ id: 'a-d-2', class: 'highlight-data' }, { id: 'a-np-2', class: 'highlight-pointer' }] },
+            { description: "遇到空指示標 10，遍歷結束。動畫完成！答案已顯示在下方。", highlights: [] }
+        ], initialData: { d: initialD, np: initialNP }, tablePrefix: 'a',
+        outputEl: document.getElementById('output-a'), prevBtn: document.getElementById('prev-a-btn'),
+        nextBtn: document.getElementById('next-a-btn'), resetBtn: document.getElementById('reset-a-btn'),
+        answerBlockId: 'answer-block-a'
+    });
+
+    createAnimationEngine({
+        steps: [
+            { description: "開始執行 delete(3)。目標是刪除第 3 個節點 'Iris' (索引 1)。", highlights: [{ id: 'bi-d-1', class: 'highlight-current' }] },
+            { description: "要刪除 'Iris'，需找到指向它的前一個節點 'Peter' (索引 3)。", highlights: [{ id: 'bi-d-3', class: 'highlight-current' }, { id: 'bi-np-3', class: 'highlight-current' }] },
+            { description: "我們需要將 'Peter' 的指針 NP[3] 指向 'Iris' 的下一個節點。", highlights: [{ id: 'bi-np-3', class: 'highlight-current' }] },
+            { description: "'Iris' 的下一個節點索引是 NP[1] 的值，即 2。", highlights: [{ id: 'bi-np-3', class: 'highlight-current' }, { id: 'bi-np-1', class: 'highlight-pointer' }] },
+            { description: "更新 NP[3] 的值為 2。", updates: [{ id: 'bi-np-3', content: '2' }], highlights: [{ id: 'bi-np-3', class: 'final-answer' }] },
+            { description: "delete(3) 完成。新鏈表: Ben(5) → Peter(3) → Ada(2)。動畫完成！答案已顯示在下方。", updates: [{ id: 'bi-np-3', content: '2' }], highlights: [{ id: 'bi-np-3', class: 'final-answer' }] }
+        ], initialData: { d: initialD, np: initialNP }, tablePrefix: 'bi',
+        outputEl: document.getElementById('output-bi'), prevBtn: document.getElementById('prev-bi-btn'),
+        nextBtn: document.getElementById('next-bi-btn'), resetBtn: document.getElementById('reset-bi-btn'),
+        answerBlockId: 'answer-block-bi'
+    });
+    
+    createAnimationEngine({
+        steps: [
+            { description: "開始執行 insert(2, Brian, 4)。這是接續 delete(3) 後的狀態。", highlights: [] },
+            { description: "1. 將新數據 'Brian' 放入空閒的 D[4]。", updates: [{ id: 'bii-d-4', content: 'Brian' }], highlights: [{ id: 'bii-d-4', class: 'final-answer' }] },
+            { description: "2. 找到插入點的前一個節點，即鏈表的第一個節點 'Ben' (索引 5)。", updates: [{ id: 'bii-d-4', content: 'Brian' }], highlights: [{ id: 'bii-d-4', class: 'final-answer' }, { id: 'bii-np-5', class: 'highlight-current' }] },
+            { description: "3. 將 'Ben' 的指針 NP[5] 從 3 改為新節點的索引 4。", updates: [{ id: 'bii-d-4', content: 'Brian' }, { id: 'bii-np-5', content: '4' }], highlights: [{ id: 'bii-d-4', class: 'final-answer' }, { id: 'bii-np-5', class: 'final-answer' }] },
+            { description: "4. 將新節點 'Brian' 的指針 NP[4] 指向原來的第 2 個節點 'Peter' (索引 3)。", updates: [{ id: 'bii-d-4', content: 'Brian' }, { id: 'bii-np-5', content: '4' }, { id: 'bii-np-4', content: '3' }], highlights: [{ id: 'bii-d-4', class: 'final-answer' }, { id: 'bii-np-5', class: 'final-answer' }, { id: 'bii-np-4', class: 'final-answer' }] },
+            { description: "insert(2, Brian, 4) 完成。新鏈表: Ben → Brian → Peter → Ada。動畫完成！答案已顯示在下方。", updates: [{ id: 'bii-d-4', content: 'Brian' }, { id: 'bii-np-5', content: '4' }, { id: 'bii-np-4', content: '3' }], highlights: [{ id: 'bii-d-4', class: 'final-answer' }, { id: 'bii-np-4', class: 'final-answer' }, { id: 'bii-np-5', class: 'final-answer' }] }
+        ], initialData: { d: initialD, np: { ...initialNP, 3: '2' } }, tablePrefix: 'bii',
+        outputEl: document.getElementById('output-bii'), prevBtn: document.getElementById('prev-bii-btn'),
+        nextBtn: document.getElementById('next-bii-btn'), resetBtn: document.getElementById('reset-bii-btn'),
+        answerBlockId: 'answer-block-bii'
+    });
+
+    createAnimationEngine({
+        steps: [
+            { description: "初始化 `l ← 0`。", pseudoLineId: 'c-line-2', varUpdates: [{ id: 'var-c-l', value: '0' }, { id: 'var-c-next', value: '?' }] },
+            { description: "初始化 `next ← start` (5)。", pseudoLineId: 'c-line-3', varUpdates: [{ id: 'var-c-l', value: '0' }, { id: 'var-c-next', value: '5' }] },
+            { description: "檢查循環條件: `next (5) != 10`。條件成立，進入循環。當前節點是 'Ben'。", pseudoLineId: 'c-line-4', highlights: [{ id: 'c-d-idx-5', class: 'highlight-current' }, { id: 'c-np-idx-5', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '0' }, { id: 'var-c-next', value: '5' }] },
+            { description: "`l ← l + 1`。`l` 現在是 1。", pseudoLineId: 'c-line-5', highlights: [{ id: 'c-d-idx-5', class: 'highlight-current' }, { id: 'c-np-idx-5', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '1' }, { id: 'var-c-next', value: '5' }] },
+            { description: "`next ← NP[next]` (NP[5])。`next` 更新為 3。", pseudoLineId: 'c-line-6', highlights: [{ id: 'c-d-idx-5', class: 'highlight-current' }, { id: 'c-np-idx-5', class: 'highlight-current' }, { id: 'c-np-5', class: 'highlight-pointer' }], varUpdates: [{ id: 'var-c-l', value: '1' }, { id: 'var-c-next', value: '3' }] },
+            { description: "檢查循環條件: `next (3) != 10`。條件成立。當前節點是 'Peter'。", pseudoLineId: 'c-line-4', highlights: [{ id: 'c-d-idx-3', class: 'highlight-current' }, { id: 'c-np-idx-3', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '1' }, { id: 'var-c-next', value: '3' }] },
+            { description: "`l ← l + 1`。`l` 現在是 2。", pseudoLineId: 'c-line-5', highlights: [{ id: 'c-d-idx-3', class: 'highlight-current' }, { id: 'c-np-idx-3', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '2' }, { id: 'var-c-next', value: '3' }] },
+            { description: "`next ← NP[next]` (NP[3])。`next` 更新為 1。", pseudoLineId: 'c-line-6', highlights: [{ id: 'c-d-idx-3', class: 'highlight-current' }, { id: 'c-np-idx-3', class: 'highlight-current' }, { id: 'c-np-3', class: 'highlight-pointer' }], varUpdates: [{ id: 'var-c-l', value: '2' }, { id: 'var-c-next', value: '1' }] },
+            { description: "檢查循環條件: `next (1) != 10`。條件成立。當前節點是 'Iris'。", pseudoLineId: 'c-line-4', highlights: [{ id: 'c-d-idx-1', class: 'highlight-current' }, { id: 'c-np-idx-1', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '2' }, { id: 'var-c-next', value: '1' }] },
+            { description: "`l ← l + 1`。`l` 現在是 3。", pseudoLineId: 'c-line-5', highlights: [{ id: 'c-d-idx-1', class: 'highlight-current' }, { id: 'c-np-idx-1', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '3' }, { id: 'var-c-next', value: '1' }] },
+            { description: "`next ← NP[next]` (NP[1])。`next` 更新為 2。", pseudoLineId: 'c-line-6', highlights: [{ id: 'c-d-idx-1', class: 'highlight-current' }, { id: 'c-np-idx-1', class: 'highlight-current' }, { id: 'c-np-1', class: 'highlight-pointer' }], varUpdates: [{ id: 'var-c-l', value: '3' }, { id: 'var-c-next', value: '2' }] },
+            { description: "檢查循環條件: `next (2) != 10`。條件成立。當前節點是 'Ada'。", pseudoLineId: 'c-line-4', highlights: [{ id: 'c-d-idx-2', class: 'highlight-current' }, { id: 'c-np-idx-2', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '3' }, { id: 'var-c-next', value: '2' }] },
+            { description: "`l ← l + 1`。`l` 現在是 4。", pseudoLineId: 'c-line-5', highlights: [{ id: 'c-d-idx-2', class: 'highlight-current' }, { id: 'c-np-idx-2', class: 'highlight-current' }], varUpdates: [{ id: 'var-c-l', value: '4' }, { id: 'var-c-next', value: '2' }] },
+            { description: "`next ← NP[next]` (NP[2])。`next` 更新為 10。", pseudoLineId: 'c-line-6', highlights: [{ id: 'c-d-idx-2', class: 'highlight-current' }, { id: 'c-np-idx-2', class: 'highlight-current' }, { id: 'c-np-2', class: 'highlight-pointer' }], varUpdates: [{ id: 'var-c-l', value: '4' }, { id: 'var-c-next', value: '10' }] },
+            { description: "檢查循環條件: `next (10) != 10`。條件不成立，循環結束。", pseudoLineId: 'c-line-4', highlights: [], varUpdates: [{ id: 'var-c-l', value: '4' }, { id: 'var-c-next', value: '10' }] },
+            { description: "`傳回 l` 的值。最終結果是 4。動畫結束。", pseudoLineId: 'c-line-7', varUpdates: [{ id: 'var-c-l', value: '4' }, { id: 'var-c-next', value: '10' }] }
+        ], initialData: { d: initialD, np: initialNP }, tablePrefix: 'c',
+        outputEl: document.getElementById('output-c'), prevBtn: document.getElementById('prev-c-btn'),
+        nextBtn: document.getElementById('next-c-btn'), resetBtn: document.getElementById('reset-c-btn'),
+        varSelectors: [ { id: 'var-c-l', initialValue: '?' }, { id: 'var-c-next', initialValue: '?' } ],
+        pseudoContainerId: 'pseudo-c-container'
+    });
+
+    createAnimationEngine({
+        steps: [
+            { description: "開始執行 `delete(3)`。檢查 `n = 1`。", pseudoLineId: 'd-line-2', varUpdates: [ { id: 'var-d-k', value: '?' }, { id: 'var-d-prev', value: '?' }, { id: 'var-d-current', value: '?' } ] },
+            { description: "因為 `n=3` 不等於 1，執行 '否則' 分支。`prev ← start`。`prev` 設為 5 (節點 'Ben')。", pseudoLineId: 'd-line-5', highlights: [{ id: 'd-d-idx-5', class: 'highlight-current' }, { id: 'd-np-idx-5', class: 'highlight-current' }], varUpdates: [ { id: 'var-d-k', value: '?' }, { id: 'var-d-prev', value: '5' }, { id: 'var-d-current', value: '?' } ] },
+            { description: "`current ← NP[start]` (NP[5])。`current` 設為 3 (節點 'Peter')。", pseudoLineId: 'd-line-6', highlights: [{ id: 'd-d-idx-5', class: 'highlight-current' }, { id: 'd-np-idx-5', class: 'highlight-current' }, { id: 'd-np-5', class: 'highlight-pointer' }, { id: 'd-d-idx-3', class: 'highlight-data' }, { id: 'd-np-idx-3', class: 'highlight-data' }], varUpdates: [ { id: 'var-d-k', value: '?' }, { id: 'var-d-prev', value: '5' }, { id: 'var-d-current', value: '3' } ] },
+            { description: "進入循環，`設 k 由 2 至 n-1` (即 2)。循環將執行一次。`k` 設為 2。", pseudoLineId: 'd-line-8', highlights: [{ id: 'd-d-idx-5', class: 'highlight-current' }, { id: 'd-np-idx-5', class: 'highlight-current' }, { id: 'd-d-idx-3', class: 'highlight-data' }, { id: 'd-np-idx-3', class: 'highlight-data' }], varUpdates: [ { id: 'var-d-k', value: '2' }, { id: 'var-d-prev', value: '5' }, { id: 'var-d-current', value: '3' } ] },
+            { description: "`prev ← current`。`prev` 更新為 3 (節點 'Peter')。", pseudoLineId: 'd-line-9', highlights: [{ id: 'd-d-idx-3', class: 'highlight-current' }, { id: 'd-np-idx-3', class: 'highlight-current' }], varUpdates: [ { id: 'var-d-k', value: '2' }, { id: 'var-d-prev', value: '3' }, { id: 'var-d-current', value: '3' } ] },
+            { description: "`current ← NP[current]` (NP[3])。`current` 更新為 1 (節點 'Iris')。", pseudoLineId: 'd-line-10', highlights: [{ id: 'd-d-idx-3', class: 'highlight-current' }, { id: 'd-np-idx-3', class: 'highlight-current' }, { id: 'd-np-3', class: 'highlight-pointer' }, { id: 'd-d-idx-1', class: 'highlight-data' }, { id: 'd-np-idx-1', class: 'highlight-data' }], varUpdates: [ { id: 'var-d-k', value: '2' }, { id: 'var-d-prev', value: '3' }, { id: 'var-d-current', value: '1' } ] },
+            { description: "循環結束。此時 `prev=3` (Peter)，`current=1` (Iris)。我們已找到要刪除的節點 (current) 和它的前一個節點 (prev)。", pseudoLineId: 'd-line-8', highlights: [{ id: 'd-d-idx-3', class: 'highlight-current' }, { id: 'd-np-idx-3', class: 'highlight-current' }, { id: 'd-d-idx-1', class: 'highlight-data' }, { id: 'd-np-idx-1', class: 'highlight-data' }], varUpdates: [ { id: 'var-d-k', value: '循環結束' }, { id: 'var-d-prev', value: '3' }, { id: 'var-d-current', value: '1' } ] },
+            { description: "執行 `NP[prev] ← NP[current]`，即 `NP[3] ← NP[1]`。這將 'Peter' 的指針跳過 'Iris'。", pseudoLineId: 'd-line-11', highlights: [{ id: 'd-np-3', class: 'highlight-current' }, { id: 'd-np-1', class: 'highlight-pointer' }], varUpdates: [ { id: 'var-d-k', value: '循環結束' }, { id: 'var-d-prev', value: '3' }, { id: 'var-d-current', value: '1' } ] },
+            { description: "`NP[1]` 的值是 2。所以 `NP[3]` 的值更新為 2。", pseudoLineId: 'd-line-11', updates: [{ id: 'd-np-3', content: '2' }], highlights: [{ id: 'd-np-3', class: 'final-answer' }], varUpdates: [ { id: 'var-d-k', value: '循環結束' }, { id: 'var-d-prev', value: '3' }, { id: 'var-d-current', value: '1' } ] },
+            { description: "刪除完成。Peter (索引3) 現在直接指向 Ada (索引2)。動畫結束。", pseudoLineId: 'd-line-11', updates: [{ id: 'd-np-3', content: '2' }], highlights: [{ id: 'd-np-3', class: 'final-answer' }], varUpdates: [ { id: 'var-d-k', value: '循環結束' }, { id: 'var-d-prev', value: '3' }, { id: 'var-d-current', value: '1' } ] }
+        ], initialData: { d: initialD, np: initialNP }, tablePrefix: 'd',
+        outputEl: document.getElementById('output-d'), prevBtn: document.getElementById('prev-d-btn'),
+        nextBtn: document.getElementById('next-d-btn'), resetBtn: document.getElementById('reset-d-btn'),
+        varSelectors: [ { id: 'var-d-n', initialValue: '3' }, { id: 'var-d-k', initialValue: '?' }, { id: 'var-d-prev', initialValue: '?' }, { id: 'var-d-current', initialValue: '?' } ],
+        pseudoContainerId: 'pseudo-d-container'
+    });
+
+    createAnimationEngine({
+        steps: [
+            { description: `開始執行 insert(2, "Brian", 4)。`, pseudoLineId: 'e-line-1', varUpdates: [ { id: 'var-e-k', value: '?' }, { id: 'var-e-prev', value: '?' }, { id: 'var-e-current', value: '?' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `D[i] ← name。將 "Brian" 存入 D[4]。`, pseudoLineId: 'e-line-2', updates: [{ id: 'e-d-4', content: 'Brian' }], highlights: [{ id: 'e-d-4', class: 'highlight-data' }], varUpdates: [ { id: 'var-e-k', value: '?' }, { id: 'var-e-prev', value: '?' }, { id: 'var-e-current', value: '?' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `檢查條件 n = 1。因為 n=2，條件為假。`, pseudoLineId: 'e-line-3', updates: [{ id: 'e-d-4', content: 'Brian' }], varUpdates: [ { id: 'var-e-k', value: '?' }, { id: 'var-e-prev', value: '?' }, { id: 'var-e-current', value: '?' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `執行 '否則' 分支。prev ← start。變數 prev 設為 5。`, pseudoLineId: 'e-line-7', updates: [{ id: 'e-d-4', content: 'Brian' }], highlights: [{ id: 'e-np-5', class: 'highlight-current' }], varUpdates: [ { id: 'var-e-k', value: '?' }, { id: 'var-e-prev', value: '5' }, { id: 'var-e-current', value: '?' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `current ← NP[start] (NP[5])。變數 current 設為 3。`, pseudoLineId: 'e-line-8', updates: [{ id: 'e-d-4', content: 'Brian' }], highlights: [{ id: 'e-np-5', class: 'highlight-pointer' }, { id: 'e-np-3', class: 'highlight-current' }], varUpdates: [ { id: 'var-e-k', value: '?' }, { id: 'var-e-prev', value: '5' }, { id: 'var-e-current', value: '3' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `進入循環 '設 k 由 2 至 n-1'。因為 n=2，n-1=1，循環範圍是 2 至 1，所以循環不執行。`, pseudoLineId: 'e-line-9', updates: [{ id: 'e-d-4', content: 'Brian' }], highlights: [{ id: 'e-np-5', class: 'highlight-current' }], varUpdates: [ { id: 'var-e-k', value: '不執行' }, { id: 'var-e-prev', value: '5' }, { id: 'var-e-current', value: '3' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `NP[i] ← current。即 NP[4] ← 3。`, pseudoLineId: 'e-line-12', updates: [{ id: 'e-d-4', content: 'Brian' }, { id: 'e-np-4', content: '3' }], highlights: [{ id: 'e-np-4', class: 'final-answer' }, { id: 'e-np-3', class: 'highlight-pointer' }], varUpdates: [ { id: 'var-e-k', value: '不執行' }, { id: 'var-e-prev', value: '5' }, { id: 'var-e-current', value: '3' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `NP[prev] ← i。即 NP[5] ← 4。`, pseudoLineId: 'e-line-13', updates: [{ id: 'e-d-4', content: 'Brian' }, { id: 'e-np-4', content: '3' }, { id: 'e-np-5', content: '4' }], highlights: [{ id: 'e-np-4', class: 'final-answer' }, { id: 'e-np-5', class: 'final-answer' }], varUpdates: [ { id: 'var-e-k', value: '不執行' }, { id: 'var-e-prev', value: '5' }, { id: 'var-e-current', value: '3' }, { id: 'var-e-start', value: '5' } ] },
+            { description: `插入完成。新鏈表順序: Ben → Brian → Peter → ...。動畫結束。`, pseudoLineId: 'e-line-13', updates: [{ id: 'e-d-4', content: 'Brian' }, { id: 'e-np-4', content: '3' }, { id: 'e-np-5', content: '4' }], highlights: [{ id: 'e-d-4', class: 'highlight-data' }, { id: 'e-np-4', class: 'final-answer' }, { id: 'e-np-5', class: 'final-answer' }], varUpdates: [ { id: 'var-e-k', value: '不執行' }, { id: 'var-e-prev', value: '5' }, { id: 'var-e-current', value: '3' }, { id: 'var-e-start', value: '5' } ] }
+        ], initialData: { d: initialD, np: initialNP }, tablePrefix: 'e',
+        outputEl: document.getElementById('output-e'), prevBtn: document.getElementById('prev-e-btn'),
+        nextBtn: document.getElementById('next-e-btn'), resetBtn: document.getElementById('reset-e-btn'),
+        varSelectors: [ { id: 'var-e-n', initialValue: '2' }, { id: 'var-e-name', initialValue: '"Brian"' }, { id: 'var-e-i', initialValue: '4' }, { id: 'var-e-start', initialValue: '5' }, { id: 'var-e-k', initialValue: '?' }, { id: 'var-e-prev', initialValue: '?' }, { id: 'var-e-current', initialValue: '?' } ],
+        pseudoContainerId: 'pseudo-e-container'
+    });
+});
+</script>
+
+</body>
+</html>
