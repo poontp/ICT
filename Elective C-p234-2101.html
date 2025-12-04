@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>選擇排序法互動教學 (顯示修復版)</title>
+    <style>
+        :root {
+            --sorted-color: #2ecc71;      /* 綠色：已排序 */
+            --unsorted-color: #bdc3c7;    /* 灰色：未排序 */
+            --min-color: #e74c3c;         /* 紅色：目前最小值 */
+            --compare-color: #f1c40f;     /* 黃色：正在比較 */
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 10px; }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            width: 60px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .visualization-container {
+            display: flex;
+            justify-content: center;
+            /* 修正：移除 align-items: flex-end，讓子元素自動拉伸高度 */
+            height: 320px;
+            width: 100%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            box-sizing: border-box; /* 確保 padding 不會影響寬度計算 */
+        }
+
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* 修正：強制高度 100% 並靠底對齊 */
+            height: 100%; 
+            justify-content: flex-end;
+            margin: 0 4px;
+            flex-grow: 1;
+            max-width: 50px;
+        }
+
+        .bar {
+            width: 100%;
+            background-color: var(--unsorted-color);
+            border-radius: 5px 5px 0 0;
+            transition: height 0.3s ease, background-color 0.2s ease;
+            min-width: 20px;
+            /* 確保長條圖本身有顏色 */
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* 狀態顏色樣式 */
+        .bar.is-sorted { background-color: var(--sorted-color) !important; }
+        .bar.is-min { background-color: var(--min-color) !important; }
+        .bar.is-comparing { background-color: var(--compare-color) !important; }
+
+        .bar-value {
+            margin-top: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            height: 20px; /* 固定高度避免跳動 */
+        }
+
+        .bar-index {
+            margin-top: 2px;
+            font-size: 12px;
+            color: #7f8c8d;
+            height: 15px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .legend-item { display: flex; align-items: center; }
+        .legend-color { width: 15px; height: 15px; margin-right: 5px; border-radius: 3px; }
+
+        .status-box {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            min-height: 60px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.5;
+            border-left: 5px solid #3498db;
+        }
+
+        @media (max-width: 600px) {
+            .visualization-container { height: 220px; }
+            .bar-value { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>選擇排序法 (Selection Sort)</h1>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background: var(--sorted-color)"></div>已排序區</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--unsorted-color)"></div>未排序區</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--min-color)"></div>目前最小值</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--compare-color)"></div>正在比較</div>
+    </div>
+
+    <div class="visualization-container" id="visualizer"></div>
+
+    <div class="status-box" id="status-text">
+        準備就緒。請點擊「下一步」開始排序。
+    </div>
+
+    <div class="controls">
+        <div style="display:flex; gap:5px; align-items:center; justify-content:center;">
+            <label for="item-count">數量:</label>
+            <input type="number" id="item-count" value="8" min="3" max="20">
+        </div>
+        <button onclick="generateArray()">重新生成</button>
+        <button id="prev-btn" onclick="stepBackward()" disabled>⏮ 上一步</button>
+        <button id="next-btn" onclick="stepForward()" disabled>下一步 ⏭</button>
+    </div>
+
+    <script>
+        let array = [];
+        let steps = [];
+        let currentStepIndex = 0;
+        const visualizer = document.getElementById('visualizer');
+        const statusText = document.getElementById('status-text');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        function generateArray() {
+            const countInput = document.getElementById('item-count');
+            let count = parseInt(countInput.value);
+            if (count < 3) count = 3;
+            if (count > 20) count = 20;
+            countInput.value = count;
+
+            array = [];
+            for (let i = 0; i < count; i++) {
+                // 生成 10 到 100 之間的隨機數
+                array.push(Math.floor(Math.random() * 90) + 10);
+            }
+
+            calculateSteps();
+            currentStepIndex = 0;
+            renderStep(0);
+        }
+
+        function calculateSteps() {
+            steps = [];
+            let tempArray = [...array];
+            let n = tempArray.length;
+
+            // 初始狀態
+            steps.push({
+                arr: [...tempArray],
+                sortedIndex: -1,
+                minIndex: -1,
+                compareIndex: -1,
+                message: "初始狀態：灰色代表未排序區域。"
+            });
+
+            for (let i = 0; i < n - 1; i++) {
+                let minIdx = i;
+                
+                // 步驟：設定新的最小值候選人
+                steps.push({
+                    arr: [...tempArray],
+                    sortedIndex: i - 1,
+                    minIndex: minIdx,
+                    compareIndex: -1,
+                    message: `第 ${i + 1} 回合：暫定索引 ${i} (${tempArray[i]}) 是最小值（紅色）。`
+                });
+
+                for (let j = i + 1; j < n; j++) {
+                    // 步驟：比較中
+                    steps.push({
+                        arr: [...tempArray],
+                        sortedIndex: i - 1,
+                        minIndex: minIdx,
+                        compareIndex: j,
+                        message: `比較：紅色最小值 ${tempArray[minIdx]} vs 黃色 ${tempArray[j]}。`
+                    });
+
+                    if (tempArray[j] < tempArray[minIdx]) {
+                        minIdx = j;
+                        // 步驟：更新最小值
+                        steps.push({
+                            arr: [...tempArray],
+                            sortedIndex: i - 1,
+                            minIndex: minIdx,
+                            compareIndex: j, 
+                            message: `發現更小的值！更新最小值為 ${tempArray[minIdx]} (索引 ${minIdx})。`
+                        });
+                    }
+                }
+
+                // 步驟：交換
+                if (minIdx !== i) {
+                    let temp = tempArray[minIdx];
+                    tempArray[minIdx] = tempArray[i];
+                    tempArray[i] = temp;
+                    
+                    steps.push({
+                        arr: [...tempArray],
+                        sortedIndex: i,
+                        minIndex: i, // 交換後，最小值現在在位置 i
+                        compareIndex: -1,
+                        message: `交換：將最小值 ${tempArray[i]} 移到已排序區的末尾。`
+                    });
+                } else {
+                    steps.push({
+                        arr: [...tempArray],
+                        sortedIndex: i,
+                        minIndex: i,
+                        compareIndex: -1,
+                        message: `無需交換：目前位置已經是最小值。`
+                    });
+                }
+            }
+
+            // 完成狀態
+            steps.push({
+                arr: [...tempArray],
+                sortedIndex: n - 1,
+                minIndex: -1,
+                compareIndex: -1,
+                message: "排序完成！所有項目變成綠色。"
+            });
+        }
+
+        function renderStep(index) {
+            visualizer.innerHTML = '';
+            const step = steps[index];
+            const arr = step.arr;
+
+            arr.forEach((value, idx) => {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'bar-container';
+
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                
+                // 修正：高度計算。
+                // 將最大高度設為 85%，保留 15% 給底部的文字，避免文字被擠出去。
+                // 假設最大值約為 100。
+                const heightPercentage = (value / 100) * 85; 
+                bar.style.height = `${heightPercentage}%`;
+
+                // 根據狀態添加特定的 class
+                if (idx <= step.sortedIndex) {
+                    bar.classList.add('is-sorted');
+                } else if (idx === step.minIndex) {
+                    bar.classList.add('is-min');
+                } else if (idx === step.compareIndex) {
+                    bar.classList.add('is-comparing');
+                }
+
+                const barValue = document.createElement('div');
+                barValue.className = 'bar-value';
+                barValue.innerText = value;
+
+                const barIndex = document.createElement('div');
+                barIndex.className = 'bar-index';
+                barIndex.innerText = idx;
+
+                barContainer.appendChild(bar);
+                barContainer.appendChild(barValue);
+                barContainer.appendChild(barIndex);
+                visualizer.appendChild(barContainer);
+            });
+
+            statusText.innerText = step.message;
+            
+            // 更新按鈕狀態
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === steps.length - 1;
+        }
+
+        function stepForward() {
+            if (currentStepIndex < steps.length - 1) {
+                currentStepIndex++;
+                renderStep(currentStepIndex);
+            }
+        }
+
+        function stepBackward() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                renderStep(currentStepIndex);
+            }
+        }
+
+        // 初始化
+        window.onload = generateArray;
+
+    </script>
+</body>
+</html>
