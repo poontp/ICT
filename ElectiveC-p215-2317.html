@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>對分檢索 (Binary Search) - 視覺化演示</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f1c40f;
+            --dark-bg: #2c3e50;
+            --light-bg: #ecf0f1;
+            --box-size: 45px; /* 稍微加大方塊以容納指標 */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 10px; text-align: center; }
+
+        /* 統計資訊區 */
+        .stats-bar {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--dark-bg);
+            background: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .highlight-count {
+            color: var(--danger-color);
+            font-size: 1.4rem;
+        }
+
+        /* 設定區塊 */
+        .settings-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: flex-end;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* 播放控制區塊 */
+        .playback-controls {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .playback-controls.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label { font-size: 0.9rem; font-weight: bold; }
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; width: 100px; }
+
+        button {
+            padding: 10px 20px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s, transform 0.1s;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+        }
+
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; }
+
+        .btn-generate { background-color: #8e44ad; }
+        .btn-init { background-color: var(--primary-color); }
+        .btn-control { background-color: #34495e; }
+        .btn-auto { background-color: var(--warning-color); color: #333; }
+        .btn-auto.playing { background-color: var(--danger-color); color: white; }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px; /* 增加間距給指標 */
+            font-size: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 15px; height: 15px; border-radius: 3px; }
+
+        /* 陣列容器 */
+        .array-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px; /* 增加間距 */
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 80px;
+            padding-top: 30px; /* 預留空間給 L/H 指標 */
+        }
+
+        .box {
+            width: var(--box-size);
+            height: var(--box-size);
+            background-color: white;
+            border: 2px solid #bdc3c7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            position: relative;
+            font-size: 1rem;
+        }
+
+        .index-label {
+            position: absolute;
+            bottom: -20px;
+            font-size: 0.6rem;
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+
+        /* 指標樣式 (L 和 H) */
+        .indicator {
+            position: absolute;
+            top: -35px;
+            font-size: 1rem;
+            font-weight: 900;
+            width: 100%;
+            text-align: center;
+            transition: left 0.3s ease;
+            z-index: 20;
+            text-shadow: 1px 1px 0px white;
+        }
+        
+        .indicator::after {
+            content: '▼';
+            display: block;
+            font-size: 0.8rem;
+            line-height: 0.8;
+        }
+
+        .indicator-l { color: #e67e22; left: -5px; } /* Orange */
+        .indicator-h { color: #9b59b6; right: -5px; } /* Purple */
+
+        /* 當 L 和 H 重疊時的微調 */
+        .box.overlap-indicators .indicator-l { transform: translateX(-8px); }
+        .box.overlap-indicators .indicator-h { transform: translateX(8px); }
+
+
+        /* 狀態樣式 */
+        .box.active-range { background-color: #fff9c4; border-color: var(--warning-color); }
+        
+        .box.mid {
+            background-color: var(--primary-color);
+            color: white;
+            transform: scale(1.15);
+            z-index: 10;
+            border-color: #2980b9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+
+        .box.found {
+            background-color: var(--success-color);
+            color: white;
+            border-color: #27ae60;
+            transform: scale(1.2);
+            z-index: 11;
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.6);
+        }
+
+        .box.discarded {
+            background-color: #ecf0f1;
+            color: #bdc3c7;
+            border-color: #ecf0f1;
+            transform: scale(0.9);
+        }
+
+        .status-log {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 60px;
+            text-align: center;
+            font-size: 1.1rem;
+            border-left: 5px solid #95a5a6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.3s;
+        }
+
+        @media (max-width: 600px) {
+            .settings-panel, .playback-controls { flex-direction: column; align-items: stretch; }
+            .input-group { width: 100%; }
+            input { width: 100%; box-sizing: border-box; }
+            .index-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>對分檢索 (Binary Search)</h1>
+
+    <div class="stats-bar">
+        比較次數: <span id="compareCount" class="highlight-count">0</span>
+    </div>
+
+    <!-- 設定區 -->
+    <div class="settings-panel">
+        <div class="input-group">
+            <label for="arraySize">數量 (5-50)</label>
+            <input type="number" id="arraySize" value="15" min="5" max="50">
+        </div>
+        <button class="btn-generate" onclick="generateArray()">重置陣列</button>
+        
+        <div class="input-group">
+            <label for="targetNum">搜尋目標</label>
+            <input type="number" id="targetNum" placeholder="輸入數字">
+        </div>
+        <button class="btn-init" onclick="initSearch()" id="initBtn" disabled>開始搜尋</button>
+    </div>
+
+    <!-- 播放控制區 -->
+    <div class="playback-controls" id="playbackControls">
+        <button class="btn-control" onclick="prevStep()" id="prevBtn">◀ 上一步</button>
+        <button class="btn-auto" onclick="toggleAutoPlay()" id="autoBtn">自動播放</button>
+        <button class="btn-control" onclick="nextStep()" id="nextBtn">下一步 ▶</button>
+        
+        <div class="input-group" style="flex: 1; min-width: 120px;">
+            <label for="speed" style="text-align: center;">速度</label>
+            <input type="range" id="speed" min="100" max="1500" value="800" style="width: 100%">
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><span style="color:#e67e22; font-weight:bold;">L</span>&nbsp;下界 (Low)</div>
+        <div class="legend-item"><span style="color:#9b59b6; font-weight:bold;">H</span>&nbsp;上界 (High)</div>
+        <div class="legend-item"><div class="dot" style="background: #3498db;"></div> 中間值 (Mid)</div>
+        <div class="legend-item"><div class="dot" style="background: #2ecc71;"></div> 找到目標</div>
+    </div>
+
+    <div class="status-log" id="statusLog">
+        請產生陣列並輸入要搜尋的數字。
+    </div>
+
+    <div class="array-container" id="arrayContainer">
+        <!-- Boxes generated here -->
+    </div>
+
+    <script>
+        let dataArray = [];
+        let searchSteps = [];
+        let currentStepIndex = -1;
+        let autoPlayTimer = null;
+        let isAutoPlaying = false;
+
+        const container = document.getElementById('arrayContainer');
+        const statusLog = document.getElementById('statusLog');
+        const compareCountLabel = document.getElementById('compareCount');
+        const playbackPanel = document.getElementById('playbackControls');
+        const initBtn = document.getElementById('initBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const autoBtn = document.getElementById('autoBtn');
+
+        function generateArray() {
+            stopAutoPlay();
+            resetUI();
+
+            const sizeInput = document.getElementById('arraySize');
+            let size = parseInt(sizeInput.value);
+            if (size < 5) size = 5;
+            if (size > 50) size = 50;
+            sizeInput.value = size;
+
+            dataArray = [];
+            while(dataArray.length < size) {
+                let num = Math.floor(Math.random() * 99) + 1;
+                if(!dataArray.includes(num)) {
+                    dataArray.push(num);
+                }
+            }
+            dataArray.sort((a, b) => a - b);
+            
+            renderArray();
+            
+            statusLog.textContent = `已產生 ${dataArray.length} 個排序數字。請輸入目標。`;
+            statusLog.style.borderLeftColor = '#3498db';
+            initBtn.disabled = false;
+            playbackPanel.classList.remove('active');
+        }
+
+        function renderArray() {
+            container.innerHTML = '';
+            dataArray.forEach((num, index) => {
+                const box = document.createElement('div');
+                box.className = 'box';
+                box.id = `box-${index}`;
+                box.textContent = num;
+                
+                const label = document.createElement('div');
+                label.className = 'index-label';
+                label.textContent = index;
+                box.appendChild(label);
+                
+                container.appendChild(box);
+            });
+        }
+
+        function initSearch() {
+            const targetInput = document.getElementById('targetNum');
+            const target = parseInt(targetInput.value);
+
+            if (isNaN(target)) {
+                alert("請輸入有效的數字！");
+                return;
+            }
+
+            calculateSteps(target);
+            
+            playbackPanel.classList.add('active');
+            initBtn.disabled = true;
+            document.getElementById('arraySize').disabled = true;
+            
+            currentStepIndex = 0;
+            showStep(currentStepIndex);
+            updateButtons();
+        }
+
+        // 計算步驟邏輯 (包含比較次數)
+        function calculateSteps(target) {
+            searchSteps = [];
+            let low = 0;
+            let high = dataArray.length - 1;
+            let found = false;
+            let comparisons = 0;
+
+            // 步驟 0: 初始狀態
+            searchSteps.push({
+                low: 0, high: dataArray.length - 1, mid: null,
+                type: 'start',
+                comparisons: 0,
+                msg: `開始搜尋數字 ${target}，範圍索引 0 到 ${dataArray.length - 1}`
+            });
+
+            while (low <= high) {
+                let mid = Math.floor((low + high) / 2);
+                comparisons++; // 每次計算 mid 並檢查都算一次比較
+
+                // 步驟: 檢查 Mid
+                searchSteps.push({
+                    low: low, high: high, mid: mid,
+                    type: 'check',
+                    comparisons: comparisons,
+                    msg: `第 ${comparisons} 次比較：檢查範圍 [${low}~${high}]，Mid 索引 ${mid} (數值: ${dataArray[mid]})`
+                });
+
+                if (dataArray[mid] === target) {
+                    // 步驟: 找到
+                    searchSteps.push({
+                        low: low, high: high, mid: mid,
+                        type: 'found',
+                        comparisons: comparisons,
+                        msg: `成功！在索引 ${mid} 找到數字 ${target}。`
+                    });
+                    found = true;
+                    break;
+                } else if (dataArray[mid] < target) {
+                    // 步驟: 往右
+                    searchSteps.push({
+                        low: low, high: high, mid: mid,
+                        type: 'move_right',
+                        comparisons: comparisons,
+                        msg: `${dataArray[mid]} < ${target}，目標在右邊。L 移動到 ${mid + 1}`
+                    });
+                    low = mid + 1;
+                } else {
+                    // 步驟: 往左
+                    searchSteps.push({
+                        low: low, high: high, mid: mid,
+                        type: 'move_left',
+                        comparisons: comparisons,
+                        msg: `${dataArray[mid]} > ${target}，目標在左邊。H 移動到 ${mid - 1}`
+                    });
+                    high = mid - 1;
+                }
+            }
+
+            if (!found) {
+                searchSteps.push({
+                    low: low, high: high, mid: null,
+                    type: 'not_found',
+                    comparisons: comparisons,
+                    msg: `搜尋結束。L (${low}) > H (${high})，陣列中找不到數字 ${target}。`
+                });
+            }
+        }
+
+        function showStep(index) {
+            const step = searchSteps[index];
+            
+            // 更新文字與統計
+            statusLog.textContent = `[步驟 ${index + 1}/${searchSteps.length}] ${step.msg}`;
+            compareCountLabel.textContent = step.comparisons;
+            
+            // 設定狀態顏色條
+            if (step.type === 'found') statusLog.style.borderLeftColor = '#2ecc71';
+            else if (step.type === 'not_found') statusLog.style.borderLeftColor = '#e74c3c';
+            else statusLog.style.borderLeftColor = '#3498db';
+
+            // 清除所有舊的指標
+            document.querySelectorAll('.indicator').forEach(el => el.remove());
+            document.querySelectorAll('.box').forEach(b => b.classList.remove('overlap-indicators'));
+
+            // 繪製 L 和 H 指標
+            // 注意：在 not_found 狀態下，low 可能大於 high，我們仍需顯示它們最後的位置
+            const boxL = document.getElementById(`box-${step.low}`);
+            const boxH = document.getElementById(`box-${step.high}`);
+
+            if (boxL) {
+                const indL = document.createElement('div');
+                indL.className = 'indicator indicator-l';
+                indL.textContent = 'L';
+                boxL.appendChild(indL);
+            }
+
+            if (boxH) {
+                const indH = document.createElement('div');
+                indH.className = 'indicator indicator-h';
+                indH.textContent = 'H';
+                boxH.appendChild(indH);
+            }
+
+            // 如果 L 和 H 在同一個格子，加上特殊 class 來分開它們
+            if (step.low === step.high && boxL) {
+                boxL.classList.add('overlap-indicators');
+            }
+
+            // 更新所有方塊樣式
+            for (let i = 0; i < dataArray.length; i++) {
+                const box = document.getElementById(`box-${i}`);
+                box.classList.remove('active-range', 'mid', 'found', 'discarded');
+
+                if (step.type === 'found' && i === step.mid) {
+                    box.classList.add('found');
+                } 
+                else if (step.mid === i && step.type !== 'not_found' && step.type !== 'start') {
+                    box.classList.add('mid');
+                } 
+                else if (i >= step.low && i <= step.high) {
+                    box.classList.add('active-range');
+                } 
+                else {
+                    box.classList.add('discarded');
+                }
+            }
+        }
+
+        function nextStep() {
+            if (currentStepIndex < searchSteps.length - 1) {
+                currentStepIndex++;
+                showStep(currentStepIndex);
+                updateButtons();
+            } else {
+                stopAutoPlay();
+            }
+        }
+
+        function prevStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                showStep(currentStepIndex);
+                updateButtons();
+            }
+        }
+
+        function updateButtons() {
+            prevBtn.disabled = (currentStepIndex <= 0);
+            nextBtn.disabled = (currentStepIndex >= searchSteps.length - 1);
+        }
+
+        function toggleAutoPlay() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+            } else {
+                if (currentStepIndex >= searchSteps.length - 1) {
+                    currentStepIndex = -1;
+                    nextStep();
+                }
+                startAutoPlay();
+            }
+        }
+
+        function startAutoPlay() {
+            isAutoPlaying = true;
+            autoBtn.textContent = "暫停 ||";
+            autoBtn.classList.add('playing');
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+
+            const speed = 2100 - parseInt(document.getElementById('speed').value);
+
+            autoPlayTimer = setInterval(() => {
+                if (currentStepIndex < searchSteps.length - 1) {
+                    nextStep();
+                } else {
+                    stopAutoPlay();
+                }
+            }, speed);
+        }
+
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            clearInterval(autoPlayTimer);
+            autoBtn.textContent = "自動播放";
+            autoBtn.classList.remove('playing');
+            updateButtons();
+        }
+
+        function resetUI() {
+            searchSteps = [];
+            currentStepIndex = -1;
+            compareCountLabel.textContent = "0";
+            stopAutoPlay();
+            document.getElementById('arraySize').disabled = false;
+        }
+
+        generateArray();
+
+    </script>
+</body>
+</html>
