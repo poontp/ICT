@@ -80,7 +80,7 @@
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            height: 320px; /* 固定高度 */
+            height: 350px; /* 稍微增加高度以容納索引 */
             width: 100%;
             max-width: 800px;
             background-color: white;
@@ -112,6 +112,14 @@
             margin-top: 5px;
             font-weight: bold;
             font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .bar-idx {
+            margin-top: 2px;
+            font-size: 12px;
+            color: #95a5a6;
+            font-family: monospace; /* 使用等寬字體讓索引看起來更像程式碼 */
         }
 
         /* 狀態文字框 */
@@ -135,7 +143,8 @@
         /* 響應式調整 */
         @media (max-width: 600px) {
             .bar-val { font-size: 10px; }
-            .visualizer-container { height: 250px; padding: 10px; }
+            .bar-idx { font-size: 9px; }
+            .visualizer-container { height: 280px; padding: 10px; }
             .controls { flex-direction: column; width: 90%; }
         }
     </style>
@@ -304,10 +313,8 @@
                 bar.className = 'bar';
                 
                 // 計算高度 (使用 px)
-                // 容器高度約 300px，留一點空間給文字
-                const heightPercentage = (val / maxVal) * 100; 
-                // 轉換為 px，假設容器最大可用高度約 250px
-                const heightPx = (val / 100) * 250; 
+                // 容器高度約 350px，扣除文字空間後分配給棒子
+                const heightPx = (val / 100) * 230; 
                 bar.style.height = `${heightPx}px`;
 
                 // 決定顏色
@@ -326,8 +333,14 @@
                 valText.className = 'bar-val';
                 valText.innerText = val;
 
+                // 索引文字 (新增部分)
+                const idxText = document.createElement('div');
+                idxText.className = 'bar-idx';
+                idxText.innerText = `[${idx}]`;
+
                 wrapper.appendChild(bar);
                 wrapper.appendChild(valText);
+                wrapper.appendChild(idxText); // 加入索引
                 visualizer.appendChild(wrapper);
             });
 
