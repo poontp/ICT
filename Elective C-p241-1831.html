@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冒泡排序法互動教學</title>
+    <style>
+        :root {
+            --default-color: #3498db;    /* 藍色：未排序 */
+            --compare-color: #f1c40f;    /* 黃色：比較中 */
+            --swap-color: #e74c3c;       /* 紅色：發生交換 */
+            --sorted-color: #2ecc71;     /* 綠色：已排序 */
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f6f7;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 10px; }
+        p.subtitle { color: #7f8c8d; margin-bottom: 20px; font-size: 0.9em; }
+
+        /* 控制區塊 */
+        .controls {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            width: 60px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 15px;
+            cursor: pointer;
+            background-color: var(--default-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        button.reset-btn { background-color: #95a5a6; }
+        button.reset-btn:hover { background-color: #7f8c8d; }
+
+        /* 圖例 */
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .legend-item { display: flex; align-items: center; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; }
+
+        /* 視覺化容器 */
+        .visualizer-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 320px; /* 固定高度 */
+            width: 100%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            margin: 0 4px;
+            flex: 1;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 40px;
+            border-radius: 5px 5px 0 0;
+            transition: height 0.3s ease, background-color 0.3s ease;
+            position: relative;
+        }
+
+        .bar-val {
+            margin-top: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 狀態文字框 */
+        .status-box {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            line-height: 1.4;
+            border-left: 5px solid var(--default-color);
+        }
+
+        /* 響應式調整 */
+        @media (max-width: 600px) {
+            .bar-val { font-size: 10px; }
+            .visualizer-container { height: 250px; padding: 10px; }
+            .controls { flex-direction: column; width: 90%; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>冒泡排序法 (Bubble Sort)</h1>
+    <p class="subtitle">像水中的氣泡一樣，最大的數字會一步步「冒」到最右邊</p>
+
+    <div class="legend">
+        <div class="legend-item"><div class="dot" style="background:var(--default-color)"></div>未排序</div>
+        <div class="legend-item"><div class="dot" style="background:var(--compare-color)"></div>比較中</div>
+        <div class="legend-item"><div class="dot" style="background:var(--swap-color)"></div>交換</div>
+        <div class="legend-item"><div class="dot" style="background:var(--sorted-color)"></div>已排序</div>
+    </div>
+
+    <div class="visualizer-container" id="visualizer">
+        <!-- 棒狀圖將在此生成 -->
+    </div>
+
+    <div class="status-box" id="status-text">
+        請輸入數量並點擊「生成陣列」開始。
+    </div>
+
+    <div class="controls">
+        <div style="display:flex; align-items:center; gap:5px;">
+            <label>數量:</label>
+            <input type="number" id="item-count" value="8" min="3" max="20">
+        </div>
+        <button onclick="initArray()">生成陣列</button>
+        <button id="prev-btn" onclick="prevStep()" disabled>⏮ 上一步</button>
+        <button id="next-btn" onclick="nextStep()" disabled>下一步 ⏭</button>
+        <button class="reset-btn" onclick="reset()">重置</button>
+    </div>
+
+    <script>
+        // 設定變數
+        let rawArray = [];
+        let steps = [];
+        let currentStep = 0;
+        const visualizer = document.getElementById('visualizer');
+        const statusText = document.getElementById('status-text');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        // 初始化
+        function initArray() {
+            const countInput = document.getElementById('item-count');
+            let count = parseInt(countInput.value);
+            
+            // 限制數量範圍
+            if (count < 3) count = 3;
+            if (count > 20) count = 20;
+            countInput.value = count;
+
+            // 生成隨機陣列 (10-100)
+            rawArray = [];
+            for (let i = 0; i < count; i++) {
+                rawArray.push(Math.floor(Math.random() * 90) + 10);
+            }
+
+            // 計算所有步驟
+            calculateBubbleSortSteps([...rawArray]);
+            
+            // 渲染初始狀態
+            currentStep = 0;
+            render(currentStep);
+            updateButtons();
+        }
+
+        // 核心：預先計算冒泡排序的所有步驟
+        function calculateBubbleSortSteps(arr) {
+            steps = [];
+            let n = arr.length;
+            
+            // 初始狀態
+            steps.push({
+                arr: [...arr],
+                compare: [],
+                swap: [],
+                sorted: [], // 初始沒有已排序的
+                message: "準備開始：未排序的陣列。"
+            });
+
+            // 冒泡排序邏輯
+            for (let i = 0; i < n - 1; i++) {
+                for (let j = 0; j < n - i - 1; j++) {
+                    
+                    // 1. 比較狀態
+                    steps.push({
+                        arr: [...arr],
+                        compare: [j, j + 1],
+                        swap: [],
+                        sorted: getSortedIndices(n, i), 
+                        message: `比較：檢查索引 ${j} (${arr[j]}) 和 ${j+1} (${arr[j+1]})。`
+                    });
+
+                    if (arr[j] > arr[j + 1]) {
+                        // 交換邏輯
+                        let temp = arr[j];
+                        arr[j] = arr[j + 1];
+                        arr[j + 1] = temp;
+
+                        // 2. 交換狀態 (如果需要交換)
+                        steps.push({
+                            arr: [...arr],
+                            compare: [], // 交換時不顯示黃色，改顯示紅色
+                            swap: [j, j + 1],
+                            sorted: getSortedIndices(n, i),
+                            message: `交換：因為 ${arr[j+1]} > ${arr[j]} (原順序)，所以交換位置。` // 這裡顯示的是交換後的值
+                        });
+                    } else {
+                        // 2b. 不需要交換的狀態
+                         steps.push({
+                            arr: [...arr],
+                            compare: [j, j + 1], // 保持比較色
+                            swap: [],
+                            sorted: getSortedIndices(n, i),
+                            message: `不交換：${arr[j]} <= ${arr[j+1]}，順序正確。`
+                        });
+                    }
+                }
+                
+                // 3. 回合結束，鎖定最右邊的一個
+                steps.push({
+                    arr: [...arr],
+                    compare: [],
+                    swap: [],
+                    sorted: getSortedIndices(n, i + 1), // 這裡 i+1 代表已排序數量增加了
+                    message: `第 ${i + 1} 回合結束：最大的數字 ${arr[n - 1 - i]} 已冒泡到正確位置（鎖定綠色）。`
+                });
+            }
+
+            // 完成狀態
+            steps.push({
+                arr: [...arr],
+                compare: [],
+                swap: [],
+                sorted: Array.from({length: n}, (_, i) => i), // 全部都是 sorted
+                message: "排序完成！所有項目都已冒泡到正確位置。"
+            });
+        }
+
+        // 輔助函式：取得目前已排序的索引陣列 (從後面數來)
+        function getSortedIndices(totalLength, sortedCount) {
+            let indices = [];
+            for (let k = 0; k < sortedCount; k++) {
+                indices.push(totalLength - 1 - k);
+            }
+            return indices;
+        }
+
+        // 渲染畫面
+        function render(stepIndex) {
+            visualizer.innerHTML = '';
+            const state = steps[stepIndex];
+            const maxVal = Math.max(...state.arr, 100); // 避免太小
+
+            state.arr.forEach((val, idx) => {
+                // 建立容器
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bar-wrapper';
+
+                // 建立棒子
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                
+                // 計算高度 (使用 px)
+                // 容器高度約 300px，留一點空間給文字
+                const heightPercentage = (val / maxVal) * 100; 
+                // 轉換為 px，假設容器最大可用高度約 250px
+                const heightPx = (val / 100) * 250; 
+                bar.style.height = `${heightPx}px`;
+
+                // 決定顏色
+                if (state.swap.includes(idx)) {
+                    bar.style.backgroundColor = 'var(--swap-color)';
+                } else if (state.compare.includes(idx)) {
+                    bar.style.backgroundColor = 'var(--compare-color)';
+                } else if (state.sorted.includes(idx)) {
+                    bar.style.backgroundColor = 'var(--sorted-color)';
+                } else {
+                    bar.style.backgroundColor = 'var(--default-color)';
+                }
+
+                // 數值文字
+                const valText = document.createElement('div');
+                valText.className = 'bar-val';
+                valText.innerText = val;
+
+                wrapper.appendChild(bar);
+                wrapper.appendChild(valText);
+                visualizer.appendChild(wrapper);
+            });
+
+            // 更新訊息與狀態條顏色
+            statusText.innerText = state.message;
+            
+            // 根據狀態改變左側邊框顏色，增加視覺提示
+            if (state.swap.length > 0) statusText.style.borderLeftColor = 'var(--swap-color)';
+            else if (state.compare.length > 0) statusText.style.borderLeftColor = 'var(--compare-color)';
+            else if (state.message.includes("排序完成")) statusText.style.borderLeftColor = 'var(--sorted-color)';
+            else statusText.style.borderLeftColor = 'var(--default-color)';
+        }
+
+        // 按鈕功能
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                render(currentStep);
+                updateButtons();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                render(currentStep);
+                updateButtons();
+            }
+        }
+
+        function reset() {
+            currentStep = 0;
+            render(0);
+            updateButtons();
+        }
+
+        function updateButtons() {
+            prevBtn.disabled = currentStep === 0;
+            nextBtn.disabled = currentStep === steps.length - 1;
+        }
+
+        // 頁面載入時執行
+        window.onload = initArray;
+
+    </script>
+</body>
+</html>

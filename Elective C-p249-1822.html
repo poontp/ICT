@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>插入排序法互動教學</title>
+    <style>
+        :root {
+            --primary-color: #3498db;      /* 藍色：未排序 */
+            --sorted-color: #2ecc71;       /* 綠色：已排序 */
+            --key-color: #9b59b6;          /* 紫色：目前手牌 (Key) */
+            --comparing-color: #f1c40f;    /* 黃色：正在比較 */
+            --text-color: #2c3e50;
+            --border-color: #bdc3c7;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f9f9f9;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 10px; }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            width: 60px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+
+        .visualization-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* 讓棒子底部對齊 */
+            height: 350px;         /* 固定容器高度 */
+            width: 100%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow-x: auto;
+            overflow-y: hidden; /* 防止浮起效果造成卷軸 */
+        }
+
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            margin: 0 6px;
+            /* 移除 position: relative 以避免層級問題 */
+        }
+
+        .bar {
+            width: 40px;
+            background-color: var(--primary-color);
+            border-radius: 5px 5px 0 0;
+            transition: height 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+            /* 高度將由 JS 直接設定 px */
+        }
+
+        /* 基準值 (Key) 的特殊效果：向上浮起 */
+        .bar.is-key {
+            transform: translateY(-20px);
+            box-shadow: 0 10px 10px rgba(0,0,0,0.2);
+            z-index: 10;
+            position: relative; /* 確保 z-index 生效 */
+        }
+
+        .bar-value {
+            margin-top: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .bar-index {
+            margin-top: 2px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .legend-item { display: flex; align-items: center; }
+        .legend-color { width: 15px; height: 15px; margin-right: 5px; border-radius: 3px; }
+
+        .status-box {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            min-height: 60px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+
+        /* 顏色工具類別 */
+        .bg-sorted { background-color: var(--sorted-color) !important; }
+        .bg-unsorted { background-color: var(--primary-color) !important; }
+        .bg-key { background-color: var(--key-color) !important; }
+        .bg-compare { background-color: var(--comparing-color) !important; }
+
+        @media (max-width: 600px) {
+            .bar { width: 20px; }
+            .visualization-container { height: 250px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .bar-value { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>插入排序法 (Insertion Sort)</h1>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color bg-sorted"></div>已排序區</div>
+        <div class="legend-item"><div class="legend-color bg-unsorted"></div>未排序區</div>
+        <div class="legend-item"><div class="legend-color bg-key"></div>基準值 (Key)</div>
+        <div class="legend-item"><div class="legend-color bg-compare"></div>比較對象</div>
+    </div>
+
+    <div class="visualization-container" id="visualizer">
+        <!-- JS 將在此生成棒狀圖 -->
+    </div>
+
+    <div class="status-box" id="status-text">
+        請輸入項目數量並點擊「生成陣列」開始。
+    </div>
+
+    <div class="controls">
+        <div style="display:flex; gap:5px; align-items:center; justify-content:center;">
+            <label for="item-count">數量:</label>
+            <input type="number" id="item-count" value="8" min="3" max="15">
+        </div>
+        <button onclick="generateArray()">生成新陣列</button>
+        <button id="prev-btn" onclick="stepBackward()" disabled>⏮ 上一步</button>
+        <button id="next-btn" onclick="stepForward()" disabled>下一步 ⏭</button>
+        <button onclick="resetSort()">重置</button>
+    </div>
+
+    <script>
+        let array = [];
+        let steps = []; 
+        let currentStepIndex = 0;
+        const visualizer = document.getElementById('visualizer');
+        const statusText = document.getElementById('status-text');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        function generateArray() {
+            const countInput = document.getElementById('item-count');
+            let count = parseInt(countInput.value);
+            if (count < 3) count = 3;
+            if (count > 15) count = 15; 
+            countInput.value = count;
+
+            array = [];
+            for (let i = 0; i < count; i++) {
+                // 生成 10 到 90 之間的隨機數，避免太小看不見或太大溢出
+                array.push(Math.floor(Math.random() * 80) + 10);
+            }
+
+            calculateSteps();
+            currentStepIndex = 0;
+            renderStep(0);
+            updateButtons();
+        }
+
+        // 核心邏輯：計算所有排序步驟
+        function calculateSteps() {
+            steps = [];
+            let tempArray = [...array];
+            let n = tempArray.length;
+
+            // 步驟 0: 初始狀態
+            steps.push({
+                arr: [...tempArray],
+                sortedBoundary: 0, 
+                keyIndex: -1,      
+                compareIndex: -1,
+                message: "初始狀態：我們假設第一個元素（索引 0）已經是排序好的。"
+            });
+
+            for (let i = 1; i < n; i++) {
+                let key = tempArray[i];
+                let j = i - 1;
+
+                // 步驟：取出 Key
+                steps.push({
+                    arr: [...tempArray],
+                    sortedBoundary: i, 
+                    keyIndex: i, 
+                    compareIndex: -1,
+                    keyVal: key, 
+                    message: `第 ${i} 回合：取出索引 ${i} 的值 (${key}) 作為「基準值 (Key)」。`
+                });
+
+                while (j >= 0 && tempArray[j] > key) {
+                    // 步驟：比較
+                    steps.push({
+                        arr: [...tempArray],
+                        sortedBoundary: i,
+                        keyIndex: j + 1, // Key 視覺上在 j+1 的位置
+                        compareIndex: j,
+                        keyVal: key,
+                        message: `比較：基準值 ${key} < 左邊的 ${tempArray[j]}。`
+                    });
+
+                    // 邏輯上的平移
+                    tempArray[j + 1] = tempArray[j];
+                    
+                    // 步驟：平移後
+                    steps.push({
+                        arr: [...tempArray],
+                        sortedBoundary: i,
+                        keyIndex: j, // Key 視覺上移動到了 j (因為 j+1 被填滿了)
+                        compareIndex: j, 
+                        keyVal: key,
+                        message: `平移：因為 ${tempArray[j]} 比基準值大，將 ${tempArray[j]} 往右移。`
+                    });
+
+                    j--;
+                }
+
+                if (j >= 0) {
+                     steps.push({
+                        arr: [...tempArray],
+                        sortedBoundary: i,
+                        keyIndex: j + 1,
+                        compareIndex: j,
+                        keyVal: key,
+                        message: `比較：基準值 ${key} >= 左邊的 ${tempArray[j]}，找到插入位置！`
+                    });
+                } else {
+                    // 如果 j < 0，代表比到最前面了
+                     steps.push({
+                        arr: [...tempArray],
+                        sortedBoundary: i,
+                        keyIndex: 0,
+                        compareIndex: -1,
+                        keyVal: key,
+                        message: `比較：已經比到最前面了，插入到索引 0。`
+                    });
+                }
+
+                tempArray[j + 1] = key;
+
+                // 步驟：插入完成
+                steps.push({
+                    arr: [...tempArray],
+                    sortedBoundary: i,
+                    keyIndex: -1, 
+                    compareIndex: -1,
+                    message: `插入：將基準值 ${key} 放入索引 ${j + 1}。`
+                });
+            }
+
+            // 完成
+            steps.push({
+                arr: [...tempArray],
+                sortedBoundary: n,
+                keyIndex: -1,
+                compareIndex: -1,
+                message: "排序完成！"
+            });
+        }
+
+        function renderStep(index) {
+            visualizer.innerHTML = '';
+            const step = steps[index];
+            const currentArr = step.arr;
+            
+            currentArr.forEach((value, idx) => {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'bar-container';
+
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                
+                let displayValue = value;
+                let isKey = false;
+
+                // 判斷是否為「浮起」的 Key
+                if (idx === step.keyIndex && step.keyVal !== undefined) {
+                    displayValue = step.keyVal;
+                    bar.classList.add('bg-key');
+                    bar.classList.add('is-key'); 
+                    isKey = true;
+                } 
+                else if (idx === step.compareIndex) {
+                    bar.classList.add('bg-compare');
+                } 
+                else if (idx < step.sortedBoundary) {
+                    bar.classList.add('bg-sorted');
+                } 
+                else {
+                    bar.classList.add('bg-unsorted');
+                }
+
+                // *** 修正重點：使用像素 (px) 計算高度 ***
+                // 假設最大值約 100，容器高度約 300px，我們乘以 2.5 讓它不要頂到天花板
+                const heightPx = displayValue * 2.5; 
+                bar.style.height = `${heightPx}px`;
+
+                const barValue = document.createElement('div');
+                barValue.className = 'bar-value';
+                barValue.innerText = displayValue;
+
+                const barIndex = document.createElement('div');
+                barIndex.className = 'bar-index';
+                barIndex.innerText = idx;
+
+                barContainer.appendChild(bar);
+                barContainer.appendChild(barValue);
+                barContainer.appendChild(barIndex);
+                visualizer.appendChild(barContainer);
+            });
+
+            statusText.innerText = step.message;
+        }
+
+        function stepForward() {
+            if (currentStepIndex < steps.length - 1) {
+                currentStepIndex++;
+                renderStep(currentStepIndex);
+                updateButtons();
+            }
+        }
+
+        function stepBackward() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                renderStep(currentStepIndex);
+                updateButtons();
+            }
+        }
+
+        function resetSort() {
+            currentStepIndex = 0;
+            renderStep(0);
+            updateButtons();
+        }
+
+        function updateButtons() {
+            prevBtn.disabled = currentStepIndex === 0;
+            nextBtn.disabled = currentStepIndex === steps.length - 1;
+        }
+
+        window.onload = generateArray;
+    </script>
+</body>
+</html>
