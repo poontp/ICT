@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>冒泡排序法：可視化 i 值 (已排序計數)</title>
+    <title>冒泡排序法：中文偽代碼版</title>
     <style>
         :root {
             --primary-color: #3498db;      /* 藍色 (未排序) */
@@ -15,9 +15,9 @@
             --highlight-line: #528bff;
             
             /* 循環專用色 */
-            --outer-loop-color: #ff6b6b;   /* 鮮紅 (i) */
-            --inner-loop-color: #4ecdc4;   /* 青綠 (j) */
-            --limit-color: #9b59b6;        /* 紫色 (n-i-2 邊界) */
+            --outer-loop-color: #e84393;   /* 粉紅 (i - 邊界) */
+            --inner-loop-color: #00cec9;   /* 青綠 (j - 掃描) */
+            --limit-color: #6c5ce7;        /* 紫色 */
         }
 
         body {
@@ -66,7 +66,6 @@
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            position: relative;
         }
 
         .code-line {
@@ -76,8 +75,6 @@
             white-space: pre;
             line-height: 32px;
             height: 32px;
-            position: relative;
-            z-index: 2;
         }
 
         .code-line.active {
@@ -86,7 +83,6 @@
             font-weight: bold;
         }
 
-        /* 變量顯示區 */
         .vars-box {
             background-color: white;
             padding: 15px;
@@ -108,43 +104,18 @@
         .var-label { color: #666; font-size: 12px; display: block; margin-bottom: 2px;}
         .var-val { font-weight: bold; font-size: 18px; color: #333; }
 
-        /* 算式解釋區 */
-        .formula-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffeeba;
-            color: #856404;
-            padding: 10px;
-            border-radius: 8px;
-            font-family: 'Consolas', monospace;
-            font-size: 16px;
-            text-align: center;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-        .formula-badge {
-            background-color: var(--limit-color);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
         /* 動畫容器樣式 */
         .visualization-container {
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            height: 380px; /* 稍微增加高度給上方標籤 */
+            height: 400px; /* 增加高度容納上方標籤 */
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 40px 20px 50px 20px; /* 增加 padding-top */
-            overflow: visible; /* 允許標籤超出 */
+            padding: 60px 20px 50px 20px; /* 上方 padding 加大 */
             position: relative;
+            overflow: visible;
         }
 
         .bar-container {
@@ -152,10 +123,10 @@
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
-            margin: 0 10px;
+            margin: 0 12px; /* 稍微拉開間距 */
             width: 50px;
             position: relative;
-            height: 100%; /* 確保容器佔滿高度以便定位 */
+            height: 100%;
         }
 
         .bar {
@@ -167,19 +138,19 @@
         }
 
         @keyframes blink-animation {
-            0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(0,0,0,0); }
-            50% { opacity: 0.6; transform: scale(1.05); box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
-            100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(0,0,0,0); }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+            100% { opacity: 1; transform: scale(1); }
         }
         .bar.blinking { animation: blink-animation 0.8s infinite ease-in-out; z-index: 10; }
-        .bar.bg-sorted { background-color: var(--sorted-color); opacity: 0.6; }
+        .bar.bg-sorted { background-color: var(--sorted-color); opacity: 0.8; }
         .bar.bg-compare { background-color: var(--compare-color); }
         .bar.bg-swap { background-color: var(--swap-color); }
 
         .bar-value { margin-top: 5px; font-weight: bold; font-size: 14px; }
         .bar-index { font-size: 12px; color: #999; margin-bottom: 5px; border-top: 1px solid #eee; width: 100%; text-align: center; padding-top: 2px;}
 
-        /* 指針區域 */
+        /* 指針區域 (下方) */
         .pointers-area {
             display: flex;
             flex-direction: column;
@@ -195,7 +166,6 @@
             color: white;
             padding: 2px 6px;
             border-radius: 4px;
-            box-shadow: 0 2px 2px rgba(0,0,0,0.2);
             white-space: nowrap;
             position: relative;
             z-index: 5;
@@ -210,54 +180,64 @@
             border-style: solid;
             border-color: transparent transparent inherit transparent;
         }
-        
         .pointer-j { background-color: var(--inner-loop-color); border-color: transparent transparent var(--inner-loop-color) transparent; }
-        .pointer-limit { background-color: var(--limit-color); border-color: transparent transparent var(--limit-color) transparent; margin-top: 2px; }
 
-        /* 新增：i 值標籤 (顯示在上方) */
-        .i-marker {
+        /* --- i 值標籤 (上方) --- */
+        .i-marker-container {
             position: absolute;
-            top: -35px; /* 懸浮在 bar-container 頂部 */
+            top: -50px; /* 懸浮在上方 */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 20;
+            transition: all 0.3s ease; /* 平滑移動 */
+        }
+
+        .i-marker {
             background-color: var(--outer-loop-color);
             color: white;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 13px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
             font-weight: bold;
             white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 20;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            position: relative;
         }
-        
-        /* 讓標籤有個向下的小箭頭 */
+
+        /* 向下的箭頭 */
         .i-marker::after {
             content: '';
             position: absolute;
-            bottom: -5px;
+            bottom: -6px;
             left: 50%;
             transform: translateX(-50%);
-            border-width: 5px 5px 0 5px;
+            border-width: 6px 6px 0 6px;
             border-style: solid;
             border-color: var(--outer-loop-color) transparent transparent transparent;
         }
 
-        /* 標籤右側的指示線 (可選，增加視覺連結) */
-        .i-marker-line {
+        /* 右側指示線：表示右邊是已排序 */
+        .sorted-indicator-line {
+            position: absolute;
+            top: 50%;
+            left: 100%; /* 從標籤右側開始 */
+            width: 60px; /* 長度 */
+            height: 2px;
+            background: linear-gradient(to right, var(--outer-loop-color), transparent);
+            transform: translateY(-50%);
+        }
+        
+        .sorted-indicator-text {
             position: absolute;
             top: -15px;
-            left: 50%;
-            width: 200px; /* 假設向右延伸 */
-            height: 2px;
-            background: repeating-linear-gradient(90deg, var(--outer-loop-color), var(--outer-loop-color) 4px, transparent 4px, transparent 8px);
-            z-index: 19;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        @keyframes popIn {
-            from { transform: scale(0); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            left: 110%;
+            font-size: 10px;
+            color: var(--outer-loop-color);
+            white-space: nowrap;
+            font-weight: bold;
         }
 
         .controls {
@@ -305,7 +285,7 @@
 </head>
 <body>
 
-    <h1>冒泡排序法：可視化 i 值 (已排序計數)</h1>
+    <h1>冒泡排序：可視化演示</h1>
 
     <div class="main-container">
         
@@ -314,14 +294,8 @@
             <div class="code-box">
                 <div id="line-1" class="code-line">1. 設 i 由 0 至 n-2 執行</div>
                 <div id="line-2" class="code-line">2.   設 j 由 0 至 n-i-2 執行</div>
-                <div id="line-3" class="code-line">3.     若 A[j] > A[j+1] 則</div>
-                <div id="line-4" class="code-line">4.       交換 A[j] 與 A[j+1]</div>
-            </div>
-
-            <!-- 算式解釋區 -->
-            <div class="formula-box" id="formula-display">
-                <span class="formula-badge">邊界計算</span>
-                <span id="formula-text">等待開始...</span>
+                <div id="line-3" class="code-line">3.     如果 A[j] > A[j+1] 則</div>
+                <div id="line-4" class="code-line">4.       交換(A[j], A[j+1])</div>
             </div>
 
             <div class="vars-box">
@@ -334,11 +308,11 @@
                     <span class="var-val" id="var-limit" style="color: var(--limit-color)">-</span>
                 </div>
                 <div class="var-item" style="border-color: var(--inner-loop-color);">
-                    <span class="var-label">j (當前)</span>
+                    <span class="var-label">j (當前掃描)</span>
                     <span class="var-val" id="var-j">-</span>
                 </div>
                 <div class="var-item" style="border-color: var(--compare-color);">
-                    <span class="var-label">比較 A[j] > A[j+1]</span>
+                    <span class="var-label">比較</span>
                     <span class="var-val" id="var-comp">-</span>
                 </div>
             </div>
@@ -368,7 +342,6 @@
 
         const visualizer = document.getElementById('visualizer');
         const statusMsg = document.getElementById('status-msg');
-        const formulaText = document.getElementById('formula-text');
         
         const varI = document.getElementById('var-i');
         const varJ = document.getElementById('var-j');
@@ -387,12 +360,12 @@
             steps = [];
             let tempArr = [...array];
 
+            // 初始狀態
             steps.push({
                 arr: [...tempArr],
                 line: 0,
                 vars: { i: '-', j: '-', limit: '-', comp: '-' },
-                msg: "初始狀態，n = " + n,
-                formula: `n = ${n}`,
+                msg: "初始狀態，尚未開始排序",
                 highlights: { compare: [], swap: [], sorted: [] }
             });
 
@@ -404,8 +377,7 @@
                     arr: [...tempArr],
                     line: 1,
                     vars: { i: i, j: '-', limit: limit, comp: '-' },
-                    msg: `第 ${i+1} 輪：i=${i}，目前有 ${i} 個數字已排序`,
-                    formula: `邊界 = n(${n}) - i(${i}) - 2 = ${limit}`,
+                    msg: `第 ${i+1} 輪開始：i=${i}，標籤位於右側第 ${i+1} 個位置`,
                     highlights: { compare: [], swap: [], sorted: getSortedIndices(n, i) }
                 });
 
@@ -415,8 +387,7 @@
                         arr: [...tempArr],
                         line: 2,
                         vars: { i: i, j: j, limit: limit, comp: '-' },
-                        msg: `內循環 j=${j}，檢查範圍還在邊界(${limit})內`,
-                        formula: `邊界 = ${limit} (j=${j} <= ${limit})`,
+                        msg: `內循環 j=${j}，準備比較`,
                         highlights: { compare: [], swap: [], sorted: getSortedIndices(n, i) }
                     });
 
@@ -430,7 +401,6 @@
                         line: 3,
                         vars: { i: i, j: j, limit: limit, comp: `${valJ} > ${valJ1} ?` },
                         msg: `比較 A[${j}] 與 A[${j+1}]`,
-                        formula: `邊界 = ${limit}，j=${j}`,
                         isComparing: true,
                         highlights: { compare: [j, j+1], swap: [], sorted: getSortedIndices(n, i) }
                     });
@@ -446,35 +416,34 @@
                             line: 4,
                             vars: { i: i, j: j, limit: limit, comp: '交換' },
                             msg: `交換 ${valJ} 與 ${valJ1}`,
-                            formula: `邊界 = ${limit}`,
                             highlights: { compare: [], swap: [j, j+1], sorted: getSortedIndices(n, i) }
                         });
                     }
                 }
                 
-                // 一輪結束
+                // 一輪結束，i 即將增加
                 steps.push({
                     arr: [...tempArr],
                     line: 1,
                     vars: { i: i, j: 'End', limit: limit, comp: '-' },
-                    msg: `本輪結束，已排序個數將變為 ${i+1}`,
-                    formula: `下輪 i 將變為 ${i+1}`,
+                    msg: `本輪結束，最大的泡泡已浮到右側，i 將變為 ${i+1}`,
                     highlights: { compare: [], swap: [], sorted: getSortedIndices(n, i+1) }
                 });
             }
 
+            // 完成
             steps.push({
                 arr: [...tempArr],
                 line: 0,
-                vars: { i: n-1, j: '-', limit: '-', comp: '-' }, // 結束時視為 n-1
+                vars: { i: 'Done', j: '-', limit: '-', comp: '-' },
                 msg: "排序完成！",
-                formula: "排序結束",
                 highlights: { compare: [], swap: [], sorted: Array.from({length: n}, (_, k) => k) }
             });
         }
 
         function getSortedIndices(n, i) {
             let indices = [];
+            // 已排序的是最後 i 個元素
             for (let k = 0; k < i; k++) {
                 indices.push(n - 1 - k);
             }
@@ -490,12 +459,11 @@
                 document.getElementById(`line-${step.line}`).classList.add('active');
             }
 
-            // 更新變量與算式
+            // 更新變量
             varI.innerText = step.vars.i;
             varJ.innerText = step.vars.j;
             varLimit.innerText = step.vars.limit;
             varComp.innerText = step.vars.comp;
-            formulaText.innerText = step.formula;
             
             // 更新狀態文字
             if (step.isComparing) {
@@ -507,35 +475,44 @@
             // 渲染棒狀圖
             visualizer.innerHTML = '';
             
-            // 計算 i 值標籤應該出現的位置
-            // 邏輯：如果 i > 0，則標籤出現在倒數第 i 個元素上 (也就是已排序區域的最左邊)
-            // 索引位置 = n - i
-            let iLabelIndex = -1;
+            // --- 計算 i 標籤的位置 ---
+            let iMarkerIndex = -1;
             let currentI = parseInt(step.vars.i);
-            if (!isNaN(currentI) && currentI > 0) {
-                iLabelIndex = n - currentI;
+            
+            if (!isNaN(currentI)) {
+                iMarkerIndex = (n - 1) - currentI;
+            } else if (step.vars.i === 'Done') {
+                iMarkerIndex = -1; 
             }
 
             step.arr.forEach((value, idx) => {
                 const barContainer = document.createElement('div');
                 barContainer.className = 'bar-container';
 
-                // --- 新增：i 值標籤 ---
-                if (idx === iLabelIndex) {
-                    const iMarker = document.createElement('div');
-                    iMarker.className = 'i-marker';
-                    iMarker.innerText = `i = ${currentI} (已排序)`;
-                    barContainer.appendChild(iMarker);
+                // --- 渲染 i 標籤 ---
+                if (idx === iMarkerIndex) {
+                    const markerContainer = document.createElement('div');
+                    markerContainer.className = 'i-marker-container';
                     
-                    // 可選：增加一條虛線向右延伸，表示右邊都是排序好的
-                    // const line = document.createElement('div');
-                    // line.className = 'i-marker-line';
-                    // barContainer.appendChild(line);
+                    const marker = document.createElement('div');
+                    marker.className = 'i-marker';
+                    marker.innerText = `i = ${currentI}`;
+                    
+                    const line = document.createElement('div');
+                    line.className = 'sorted-indicator-line';
+                    const lineText = document.createElement('div');
+                    lineText.className = 'sorted-indicator-text';
+                    lineText.innerText = '已排序';
+                    
+                    marker.appendChild(line);
+                    marker.appendChild(lineText);
+                    markerContainer.appendChild(marker);
+                    barContainer.appendChild(markerContainer);
                 }
 
                 const bar = document.createElement('div');
                 bar.className = 'bar';
-                const height = value * 2.5;
+                const height = value * 3; 
                 bar.style.height = `${height}px`;
 
                 // 顏色邏輯
@@ -556,16 +533,9 @@
                 idxDiv.className = 'bar-index';
                 idxDiv.innerText = idx;
 
-                // --- 指針區域 ---
+                // --- 指針區域 (j) ---
                 const pointersArea = document.createElement('div');
                 pointersArea.className = 'pointers-area';
-
-                if (step.vars.limit !== '-' && parseInt(step.vars.limit) === idx) {
-                    const pLimit = document.createElement('div');
-                    pLimit.className = 'pointer pointer-limit';
-                    pLimit.innerText = 'Limit';
-                    pointersArea.appendChild(pLimit);
-                }
 
                 if (step.vars.j !== '-' && step.vars.j !== 'End' && parseInt(step.vars.j) === idx) {
                     const pJ = document.createElement('div');
