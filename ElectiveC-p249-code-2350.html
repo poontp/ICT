@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>冒泡排序法：可視化 n-i-2 邊界</title>
+    <title>冒泡排序法：可視化 i 值 (已排序計數)</title>
     <style>
         :root {
             --primary-color: #3498db;      /* 藍色 (未排序) */
@@ -61,7 +61,7 @@
         .code-box {
             background-color: var(--code-bg);
             color: var(--code-text);
-            padding: 30px 15px 20px 80px; 
+            padding: 20px; 
             border-radius: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 15px;
@@ -86,37 +86,6 @@
             font-weight: bold;
         }
 
-        /* 循環範圍括號樣式 */
-        .loop-bracket {
-            position: absolute;
-            background: transparent;
-            border-left: 4px solid;
-            border-top: 4px solid;
-            border-bottom: 4px solid;
-            border-top-left-radius: 6px;
-            border-bottom-left-radius: 6px;
-            box-sizing: border-box;
-            z-index: 1;
-        }
-
-        .loop-label {
-            position: absolute;
-            font-size: 11px;
-            font-weight: bold;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            z-index: 3;
-        }
-
-        .outer-bracket { border-color: var(--outer-loop-color); left: 15px; width: 20px; top: 30px; height: 128px; }
-        .outer-label { background-color: var(--outer-loop-color); left: 5px; top: 5px; }
-
-        .inner-bracket { border-color: var(--inner-loop-color); left: 45px; width: 20px; top: 62px; height: 96px; }
-        .inner-label { background-color: var(--inner-loop-color); left: 35px; top: 45px; }
-
         /* 變量顯示區 */
         .vars-box {
             background-color: white;
@@ -139,7 +108,7 @@
         .var-label { color: #666; font-size: 12px; display: block; margin-bottom: 2px;}
         .var-val { font-weight: bold; font-size: 18px; color: #333; }
 
-        /* 算式解釋區 (新功能) */
+        /* 算式解釋區 */
         .formula-box {
             background-color: #fff3cd;
             border: 1px solid #ffeeba;
@@ -169,12 +138,12 @@
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            height: 360px; /* 增加高度 */
+            height: 380px; /* 稍微增加高度給上方標籤 */
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 20px 20px 50px 20px; 
-            overflow: hidden;
+            padding: 40px 20px 50px 20px; /* 增加 padding-top */
+            overflow: visible; /* 允許標籤超出 */
             position: relative;
         }
 
@@ -186,6 +155,7 @@
             margin: 0 10px;
             width: 50px;
             position: relative;
+            height: 100%; /* 確保容器佔滿高度以便定位 */
         }
 
         .bar {
@@ -202,7 +172,7 @@
             100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(0,0,0,0); }
         }
         .bar.blinking { animation: blink-animation 0.8s infinite ease-in-out; z-index: 10; }
-        .bar.bg-sorted { background-color: var(--sorted-color); opacity: 0.6; } /* 已排序稍微變淡 */
+        .bar.bg-sorted { background-color: var(--sorted-color); opacity: 0.6; }
         .bar.bg-compare { background-color: var(--compare-color); }
         .bar.bg-swap { background-color: var(--swap-color); }
 
@@ -212,7 +182,7 @@
         /* 指針區域 */
         .pointers-area {
             display: flex;
-            flex-direction: column; /* 改為垂直排列，避免重疊 */
+            flex-direction: column;
             align-items: center;
             gap: 2px;
             min-height: 45px; 
@@ -230,7 +200,6 @@
             position: relative;
             z-index: 5;
         }
-        /* 指針箭頭 */
         .pointer::before {
             content: '';
             position: absolute;
@@ -242,14 +211,53 @@
             border-color: transparent transparent inherit transparent;
         }
         
-        .pointer-i { background-color: var(--outer-loop-color); border-color: transparent transparent var(--outer-loop-color) transparent; }
         .pointer-j { background-color: var(--inner-loop-color); border-color: transparent transparent var(--inner-loop-color) transparent; }
+        .pointer-limit { background-color: var(--limit-color); border-color: transparent transparent var(--limit-color) transparent; margin-top: 2px; }
+
+        /* 新增：i 值標籤 (顯示在上方) */
+        .i-marker {
+            position: absolute;
+            top: -35px; /* 懸浮在 bar-container 頂部 */
+            background-color: var(--outer-loop-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 20;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
         
-        /* 邊界指針樣式 */
-        .pointer-limit { 
-            background-color: var(--limit-color); 
-            border-color: transparent transparent var(--limit-color) transparent;
-            margin-top: 2px;
+        /* 讓標籤有個向下的小箭頭 */
+        .i-marker::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px 5px 0 5px;
+            border-style: solid;
+            border-color: var(--outer-loop-color) transparent transparent transparent;
+        }
+
+        /* 標籤右側的指示線 (可選，增加視覺連結) */
+        .i-marker-line {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            width: 200px; /* 假設向右延伸 */
+            height: 2px;
+            background: repeating-linear-gradient(90deg, var(--outer-loop-color), var(--outer-loop-color) 4px, transparent 4px, transparent 8px);
+            z-index: 19;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
         .controls {
@@ -297,19 +305,13 @@
 </head>
 <body>
 
-    <h1>冒泡排序法：可視化 n-i-2 邊界</h1>
+    <h1>冒泡排序法：可視化 i 值 (已排序計數)</h1>
 
     <div class="main-container">
         
         <!-- 左側：代碼與變量 -->
         <div class="code-panel">
             <div class="code-box">
-                <div class="loop-label outer-label">外循環 i</div>
-                <div class="loop-bracket outer-bracket"></div>
-                
-                <div class="loop-label inner-label">內循環 j</div>
-                <div class="loop-bracket inner-bracket"></div>
-
                 <div id="line-1" class="code-line">1. 設 i 由 0 至 n-2 執行</div>
                 <div id="line-2" class="code-line">2.   設 j 由 0 至 n-i-2 執行</div>
                 <div id="line-3" class="code-line">3.     若 A[j] > A[j+1] 則</div>
@@ -362,7 +364,7 @@
         let array = [];
         let steps = [];
         let currentStep = 0;
-        const n = 6; // 固定陣列長度以便教學
+        const n = 6; 
 
         const visualizer = document.getElementById('visualizer');
         const statusMsg = document.getElementById('status-msg');
@@ -402,12 +404,12 @@
                     arr: [...tempArr],
                     line: 1,
                     vars: { i: i, j: '-', limit: limit, comp: '-' },
-                    msg: `第 ${i+1} 輪：i=${i}，準備將第 ${i+1} 大的數浮到右邊`,
+                    msg: `第 ${i+1} 輪：i=${i}，目前有 ${i} 個數字已排序`,
                     formula: `邊界 = n(${n}) - i(${i}) - 2 = ${limit}`,
                     highlights: { compare: [], swap: [], sorted: getSortedIndices(n, i) }
                 });
 
-                for (let j = 0; j <= limit; j++) { // 注意這裡用 <= limit，對應 0 至 n-i-2
+                for (let j = 0; j <= limit; j++) { 
                     // 行 2: 內循環開始
                     steps.push({
                         arr: [...tempArr],
@@ -428,7 +430,7 @@
                         line: 3,
                         vars: { i: i, j: j, limit: limit, comp: `${valJ} > ${valJ1} ?` },
                         msg: `比較 A[${j}] 與 A[${j+1}]`,
-                        formula: `邊界 = ${limit}，j=${j} (最後檢查點為 ${limit})`,
+                        formula: `邊界 = ${limit}，j=${j}`,
                         isComparing: true,
                         highlights: { compare: [j, j+1], swap: [], sorted: getSortedIndices(n, i) }
                     });
@@ -455,8 +457,8 @@
                     arr: [...tempArr],
                     line: 1,
                     vars: { i: i, j: 'End', limit: limit, comp: '-' },
-                    msg: `本輪結束，索引 ${n-i-1} 的位置已確定`,
-                    formula: `下輪 i 將變為 ${i+1}，邊界將左移`,
+                    msg: `本輪結束，已排序個數將變為 ${i+1}`,
+                    formula: `下輪 i 將變為 ${i+1}`,
                     highlights: { compare: [], swap: [], sorted: getSortedIndices(n, i+1) }
                 });
             }
@@ -464,7 +466,7 @@
             steps.push({
                 arr: [...tempArr],
                 line: 0,
-                vars: { i: 'Done', j: '-', limit: '-', comp: '-' },
+                vars: { i: n-1, j: '-', limit: '-', comp: '-' }, // 結束時視為 n-1
                 msg: "排序完成！",
                 formula: "排序結束",
                 highlights: { compare: [], swap: [], sorted: Array.from({length: n}, (_, k) => k) }
@@ -497,16 +499,39 @@
             
             // 更新狀態文字
             if (step.isComparing) {
-                statusMsg.innerHTML = step.msg.replace(/(A\[\d+\])/g, '<span class="math-highlight">$1</span>');
+                statusMsg.innerHTML = step.msg.replace(/(A[\d+])/g, '<span class="math-highlight">$1</span>');
             } else {
                 statusMsg.innerText = step.msg;
             }
 
             // 渲染棒狀圖
             visualizer.innerHTML = '';
+            
+            // 計算 i 值標籤應該出現的位置
+            // 邏輯：如果 i > 0，則標籤出現在倒數第 i 個元素上 (也就是已排序區域的最左邊)
+            // 索引位置 = n - i
+            let iLabelIndex = -1;
+            let currentI = parseInt(step.vars.i);
+            if (!isNaN(currentI) && currentI > 0) {
+                iLabelIndex = n - currentI;
+            }
+
             step.arr.forEach((value, idx) => {
                 const barContainer = document.createElement('div');
                 barContainer.className = 'bar-container';
+
+                // --- 新增：i 值標籤 ---
+                if (idx === iLabelIndex) {
+                    const iMarker = document.createElement('div');
+                    iMarker.className = 'i-marker';
+                    iMarker.innerText = `i = ${currentI} (已排序)`;
+                    barContainer.appendChild(iMarker);
+                    
+                    // 可選：增加一條虛線向右延伸，表示右邊都是排序好的
+                    // const line = document.createElement('div');
+                    // line.className = 'i-marker-line';
+                    // barContainer.appendChild(line);
+                }
 
                 const bar = document.createElement('div');
                 bar.className = 'bar';
@@ -535,22 +560,13 @@
                 const pointersArea = document.createElement('div');
                 pointersArea.className = 'pointers-area';
 
-                // 1. 顯示 i 指針 (外循環)
-                // 邏輯：i 其實代表「已經有幾個數排好在右邊了」，通常不直接指向某個bar，
-                // 但為了教學，我們可以讓它指向「當前未排序的最右端」或者不顯示在Bar上，只顯示在變量區。
-                // 這裡我們專注顯示 j 和 Limit。
-
-                // 2. 顯示 Limit 指針 (n-i-2)
-                // 這是本次修改的核心：顯示內循環的終點
                 if (step.vars.limit !== '-' && parseInt(step.vars.limit) === idx) {
                     const pLimit = document.createElement('div');
                     pLimit.className = 'pointer pointer-limit';
-                    pLimit.innerText = 'Limit'; // n-i-2
-                    pLimit.title = "內循環 j 的終點 (n-i-2)";
+                    pLimit.innerText = 'Limit';
                     pointersArea.appendChild(pLimit);
                 }
 
-                // 3. 顯示 j 指針 (內循環)
                 if (step.vars.j !== '-' && step.vars.j !== 'End' && parseInt(step.vars.j) === idx) {
                     const pJ = document.createElement('div');
                     pJ.className = 'pointer pointer-j';
