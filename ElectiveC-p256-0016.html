@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合併兩個已排序列表 (Merge Two Sorted Lists)</title>
+    <style>
+        :root {
+            --bg-color: #fdfdfd;
+            --list-a-color: #e74c3c; /* 紅色系 */
+            --list-b-color: #f39c12; /* 黃色系 */
+            --merged-color: #2ecc71; /* 綠色系 */
+            --text-color: #333;
+            --box-size: 50px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 { margin-bottom: 10px; }
+        p.desc { color: #666; margin-bottom: 20px; max-width: 600px; text-align: center; }
+
+        /* 控制區 */
+        .controls {
+            background: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.1s, background 0.2s;
+        }
+        button:hover { background-color: #2980b9; transform: translateY(-2px); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; transform: none; }
+        button.secondary { background-color: #95a5a6; }
+
+        input[type="number"] {
+            padding: 8px;
+            width: 60px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* 動畫舞台 */
+        .stage {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 上半部：兩個來源列表 */
+        .source-area {
+            display: flex;
+            justify-content: space-around;
+            height: 150px;
+            align-items: flex-end; /* 讓長條圖底部對齊 */
+            padding-bottom: 30px;
+            border-bottom: 2px dashed #eee;
+        }
+
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .list-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .list-items {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            min-height: 100px;
+        }
+
+        /* 下半部：合併結果 */
+        .target-area {
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 20px;
+        }
+
+        /* 數字方塊/長條 */
+        .item-box {
+            width: 40px;
+            display: flex;
+            align-items: flex-end; /* 數字在底部 */
+            justify-content: center;
+            border-radius: 4px 4px 0 0;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            padding-bottom: 5px;
+            transition: all 0.5s ease;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 狀態樣式 */
+        .item-a { background-color: var(--list-a-color); }
+        .item-b { background-color: var(--list-b-color); }
+        .item-merged { background-color: var(--merged-color); }
+        
+        .item-faded { opacity: 0.3; transform: scale(0.9); } /* 已經移動走的 */
+        .item-highlight { 
+            box-shadow: 0 0 0 3px #3498db; 
+            z-index: 10;
+        }
+
+        /* 指針箭頭 */
+        .pointer {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #3498db;
+            transition: left 0.3s ease;
+            display: none; /* 預設隱藏 */
+        }
+        .pointer::after {
+            content: '比較中';
+            font-size: 10px;
+            position: absolute;
+            top: 25px;
+            left: -10px;
+            width: 60px;
+            text-align: center;
+            color: #3498db;
+        }
+
+        /* 訊息顯示 */
+        .message-box {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #555;
+            height: 30px;
+            margin-bottom: 10px;
+        }
+
+        /* 用於動畫的佔位符 */
+        .placeholder {
+            width: 40px;
+            height: 0;
+            margin: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>合併兩個已排序列表</h1>
+    <p class="desc">模擬將兩個已經排好序的列表（Class 4A 與 Class 4B），透過比較首項，合併成一個新的有序列表。</p>
+
+    <div class="controls">
+        <label>列表 A 數量: <input type="number" id="count-a" value="5" min="2" max="8"></label>
+        <label>列表 B 數量: <input type="number" id="count-b" value="4" min="2" max="8"></label>
+        <button onclick="init()">重新生成</button>
+        <div style="width: 20px;"></div>
+        <button class="secondary" id="prev-btn" onclick="changeStep(-1)" disabled>⏮ 上一步</button>
+        <button class="secondary" id="next-btn" onclick="changeStep(1)">下一步 ⏭</button>
+    </div>
+
+    <div class="message-box" id="msg-box">準備開始...</div>
+
+    <div class="stage">
+        <!-- 上方來源區 -->
+        <div class="source-area">
+            <div class="list-container">
+                <div class="list-title" style="color: var(--list-a-color)">列表 A</div>
+                <div class="list-items" id="container-a">
+                    <!-- Items A go here -->
+                </div>
+                <div id="pointer-a" class="pointer">⬆</div>
+            </div>
+
+            <div class="list-container">
+                <div class="list-title" style="color: var(--list-b-color)">列表 B</div>
+                <div class="list-items" id="container-b">
+                    <!-- Items B go here -->
+                </div>
+                <div id="pointer-b" class="pointer">⬆</div>
+            </div>
+        </div>
+
+        <!-- 下方合併區 -->
+        <div class="target-area">
+            <div class="list-title" style="color: var(--merged-color)">已合併列表</div>
+            <div class="list-items" id="container-merged">
+                <!-- Merged Items go here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let listA = [];
+        let listB = [];
+        let steps = [];
+        let currentStep = 0;
+
+        const containerA = document.getElementById('container-a');
+        const containerB = document.getElementById('container-b');
+        const containerMerged = document.getElementById('container-merged');
+        const pointerA = document.getElementById('pointer-a');
+        const pointerB = document.getElementById('pointer-b');
+        const msgBox = document.getElementById('msg-box');
+        const btnPrev = document.getElementById('prev-btn');
+        const btnNext = document.getElementById('next-btn');
+
+        function generateSortedArray(count) {
+            let arr = [];
+            let current = Math.floor(Math.random() * 10) + 10;
+            for(let i=0; i<count; i++) {
+                arr.push(current);
+                current += Math.floor(Math.random() * 15) + 5; // 確保遞增
+            }
+            return arr;
+        }
+
+        function init() {
+            let countA = parseInt(document.getElementById('count-a').value);
+            let countB = parseInt(document.getElementById('count-b').value);
+            
+            // 限制範圍
+            if(countA < 1) countA = 1; if(countA > 8) countA = 8;
+            if(countB < 1) countB = 1; if(countB > 8) countB = 8;
+            document.getElementById('count-a').value = countA;
+            document.getElementById('count-b').value = countB;
+
+            listA = generateSortedArray(countA);
+            listB = generateSortedArray(countB);
+
+            calculateSteps();
+            currentStep = 0;
+            render();
+        }
+
+        function calculateSteps() {
+            steps = [];
+            let i = 0, j = 0;
+            let merged = [];
+
+            // 初始狀態
+            steps.push({
+                idxA: 0, idxB: 0, merged: [], 
+                msg: "準備開始比較兩個列表的首項",
+                action: 'start'
+            });
+
+            while (i < listA.length && j < listB.length) {
+                // 比較步驟
+                steps.push({
+                    idxA: i, idxB: j, merged: [...merged],
+                    msg: `比較 A[${i}] (${listA[i]}) 與 B[${j}] (${listB[j]})`,
+                    action: 'compare'
+                });
+
+                let val;
+                let from;
+                if (listA[i] <= listB[j]) {
+                    val = listA[i];
+                    from = 'A';
+                    i++;
+                } else {
+                    val = listB[j];
+                    from = 'B';
+                    j++;
+                }
+                merged.push({val: val, from: from});
+
+                // 移動步驟
+                steps.push({
+                    idxA: i, idxB: j, merged: [...merged],
+                    msg: `${val} 較小，將其加入合併列表`,
+                    action: 'move'
+                });
+            }
+
+            // 處理剩餘
+            while (i < listA.length) {
+                merged.push({val: listA[i], from: 'A'});
+                i++;
+                steps.push({
+                    idxA: i, idxB: j, merged: [...merged],
+                    msg: `列表 B 已空，將列表 A 剩餘項目 ${merged[merged.length-1].val} 加入`,
+                    action: 'move'
+                });
+            }
+
+            while (j < listB.length) {
+                merged.push({val: listB[j], from: 'B'});
+                j++;
+                steps.push({
+                    idxA: i, idxB: j, merged: [...merged],
+                    msg: `列表 A 已空，將列表 B 剩餘項目 ${merged[merged.length-1].val} 加入`,
+                    action: 'move'
+                });
+            }
+
+            // 完成
+            steps.push({
+                idxA: i, idxB: j, merged: [...merged],
+                msg: "合併完成！",
+                action: 'finish'
+            });
+        }
+
+        function createBar(val, type, isFaded = false, isHighlight = false) {
+            const div = document.createElement('div');
+            div.className = `item-box item-${type}`;
+            if (isFaded) div.classList.add('item-faded');
+            if (isHighlight) div.classList.add('item-highlight');
+            
+            // 高度根據數值調整，最大值假設約 150
+            let h = Math.min(val * 1.5, 120); 
+            if (h < 30) h = 30;
+            
+            div.style.height = `${h}px`;
+            div.innerText = val;
+            return div;
+        }
+
+        function render() {
+            const state = steps[currentStep];
+            
+            // 清空容器
+            containerA.innerHTML = '';
+            containerB.innerHTML = '';
+            containerMerged.innerHTML = '';
+
+            // 渲染列表 A
+            listA.forEach((val, idx) => {
+                // 判斷狀態：是否已經被移走？是否正在比較？
+                let isFaded = idx < state.idxA; // 索引小於當前指針，代表已處理
+                
+                // 特殊情況：如果是 'compare' 階段，當前指針位置要高亮
+                // 如果是 'move' 階段，剛剛移動下去的那個在上面要變淡 (idx < state.idxA 已經涵蓋)
+                let isHighlight = (state.action === 'compare' && idx === state.idxA);
+
+                // 如果是剛移動完的一步，最後一個被移動的元素在上方應該是 faded，這由 idx < state.idxA 處理了
+                // 但為了視覺連貫，我們不需要在上方保留已經移動走的元素太久，
+                // 不過為了展示「它從這裡消失」，保留 faded 狀態是好的。
+                
+                containerA.appendChild(createBar(val, 'a', isFaded, isHighlight));
+            });
+
+            // 渲染列表 B (邏輯同 A)
+            listB.forEach((val, idx) => {
+                let isFaded = idx < state.idxB;
+                let isHighlight = (state.action === 'compare' && idx === state.idxB);
+                containerB.appendChild(createBar(val, 'b', isFaded, isHighlight));
+            });
+
+            // 渲染合併列表
+            state.merged.forEach((item) => {
+                // 來源決定顏色
+                let type = item.from === 'A' ? 'a' : 'b';
+                // 在合併區，我們可能希望最後都變成綠色，或者保持原色。
+                // 為了對應教學圖片，我們保持原色，或者統一變綠。
+                // 這裡設計：剛下來保持原色，全部完成後變綠？
+                // 為了簡單直觀，保持來源色，或者統一用 merged 色。
+                // 根據圖片，合併後通常是統一顏色，這裡我們用綠色代表「已排序/已合併」。
+                containerMerged.appendChild(createBar(item.val, 'merged'));
+            });
+
+            // 渲染指針
+            // 指針位置需要計算 DOM 元素的 offset，這裡用簡化版：根據 index 移動
+            // 每個 box 寬 40 + gap 10 = 50px
+            const boxWidth = 50;
+            
+            if (state.idxA < listA.length && state.action !== 'finish') {
+                pointerA.style.display = 'block';
+                pointerA.style.left = (state.idxA * boxWidth + 20) + 'px'; // 20是半個box寬度
+            } else {
+                pointerA.style.display = 'none';
+            }
+
+            if (state.idxB < listB.length && state.action !== 'finish') {
+                pointerB.style.display = 'block';
+                pointerB.style.left = (state.idxB * boxWidth + 20) + 'px';
+            } else {
+                pointerB.style.display = 'none';
+            }
+
+            // 更新文字
+            msgBox.innerText = state.msg;
+
+            // 更新按鈕狀態
+            btnPrev.disabled = currentStep === 0;
+            btnNext.disabled = currentStep === steps.length - 1;
+        }
+
+        function changeStep(delta) {
+            let next = currentStep + delta;
+            if (next >= 0 && next < steps.length) {
+                currentStep = next;
+                render();
+            }
+        }
+
+        // 啟動
+        window.onload = init;
+
+    </script>
+</body>
+</html>
