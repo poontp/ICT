@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>冒泡排序法：範圍明確版</title>
+    <title>冒泡排序法：修正範圍版</title>
     <style>
         :root {
-            --primary-color: #3498db;      /* 藍色 (未排序) */
-            --sorted-color: #2ecc71;       /* 綠色 (已排序) */
-            --compare-color: #f1c40f;      /* 黃色 (比較中) */
-            --swap-color: #e74c3c;         /* 紅色 (交換中) */
+            --primary-color: #3498db;
+            --sorted-color: #2ecc71;
+            --compare-color: #f1c40f;
+            --swap-color: #e74c3c;
             --code-bg: #282c34;
             --code-text: #abb2bf;
             --highlight-line: #528bff;
-            
-            /* 循環專用色 */
-            --outer-loop-color: #ff6b6b;   /* 鮮紅 */
-            --inner-loop-color: #4ecdc4;   /* 青綠 */
+            --outer-loop-color: #ff6b6b;
+            --inner-loop-color: #4ecdc4;
         }
 
         body {
@@ -60,7 +58,6 @@
         .code-box {
             background-color: var(--code-bg);
             color: var(--code-text);
-            /* 左側留白：為兩層括號留出足夠空間 */
             padding: 30px 15px 20px 80px; 
             border-radius: 8px;
             font-family: 'Consolas', 'Monaco', monospace;
@@ -74,10 +71,10 @@
             border-radius: 4px;
             display: block;
             white-space: pre;
-            line-height: 32px; /* 固定行高，方便計算括號高度 */
+            line-height: 32px;
             height: 32px;
             position: relative;
-            z-index: 2; /* 確保文字在線條之上 */
+            z-index: 2;
         }
 
         .code-line.active {
@@ -86,11 +83,9 @@
             font-weight: bold;
         }
 
-        /* --- 循環範圍括號樣式 (核心修改) --- */
-        
         .loop-bracket {
             position: absolute;
-            background: transparent; /* 中間透明 */
+            background: transparent;
             border-left-width: 4px;
             border-left-style: solid;
             border-top-width: 4px;
@@ -118,42 +113,31 @@
         /* 外循環 i (範圍：行 1-4) */
         .outer-bracket {
             border-color: var(--outer-loop-color);
-            left: 15px;          /* 最左側 */
-            width: 20px;         /* 括號寬度 */
-            
-            /* 計算位置：
-               Top = padding-top (30px)
-               Height = 4行 * 32px = 128px
-            */
+            left: 15px;
+            width: 20px;
             top: 30px;
-            height: 128px;
+            height: 128px; /* 4行高度 */
         }
         .outer-label {
             background-color: var(--outer-loop-color);
             left: 5px;
-            top: 5px; /* 放在括號上方 */
+            top: 5px;
         }
 
         /* 內循環 j (範圍：行 2-4) */
         .inner-bracket {
             border-color: var(--inner-loop-color);
-            left: 45px;          /* 向右縮進 */
-            width: 20px;         /* 括號寬度 */
-
-            /* 計算位置：
-               Top = padding-top (30px) + 1行高 (32px) = 62px
-               Height = 3行 * 32px = 96px
-            */
+            left: 45px;
+            width: 20px;
             top: 62px;
-            height: 96px;
+            height: 96px; /* 3行高度 */
         }
         .inner-label {
             background-color: var(--inner-loop-color);
             left: 35px;
-            top: 45px; /* 放在內層括號上方 */
+            top: 45px;
         }
 
-        /* 變量顯示區 */
         .vars-box {
             background-color: white;
             padding: 15px;
@@ -175,7 +159,6 @@
         .var-label { color: #666; font-size: 12px; display: block; margin-bottom: 2px;}
         .var-val { font-weight: bold; font-size: 18px; color: #333; }
 
-        /* 動畫容器樣式 */
         .visualization-container {
             display: flex;
             justify-content: center;
@@ -274,7 +257,8 @@
                 <div class="loop-label inner-label">內循環 j</div>
                 <div class="loop-bracket inner-bracket"></div>
 
-                <div id="line-1" class="code-line">1. 設 i 由 0 至 n-1 執行</div>
+                <!-- 這裡更新了第 1 行的文字 -->
+                <div id="line-1" class="code-line">1. 設 i 由 0 至 n-2 執行</div>
                 <div id="line-2" class="code-line">2.   設 j 由 0 至 n-i-2 執行</div>
                 <div id="line-3" class="code-line">3.     若 A[j] > A[j+1] 則</div>
                 <div id="line-4" class="code-line">4.       交換 A[j] 與 A[j+1]</div>
@@ -349,13 +333,14 @@
                 highlights: { compare: [], swap: [], sorted: [] }
             });
 
+            // 更新邏輯：i < n - 1 (即 0 到 n-2)
             for (let i = 0; i < n - 1; i++) {
                 // 行 1: 外循環開始
                 steps.push({
                     arr: [...tempArr],
                     line: 1,
                     vars: { i: i, j: '-', aj: '-', aj1: '-' },
-                    msg: `外循環 i=${i} 開始`,
+                    msg: `外循環 i=${i} 開始 (範圍 0~${n-2})`,
                     highlights: { compare: [], swap: [], sorted: getSortedIndices(n, i) }
                 });
 
@@ -392,7 +377,6 @@
                             highlights: { compare: [], swap: [j, j+1], sorted: getSortedIndices(n, i) }
                         });
                     } else {
-                        // 雖然在代碼邏輯上這裡不會執行行4，但為了教學連貫，停留在行3
                         steps.push({
                             arr: [...tempArr],
                             line: 3,
