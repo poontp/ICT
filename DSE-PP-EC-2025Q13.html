@@ -1,0 +1,774 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Tab } from '@headlessui/react';
+import { CheckCircle, ArrowRight, Activity, Eye, Search, GitMerge, Split, Play, SkipBack, SkipForward, RotateCcw, Info, MessageSquare } from 'lucide-react';
+
+// Utility for class names
+function classNames(...classes) {
+  return classes.filter(Boolean).join(' ');
+}
+
+// Initial Data from the PDF Question 13
+const INITIAL_CAP = [6, 6, 4, 4, 2, 2, 8, 4, 4];
+const INITIAL_AVAIL = [0, 0, 1, 2, 2, 2, 7, 4, 4];
+
+export default function ExamSolutionQ13() {
+  return (
+    <div className="w-full max-w-4xl mx-auto p-4 bg-gray-50 rounded-xl shadow-lg font-sans text-slate-800">
+      <header className="mb-6 border-b pb-4">
+        <h1 className="text-2xl font-bold text-blue-900 flex items-center gap-2">
+          <Activity className="w-6 h-6" />
+          2025 DSE ICT Elective C - Q13 解題分析
+        </h1>
+        <p className="text-gray-600 mt-2">
+          餐廳座位分配系統算法模擬 (加強註釋與單步執行版)
+        </p>
+      </header>
+
+      <Tab.Group>
+        <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1 mb-6 overflow-x-auto">
+          {['(a) 尋找區段 findZone', '(b) 合併區段 comZone', '(c) 分拆區段 splitZone', '(d) 傳感器技術'].map((category) => (
+            <Tab
+              key={category}
+              className={({ selected }) =>
+                classNames(
+                  'w-full min-w-[120px] rounded-lg py-2.5 text-sm font-medium leading-5 whitespace-nowrap px-2',
+                  'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                  selected
+                    ? 'bg-white text-blue-700 shadow'
+                    : 'text-blue-800 hover:bg-white/[0.12] hover:text-blue-900'
+                )
+              }
+            >
+              {category}
+            </Tab>
+          ))}
+        </Tab.List>
+        <Tab.Panels>
+          <Tab.Panel><PartA_FindZone /></Tab.Panel>
+          <Tab.Panel><PartB_ComZone /></Tab.Panel>
+          <Tab.Panel><PartC_SplitZone /></Tab.Panel>
+          <Tab.Panel><PartD_Sensors /></Tab.Panel>
+        </Tab.Panels>
+      </Tab.Group>
+    </div>
+  );
+}
+
+// --- Part A: Find Zone ---
+function PartA_FindZone() {
+  const [customerCount, setCustomerCount] = useState(6);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  
+  const cap = INITIAL_CAP;
+  const avail = INITIAL_AVAIL;
+
+  const simulationSteps = useMemo(() => {
+    const steps = [];
+    let bestZone = -1;
+    
+    steps.push({
+      i: -1,
+      bestZone: -1,
+      msg: `初始化：準備尋找 ${customerCount} 人的座位。最佳區段 (zone) 設為 -1。`,
+      highlight: 'init'
+    });
+
+    for (let i = 0; i < 9; i++) {
+      steps.push({
+        i: i,
+        bestZone: bestZone,
+        msg: `檢查區段 ${i} (空位: ${avail[i]})...`,
+        highlight: 'scanning'
+      });
+
+      if (avail[i] >= customerCount) {
+        if (bestZone === -1) {
+          bestZone = i;
+          steps.push({
+            i: i,
+            bestZone: bestZone,
+            msg: `區段 ${i} 空位足夠 (${avail[i]} >= ${customerCount})。目前尚未選定區段，故設 zone = ${i}。`,
+            highlight: 'found_new'
+          });
+        } else {
+          if (avail[i] < avail[bestZone]) {
+            const oldZone = bestZone;
+            bestZone = i;
+            steps.push({
+              i: i,
+              bestZone: bestZone,
+              msg: `區段 ${i} 空位 (${avail[i]}) 比區段 ${oldZone} (${avail[oldZone]}) 更接近 ${customerCount}。更新 zone = ${i}。`,
+              highlight: 'found_better'
+            });
+          } else {
+            steps.push({
+              i: i,
+              bestZone: bestZone,
+              msg: `區段 ${i} 空位 (${avail[i]}) 足夠，但不比當前最佳區段 ${bestZone} (${avail[bestZone]}) 更接近。忽略。`,
+              highlight: 'rejected'
+            });
+          }
+        }
+      } else {
+        steps.push({
+          i: i,
+          bestZone: bestZone,
+          msg: `區段 ${i} 空位不足 (${avail[i]} < ${customerCount})。跳過。`,
+          highlight: 'fail'
+        });
+      }
+    }
+    
+    steps.push({
+      i: null,
+      bestZone: bestZone,
+      msg: bestZone !== -1 ? `搜尋結束。傳回最佳區段：${bestZone}。` : `搜尋結束。未找到合適區段，傳回 -1。`,
+      highlight: 'end'
+    });
+
+    return steps;
+  }, [customerCount]);
+
+  useEffect(() => {
+    setCurrentStepIndex(0);
+  }, [customerCount]);
+
+  const currentStep = simulationSteps[currentStepIndex];
+  const isScanning = currentStep.i !== null && currentStep.i !== -1;
+
+  const handleNext = () => {
+    if (currentStepIndex < simulationSteps.length - 1) {
+      setCurrentStepIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(prev => prev - 1);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <Search className="w-5 h-5 text-blue-600" />
+          視覺化演示：findZone(c)
+        </h3>
+        
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2">
+            <label className="font-medium text-gray-700">顧客人數 (c):</label>
+            <input 
+              type="number" 
+              value={customerCount}
+              onChange={(e) => setCustomerCount(parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 w-16 text-center font-mono text-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              min="1"
+              max="10"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setCurrentStepIndex(0)}
+              className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
+              title="重置"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={handlePrev}
+              disabled={currentStepIndex === 0}
+              className="flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors"
+            >
+              <SkipBack className="w-4 h-4" /> 上一步
+            </button>
+            <div className="text-sm font-mono text-gray-500 w-16 text-center">
+              {currentStepIndex} / {simulationSteps.length - 1}
+            </div>
+            <button 
+              onClick={handleNext}
+              disabled={currentStepIndex === simulationSteps.length - 1}
+              className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors shadow-sm"
+            >
+              下一步 <SkipForward className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-9 gap-2 h-56 items-end mb-4 px-2">
+          {cap.map((c, idx) => {
+            const isCurrentScanner = currentStep.i === idx;
+            const isBest = currentStep.bestZone === idx;
+            
+            let barColor = 'bg-gray-300';
+            if (isBest) barColor = 'bg-green-500';
+            else if (isCurrentScanner && currentStep.highlight === 'fail') barColor = 'bg-red-300';
+            else if (isCurrentScanner) barColor = 'bg-blue-400';
+            else if (avail[idx] >= customerCount) barColor = 'bg-blue-200';
+
+            return (
+              <div key={idx} className="flex flex-col items-center relative">
+                {isCurrentScanner && (
+                  <motion.div 
+                    layoutId="scanner"
+                    className="absolute -top-8 text-blue-600 font-bold text-xs flex flex-col items-center"
+                  >
+                    <ArrowRight className="w-4 h-4 rotate-90" />
+                    掃描中
+                  </motion.div>
+                )}
+
+                {isBest && !isCurrentScanner && (
+                  <div className="absolute -top-8 text-green-600 font-bold text-xs flex flex-col items-center">
+                    <CheckCircle className="w-4 h-4" />
+                    暫定
+                  </div>
+                )}
+
+                <div className="text-[10px] text-gray-400 mb-1">C:{c}</div>
+                <div className={`relative w-full rounded-t-md overflow-hidden transition-all duration-300 border-b-0 ${isCurrentScanner ? 'ring-2 ring-blue-500 ring-offset-1' : ''} bg-gray-100`} style={{ height: `${c * 18}px` }}>
+                  <motion.div 
+                    className={`absolute bottom-0 w-full transition-colors duration-300 ${barColor}`}
+                    style={{ height: `${avail[idx] * 18}px` }}
+                  />
+                  <div className="absolute inset-0 flex items-end justify-center pb-1 text-xs font-bold text-slate-700 z-10">
+                    {avail[idx]}
+                  </div>
+                </div>
+                <div className={`mt-2 font-mono font-bold transition-colors ${isCurrentScanner ? 'text-blue-600' : (isBest ? 'text-green-600' : 'text-gray-500')}`}>
+                  {idx}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="text-center text-xs text-gray-400 mb-4">區段編號 (0-8)</div>
+
+        <div className="bg-slate-800 text-slate-200 p-4 rounded-md font-mono text-sm min-h-[80px] flex items-center shadow-inner border border-slate-700">
+          <span className="mr-2 text-blue-400">{'>'}</span>
+          {currentStep.msg}
+        </div>
+      </div>
+
+      <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+        <h3 className="text-lg font-bold text-yellow-800 mb-3">題目答案詳解 (a)</h3>
+        <div className="space-y-4">
+          <div>
+            <span className="font-bold text-gray-800">(a)(i) findZone(6) 的傳回值：</span>
+            <span className="ml-2 text-xl font-mono text-red-600 font-bold">6</span>
+            <p className="text-sm text-gray-600 mt-1">
+              理由：區段 6 有 7 個空位 (avail[6]=7)，7 {'>='} 6。雖然區段 7, 8 也有空位，但它們只有 4 個，不足以容納 6 人。區段 6 是唯一且最接近的選擇。
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded border border-gray-200 font-mono text-sm">
+            <p className="text-gray-500">// findZone 偽代碼填空</p>
+            <p>zone &lt;- -1</p>
+            <p>設 i 由 0 至 zn - 1</p>
+            <p className="pl-4">如果 avail[i] &gt;= c</p>
+            <p className="pl-8">如果 zone = -1</p>
+            <p className="pl-12 text-blue-600 font-bold bg-blue-50 p-1 inline-block rounded">
+              zone &lt;- i <span className="text-gray-500 ml-4">// (a1)</span>
+            </p>
+            <p className="pl-8">否則如果 <span className="text-blue-600 font-bold bg-blue-50 p-1 rounded">avail[i] &lt; avail[zone] <span className="text-gray-500 ml-4">// (a2)</span></span></p>
+            <p className="pl-12">zone &lt;- i</p>
+            <p>傳回 zone</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Part B: Com Zone (Updated with Steps and Comments) ---
+function PartB_ComZone() {
+  const [stepIndex, setStepIndex] = useState(0);
+  
+  const cap = INITIAL_CAP;
+  const avail = INITIAL_AVAIL;
+  const targetC = 7;
+
+  // Pre-calculate simulation steps for comZone
+  const steps = useMemo(() => {
+    const s = [];
+    let i = 0;
+    let cnt = 0;
+    let found = false;
+
+    s.push({
+      j: -1, i, cnt, found,
+      msg: `初始化：開始尋找連續空位總和 >= ${targetC}。起始指標 i = 0，累計 cnt = 0。`
+    });
+
+    for (let j = 0; j < 9; j++) {
+      s.push({
+        j, i, cnt, found,
+        msg: `掃描區段 ${j} (空位: ${avail[j]}, 容量: ${cap[j]})...`
+      });
+
+      if (avail[j] === cap[j]) {
+        cnt += avail[j];
+        if (cnt >= targetC) {
+          found = true;
+          s.push({
+            j, i, cnt, found,
+            msg: `區段 ${j} 是全空的。累計空位 cnt 更新為 ${cnt}。已達到目標 (${targetC})！找到合併區段 ${i} 至 ${j}。`
+          });
+          break; // Stop loop if found
+        } else {
+          s.push({
+            j, i, cnt, found,
+            msg: `區段 ${j} 是全空的。累計空位 cnt 更新為 ${cnt}。尚未達到目標 (${targetC})，繼續。`
+          });
+        }
+      } else {
+        cnt = 0;
+        i = j + 1;
+        s.push({
+          j, i, cnt, found,
+          msg: `區段 ${j} 被佔用 (非全空)。連續性中斷。重置 cnt = 0，起始指標 i 移至 ${j + 1}。`
+        });
+      }
+    }
+
+    if (!found) {
+      s.push({
+        j: 8, i, cnt, found,
+        msg: `掃描結束。未找到符合條件的連續合併區段。`
+      });
+    }
+
+    return s;
+  }, []);
+
+  const currentStep = steps[stepIndex];
+  const { j: currentJ, i: startI, cnt: count, found, msg } = currentStep;
+
+  const handleNext = () => {
+    if (stepIndex < steps.length - 1) setStepIndex(prev => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (stepIndex > 0) setStepIndex(prev => prev - 1);
+  };
+
+  const reset = () => setStepIndex(0);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <GitMerge className="w-5 h-5 text-purple-600" />
+          視覺化演示：comZone(7)
+        </h3>
+
+        {/* Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
+          <div className="font-medium text-gray-700">目標人數 (c): 7</div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={reset}
+              className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
+              title="重置"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={handlePrev}
+              disabled={stepIndex === 0}
+              className="flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors"
+            >
+              <SkipBack className="w-4 h-4" /> 上一步
+            </button>
+            <div className="text-sm font-mono text-gray-500 w-16 text-center">
+              {stepIndex} / {steps.length - 1}
+            </div>
+            <button 
+              onClick={handleNext}
+              disabled={stepIndex === steps.length - 1}
+              className="flex items-center gap-1 px-4 py-2 bg-purple-600 text-white border border-purple-600 rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors shadow-sm"
+            >
+              下一步 <SkipForward className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Visualization Grid */}
+        <div className="grid grid-cols-9 gap-2 mb-12 relative mt-10">
+          {cap.map((c, idx) => {
+            const isEmpty = avail[idx] === c;
+            const isCurrentScanner = idx === currentJ;
+            const isStartPointer = idx === startI;
+            const isInRange = idx >= startI && idx <= currentJ && currentJ !== -1;
+
+            return (
+              <div key={idx} className={`relative border rounded p-2 flex flex-col items-center transition-all duration-300 ${isInRange ? 'bg-purple-50 border-purple-300' : 'bg-gray-50'}`}>
+                
+                {/* I Pointer */}
+                {isStartPointer && (
+                  <motion.div 
+                    layoutId="pointer-i"
+                    className="absolute -top-8 text-purple-700 font-bold text-xs flex flex-col items-center z-20"
+                  >
+                    <span className="bg-purple-100 px-1 rounded border border-purple-300">i</span>
+                    <ArrowRight className="w-4 h-4 rotate-90" />
+                  </motion.div>
+                )}
+
+                {/* J Pointer */}
+                {isCurrentScanner && (
+                  <motion.div 
+                    layoutId="pointer-j"
+                    className="absolute -bottom-8 text-blue-600 font-bold text-xs flex flex-col items-center z-20"
+                  >
+                    <ArrowRight className="w-4 h-4 -rotate-90" />
+                    <span className="bg-blue-100 px-1 rounded border border-blue-300">j</span>
+                  </motion.div>
+                )}
+
+                <span className="text-xs text-gray-500 mb-1">Zone {idx}</span>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm transition-colors ${isEmpty ? 'bg-green-500' : 'bg-red-400'} ${isCurrentScanner ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}>
+                  {avail[idx]}
+                </div>
+                <span className="text-[10px] text-gray-400 mt-1">Cap: {c}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Status Dashboard */}
+        <div className="bg-gray-100 p-4 rounded-lg flex items-center justify-between border border-gray-200">
+          <div className="flex gap-8">
+            <div>
+              <div className="text-sm text-gray-500">起始指標 (i):</div>
+              <div className="text-2xl font-mono font-bold text-purple-700">{startI}</div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-500">當前掃描 (j):</div>
+              <div className="text-2xl font-mono font-bold text-blue-600">{currentJ === -1 ? '-' : currentJ}</div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-500">累積空位 (cnt):</div>
+              <div className="text-2xl font-mono font-bold text-green-600">{count}</div>
+            </div>
+          </div>
+          <div className="text-right border-l pl-6">
+             <div className="text-sm text-gray-500">目標人數 (c):</div>
+             <div className="text-xl font-bold">7</div>
+          </div>
+        </div>
+        
+        {/* Log Message */}
+        <div className={`mt-4 p-4 rounded-lg font-mono text-sm border shadow-sm transition-colors ${found ? 'bg-green-100 border-green-300 text-green-900' : 'bg-slate-800 text-slate-200 border-slate-700'}`}>
+          <span className="mr-2 opacity-50">{'>'}</span>
+          {msg}
+        </div>
+      </div>
+
+      <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+        <h3 className="text-lg font-bold text-yellow-800 mb-3">題目答案詳解 (b) - 附詳細註釋</h3>
+        <p className="text-sm text-gray-700 mb-4">
+          此算法目的是尋找一段「連續」且「全空」的區段，其總容量大於等於 c。
+        </p>
+        <div className="bg-white p-4 rounded border border-gray-200 font-mono text-sm overflow-x-auto leading-relaxed">
+          <p>comZone(c)</p>
+          <p>i &lt;- 0 <span className="text-gray-500 italic ml-4">// 初始化潛在合併區段的起始索引</span></p>
+          <p>cnt &lt;- 0 <span className="text-gray-500 italic ml-4">// 初始化目前累積的空位數量</span></p>
+          <p>設 j 由 0 至 zn - 1 <span className="text-gray-500 italic ml-4">// 從頭到尾掃描每一個區段</span></p>
+          
+          <div className="bg-blue-50/50 -mx-2 px-2 py-1 rounded my-1">
+            <p className="pl-4">如果 avail[j] = cap[j]  <span className="text-gray-500 italic ml-4">// 檢查區段 j 是否「完全未被佔用」(全空)</span></p>
+            <p className="pl-8 text-gray-500 italic">// 只有全空的區段才能被合併</p>
+            <p className="pl-8">cnt &lt;- cnt + <span className="text-blue-600 font-bold">avail[j]</span> <span className="text-green-600 font-bold ml-4">// (b1) 累加當前全空區段的座位數</span></p>
+            
+            <p className="pl-8 mt-1">如果 cnt <span className="text-blue-600 font-bold">&gt;= c</span> <span className="text-green-600 font-bold ml-4">// (b2) 檢查累積座位是否已滿足需求</span></p>
+            <p className="pl-12">輸出 "合併區段 : ", i, " 至 ", j</p>
+            <p className="pl-12">離開 comZone <span className="text-gray-500 italic ml-4">// 找到後立即結束</span></p>
+          </div>
+
+          <div className="bg-gray-50 -mx-2 px-2 py-1 rounded my-1">
+            <p className="pl-4">否則 <span className="text-gray-500 italic ml-4">// 如果區段 j 被佔用 (非全空)</span></p>
+            <p className="pl-8">cnt &lt;- <span className="text-blue-600 font-bold">0</span> <span className="text-green-600 font-bold ml-4">// (b3) 連續性中斷，累計歸零</span></p>
+            <p className="pl-8">i &lt;- <span className="text-blue-600 font-bold">j + 1</span> <span className="text-green-600 font-bold ml-4">// (b4) 將起始點重置為下一個區段</span></p>
+            <p className="pl-8 text-gray-500 italic">// 因為區段 j 已被佔用，合併的起始點不可能在 j 或 j 之前</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Part C: Split Zone ---
+function PartC_SplitZone() {
+  const [isSplit, setIsSplit] = useState(false);
+
+  // Data derived from the "Before" part of the image
+  const initialZones = [
+    { id: 'z0', label: '0', cap: 12, avail: 7, occupied: true, k: 3 },
+    { id: 'z1', label: '1', cap: 6, avail: 6, occupied: false, k: 0 },
+    { id: 'z2', label: '2', cap: 4, avail: 1, occupied: true, k: 0 }, 
+    { id: 'z3', label: '3', cap: 2, avail: 2, occupied: false, k: 0 },
+    { id: 'z4', label: '4', cap: 6, avail: 4, occupied: true, k: 2 },
+    { id: 'z5', label: '5', cap: 2, avail: 2, occupied: false, k: 0 },
+    { id: 'z6', label: '6', cap: 4, avail: 4, occupied: false, k: 0 },
+    { id: 'z7', label: '7', cap: 4, avail: 4, occupied: false, k: 0 },
+  ];
+
+  // Data derived from the "After" table in the image
+  const finalZones = [
+    { id: 'z0', label: '0', cap: 6, avail: 1, source: 'old-0' },
+    { id: 'n1', label: '1', cap: 2, avail: 2, source: 'new-from-0', isNew: true },
+    { id: 'n2', label: '2', cap: 2, avail: 2, source: 'new-from-0', isNew: true },
+    { id: 'n3', label: '3', cap: 2, avail: 2, source: 'new-from-0', isNew: true },
+    { id: 'z1', label: '4', cap: 6, avail: 6, source: 'old-1' },
+    { id: 'z2', label: '5', cap: 4, avail: 1, source: 'old-2' },
+    { id: 'z3', label: '6', cap: 2, avail: 2, source: 'old-3' },
+    { id: 'z4', label: '7', cap: 2, avail: 0, source: 'old-4' },
+    { id: 'n8', label: '8', cap: 2, avail: 2, source: 'new-from-4', isNew: true },
+    { id: 'n9', label: '9', cap: 2, avail: 2, source: 'new-from-4', isNew: true },
+    { id: 'z5', label: '10', cap: 2, avail: 2, source: 'old-5' },
+    { id: 'z6', label: '11', cap: 4, avail: 4, source: 'old-6' },
+    { id: 'z7', label: '12', cap: 4, avail: 4, source: 'old-7' },
+  ];
+
+  const TableVisual = ({ cap, avail, label, isNew, highlight }) => {
+    const occupiedCount = cap - avail;
+    const topRowSeats = Math.ceil(cap / 2);
+    const bottomRowSeats = Math.floor(cap / 2);
+
+    const renderRow = (isBottomRow, count) => (
+      <div className="flex gap-1 justify-center">
+        {Array.from({ length: count }).map((_, colIndex) => {
+          let logicalIndex = isBottomRow ? colIndex * 2 + 1 : colIndex * 2;
+          const isOccupied = logicalIndex < occupiedCount;
+          return (
+            <div
+              key={logicalIndex}
+              className={`w-3 h-3 rounded-[1px] border border-gray-400 ${
+                isOccupied ? 'bg-slate-700' : 'bg-white'
+              }`}
+            />
+          );
+        })}
+      </div>
+    );
+
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`
+          relative border-2 rounded-lg p-2 flex flex-col items-center justify-center min-w-[60px] shadow-sm
+          ${isNew ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-white'}
+          ${highlight ? 'ring-2 ring-orange-400 ring-offset-1 bg-orange-50' : ''}
+        `}
+      >
+        <div className="absolute -top-3 bg-white px-1 text-xs font-bold text-gray-500 border rounded">
+          {label}
+        </div>
+        <div className="flex flex-col gap-1 w-full items-center mt-2">
+          {renderRow(false, topRowSeats)}
+          <div className="h-8 w-full min-w-[30px] border-2 border-gray-400 bg-gray-100 rounded-sm flex items-center justify-center"></div>
+          {renderRow(true, bottomRowSeats)}
+        </div>
+        <div className="text-[10px] font-mono text-gray-500 w-full text-center border-t pt-1 mt-2">
+          {cap}/{avail}
+        </div>
+      </motion.div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <Split className="w-5 h-5 text-orange-600" />
+          視覺化演示：splitZone (圖片情境)
+        </h3>
+
+        <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-100 text-sm space-y-2">
+          <p><strong>規則：</strong> 僅有被佔用且空位足夠的區段會進行分拆。</p>
+          <ul className="list-disc list-inside ml-2 text-gray-600">
+            <li>區段 0 (佔用): k = 3 (分拆出 3 個新區段)</li>
+            <li>區段 2 (佔用): k = 0 (不分拆)</li>
+            <li>區段 4 (佔用): k = 2 (分拆出 2 個新區段)</li>
+          </ul>
+        </div>
+
+        <div className="flex gap-4 mb-8 justify-center">
+          <button 
+            onClick={() => setIsSplit(!isSplit)}
+            className={`
+              px-6 py-2 rounded-full font-bold shadow-sm transition-all flex items-center gap-2
+              ${isSplit ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-orange-600 text-white hover:bg-orange-700'}
+            `}
+          >
+            {isSplit ? <><RotateCcw className="w-4 h-4"/> 重置還原</> : <><Split className="w-4 h-4"/> 執行分拆</>}
+          </button>
+        </div>
+
+        <div className="min-h-[200px] bg-gray-100 rounded-xl p-6 border-inner border-gray-200 overflow-x-auto">
+          <div className="flex gap-3 items-start min-w-max">
+            <AnimatePresence mode='wait'>
+              {!isSplit ? (
+                initialZones.map((z) => (
+                  <div key={z.id} className="flex flex-col items-center gap-2">
+                    <TableVisual 
+                      cap={z.cap} 
+                      avail={z.avail} 
+                      label={z.label} 
+                      highlight={z.k > 0}
+                    />
+                    {z.k > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full"
+                      >
+                        k={z.k}
+                      </motion.div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                finalZones.map((z) => (
+                  <div key={z.id} className="flex flex-col items-center gap-2">
+                    <TableVisual 
+                      cap={z.cap} 
+                      avail={z.avail} 
+                      label={z.label} 
+                      isNew={z.isNew}
+                      highlight={z.source === 'old-0' || z.source === 'old-4'}
+                    />
+                    {z.isNew && (
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="text-[10px] font-bold text-green-600"
+                      >
+                        NEW
+                      </motion.div>
+                    )}
+                  </div>
+                ))
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+        <h3 className="text-lg font-bold text-yellow-800 mb-3 flex items-center gap-2">
+           <MessageSquare className="w-5 h-5" />
+           題目答案詳解 (c) - 附詳細註釋
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          此算法的核心在於建立一個新陣列 (new_cap/new_avail)，將舊陣列的資料搬移過去。若區段符合分拆條件，則將其「一分為多」；若不符合，則直接「複製」。
+        </p>
+        <div className="bg-white p-4 rounded border border-gray-200 font-mono text-sm overflow-x-auto leading-relaxed">
+          <div className="flex">
+            <div className="text-gray-400 select-none pr-4 text-right border-r mr-4">
+              1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8<br/>9<br/>10<br/>11<br/>12<br/>13<br/>14<br/>15<br/>16<br/>17<br/>18
+            </div>
+            <div className="w-full">
+              <p><span className="text-purple-700">cnt</span> &lt;- 0 <span className="text-gray-500 italic ml-4">// 初始化新陣列的索引計數器</span></p>
+              <p>設 i 由 0 至 zn - 1 <span className="text-gray-500 italic ml-4">// 遍歷所有舊區段</span></p>
+              
+              <div className="bg-blue-50/50 -mx-2 px-2 py-1 rounded my-1">
+                <p className="pl-4">如果 cap[i] <span className="text-blue-600 font-bold">&gt;</span> avail[i] <span className="text-green-600 font-bold ml-4">// (c1) 檢查條件：區段是否已被佔用</span></p>
+                <p className="pl-8 text-gray-500 italic">// 只有被佔用的區段才需要考慮分拆，全空區段不拆</p>
+                
+                <p className="pl-8 mt-2">k &lt;- floor(avail[i] / 2) <span className="text-gray-500 italic ml-4">// 計算可分拆出多少張 2 人桌</span></p>
+                <p className="pl-8">temp &lt;- <span className="text-blue-600 font-bold">k * 2</span> <span className="text-green-600 font-bold ml-4">// (c2) 計算將從原區段移出的總空位數</span></p>
+                
+                <p className="pl-8 mt-2 text-gray-500 italic">// 更新原區段：減去分拆出去的容量與空位</p>
+                <p className="pl-8">new_cap[cnt] &lt;- cap[i] - temp</p>
+                <p className="pl-8">new_avail[cnt] &lt;- avail[i] - temp</p>
+                <p className="pl-8">cnt &lt;- cnt + 1 <span className="text-gray-500 italic ml-4">// 準備填入下一個位置</span></p>
+                
+                <p className="pl-8 mt-2 text-gray-500 italic">// 產生 k 個新的 2 人區段</p>
+                <p className="pl-8">設 j 由 0 至 <span className="text-blue-600 font-bold">k - 1</span> <span className="text-green-600 font-bold ml-4">// (c3) 迴圈執行 k 次</span></p>
+                <p className="pl-12">new_cap[cnt] &lt;- 2</p>
+                <p className="pl-12">new_avail[cnt] &lt;- 2</p>
+                <p className="pl-12">cnt &lt;- cnt + 1</p>
+              </div>
+
+              <div className="bg-gray-50 -mx-2 px-2 py-1 rounded my-1">
+                <p className="pl-4">否則 <span className="text-gray-500 italic ml-4">// 處理不需要分拆的情況 (全空或已滿)</span></p>
+                <p className="pl-8 text-gray-500 italic">// 直接複製舊資料，確保資料不遺失</p>
+                <p className="pl-8">new_cap[cnt] &lt;- cap[i]</p>
+                <p className="pl-8">new_avail[cnt] &lt;- avail[i]</p>
+                <p className="pl-8">cnt &lt;- cnt + 1</p>
+              </div>
+
+              <p>zn &lt;- <span className="text-blue-600 font-bold">cnt</span> <span className="text-green-600 font-bold ml-4">// (c4) 更新全域變數：區段總數</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Part D: Sensors ---
+function PartD_Sensors() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+          <Eye className="w-5 h-5 text-teal-600" />
+          (d) 估算被佔用座位的傳感器技術
+        </h3>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-blue-100 rounded-full text-blue-600">
+                <Activity className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-lg">壓力傳感器 (Pressure Sensor)</h4>
+            </div>
+            <p className="text-gray-600 text-sm">
+              安裝在椅子座墊下。當顧客坐下時，傳感器檢測到重量/壓力變化，數值超過閾值即視為「佔用」。
+            </p>
+          </div>
+
+          <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-red-100 rounded-full text-red-600">
+                <Info className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-lg">紅外線/動作傳感器 (Infrared/Motion Sensor)</h4>
+            </div>
+            <p className="text-gray-600 text-sm">
+              安裝在桌子下方或天花板。檢測人體發出的紅外線熱能或動作。如果檢測到持續的信號，則視為有人入座。
+            </p>
+          </div>
+          
+          <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+             <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-purple-100 rounded-full text-purple-600">
+                <Eye className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-lg">超聲波傳感器 (Ultrasonic Sensor)</h4>
+            </div>
+            <p className="text-gray-600 text-sm">
+              測量距離。安裝在桌子前方，當有人坐下時，反射回來的聲波時間變短（距離變近），從而判斷有障礙物（人）。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <h4 className="font-bold text-yellow-800 mb-2">評分重點：</h4>
+        <p className="text-sm text-gray-700">
+          考生需列出具體的傳感器名稱（如壓力、紅外線、超聲波），並簡單描述其運作原理（如何區分有人/無人）。僅列出名稱可能無法獲得滿分。
+        </p>
+      </div>
+    </div>
+  );
+}
