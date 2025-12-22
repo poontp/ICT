@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 DSE ICT Elective C - Q13 解題分析</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom Styles for transitions */
+        .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .tab-content.active { display: block; opacity: 1; }
+        
+        .bar-height { transition: height 0.3s ease, background-color 0.3s ease; }
+        
+        /* Smooth transitions for moving elements */
+        .transition-all-300 { transition: all 0.3s ease-in-out; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-slate-800 p-4 md:p-8">
+
+    <div class="w-full max-w-4xl mx-auto bg-gray-50 rounded-xl shadow-lg overflow-hidden">
+        <!-- Header -->
+        <header class="p-6 border-b bg-white">
+            <h1 class="text-2xl font-bold text-blue-900 flex items-center gap-2">
+                <i data-lucide="activity" class="w-6 h-6"></i>
+                2025 DSE ICT Elective C - Q13 解題分析
+            </h1>
+            <p class="text-gray-600 mt-2">
+                餐廳座位分配系統算法模擬 (網頁互動版)
+            </p>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="px-6 pt-6">
+            <div class="flex space-x-1 rounded-xl bg-blue-900/20 p-1 overflow-x-auto">
+                <button onclick="switchTab('tab-a')" class="tab-btn w-full min-w-[120px] rounded-lg py-2.5 text-sm font-medium leading-5 whitespace-nowrap px-2 text-blue-700 bg-white shadow ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2" id="btn-tab-a">(a) 尋找區段 findZone</button>
+                <button onclick="switchTab('tab-b')" class="tab-btn w-full min-w-[120px] rounded-lg py-2.5 text-sm font-medium leading-5 whitespace-nowrap px-2 text-blue-800 hover:bg-white/[0.12] hover:text-blue-900" id="btn-tab-b">(b) 合併區段 comZone</button>
+                <button onclick="switchTab('tab-c')" class="tab-btn w-full min-w-[120px] rounded-lg py-2.5 text-sm font-medium leading-5 whitespace-nowrap px-2 text-blue-800 hover:bg-white/[0.12] hover:text-blue-900" id="btn-tab-c">(c) 分拆區段 splitZone</button>
+                <button onclick="switchTab('tab-d')" class="tab-btn w-full min-w-[120px] rounded-lg py-2.5 text-sm font-medium leading-5 whitespace-nowrap px-2 text-blue-800 hover:bg-white/[0.12] hover:text-blue-900" id="btn-tab-d">(d) 傳感器技術</button>
+            </div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="p-6">
+            
+            <!-- Part A: Find Zone -->
+            <div id="tab-a" class="tab-content active space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i data-lucide="search" class="w-5 h-5 text-blue-600"></i>
+                        視覺化演示：findZone(c)
+                    </h3>
+                    
+                    <!-- Controls -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <label class="font-medium text-gray-700">顧客人數 (c):</label>
+                            <input type="number" id="input-c-a" value="6" min="1" max="10" class="border rounded px-2 py-1 w-16 text-center font-mono text-lg focus:ring-2 focus:ring-blue-400 outline-none">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="partA.reset()" class="p-2 text-gray-600 hover:bg-gray-200 rounded-full" title="重置"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
+                            <button onclick="partA.prev()" id="btn-prev-a" class="flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors"><i data-lucide="skip-back" class="w-4 h-4"></i> 上一步</button>
+                            <div id="step-counter-a" class="text-sm font-mono text-gray-500 w-16 text-center">0 / 0</div>
+                            <button onclick="partA.next()" id="btn-next-a" class="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors shadow-sm">下一步 <i data-lucide="skip-forward" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div id="chart-container-a" class="grid grid-cols-9 gap-2 h-56 items-end mb-4 px-2">
+                        <!-- Bars will be injected here by JS -->
+                    </div>
+                    <div class="text-center text-xs text-gray-400 mb-4">區段編號 (0-8)</div>
+
+                    <!-- Log -->
+                    <div id="log-a" class="bg-slate-800 text-slate-200 p-4 rounded-md font-mono text-sm min-h-[80px] flex items-center shadow-inner border border-slate-700">
+                        <!-- Log message here -->
+                    </div>
+                </div>
+
+                <!-- Explanation -->
+                <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                    <h3 class="text-lg font-bold text-yellow-800 mb-3">題目答案詳解 (a)</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <span class="font-bold text-gray-800">(a)(i) findZone(6) 的傳回值：</span>
+                            <span class="ml-2 text-xl font-mono text-red-600 font-bold">6</span>
+                            <p class="text-sm text-gray-600 mt-1">
+                                理由：區段 6 有 7 個空位 (avail[6]=7)，7 >= 6。雖然區段 7, 8 也有空位，但它們只有 4 個，不足以容納 6 人。區段 6 是唯一且最接近的選擇。
+                            </p>
+                        </div>
+                        <div class="bg-white p-4 rounded border border-gray-200 font-mono text-sm">
+                            <p class="text-gray-500">// findZone 偽代碼填空</p>
+                            <p>zone &lt;- -1</p>
+                            <p>設 i 由 0 至 zn - 1</p>
+                            <p class="pl-4">如果 avail[i] &gt;= c</p>
+                            <p class="pl-8">如果 zone = -1</p>
+                            <p class="pl-12 text-blue-600 font-bold bg-blue-50 p-1 inline-block rounded">
+                                zone &lt;- i <span class="text-gray-500 ml-4">// (a1)</span>
+                            </p>
+                            <p class="pl-8">否則如果 <span class="text-blue-600 font-bold bg-blue-50 p-1 rounded">avail[i] &lt; avail[zone] <span class="text-gray-500 ml-4">// (a2)</span></span></p>
+                            <p class="pl-12">zone &lt;- i</p>
+                            <p>傳回 zone</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part B: Com Zone -->
+            <div id="tab-b" class="tab-content space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i data-lucide="git-merge" class="w-5 h-5 text-purple-600"></i>
+                        視覺化演示：comZone(7)
+                    </h3>
+
+                    <!-- Controls -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div class="font-medium text-gray-700">目標人數 (c): 7</div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="partB.reset()" class="p-2 text-gray-600 hover:bg-gray-200 rounded-full" title="重置"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
+                            <button onclick="partB.prev()" id="btn-prev-b" class="flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors"><i data-lucide="skip-back" class="w-4 h-4"></i> 上一步</button>
+                            <div id="step-counter-b" class="text-sm font-mono text-gray-500 w-16 text-center">0 / 0</div>
+                            <button onclick="partB.next()" id="btn-next-b" class="flex items-center gap-1 px-4 py-2 bg-purple-600 text-white border border-purple-600 rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-colors shadow-sm">下一步 <i data-lucide="skip-forward" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Visualization Grid -->
+                    <div id="grid-container-b" class="grid grid-cols-9 gap-2 mb-12 relative mt-10">
+                        <!-- Grid items injected by JS -->
+                    </div>
+
+                    <!-- Status Dashboard -->
+                    <div class="bg-gray-100 p-4 rounded-lg flex items-center justify-between border border-gray-200">
+                        <div class="flex gap-8">
+                            <div>
+                                <div class="text-sm text-gray-500">起始指標 (i):</div>
+                                <div id="stat-i-b" class="text-2xl font-mono font-bold text-purple-700">0</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-500">當前掃描 (j):</div>
+                                <div id="stat-j-b" class="text-2xl font-mono font-bold text-blue-600">-</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-500">累積空位 (cnt):</div>
+                                <div id="stat-cnt-b" class="text-2xl font-mono font-bold text-green-600">0</div>
+                            </div>
+                        </div>
+                        <div class="text-right border-l pl-6">
+                            <div class="text-sm text-gray-500">目標人數 (c):</div>
+                            <div class="text-xl font-bold">7</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Log Message -->
+                    <div id="log-b" class="mt-4 p-4 rounded-lg font-mono text-sm border shadow-sm transition-colors bg-slate-800 text-slate-200 border-slate-700">
+                        <!-- Log content -->
+                    </div>
+                </div>
+
+                <!-- Explanation -->
+                <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                    <h3 class="text-lg font-bold text-yellow-800 mb-3">題目答案詳解 (b) - 附詳細註釋</h3>
+                    <p class="text-sm text-gray-700 mb-4">
+                        此算法目的是尋找一段「連續」且「全空」的區段，其總容量大於等於 c。
+                    </p>
+                    <div class="bg-white p-4 rounded border border-gray-200 font-mono text-sm overflow-x-auto leading-relaxed">
+                        <p>comZone(c)</p>
+                        <p>i &lt;- 0 <span class="text-gray-500 italic ml-4">// 初始化潛在合併區段的起始索引</span></p>
+                        <p>cnt &lt;- 0 <span class="text-gray-500 italic ml-4">// 初始化目前累積的空位數量</span></p>
+                        <p>設 j 由 0 至 zn - 1 <span class="text-gray-500 italic ml-4">// 從頭到尾掃描每一個區段</span></p>
+                        
+                        <div class="bg-blue-50/50 -mx-2 px-2 py-1 rounded my-1">
+                            <p class="pl-4">如果 avail[j] = cap[j]  <span class="text-gray-500 italic ml-4">// 檢查區段 j 是否「完全未被佔用」(全空)</span></p>
+                            <p class="pl-8 text-gray-500 italic">// 只有全空的區段才能被合併</p>
+                            <p class="pl-8">cnt &lt;- cnt + <span class="text-blue-600 font-bold">avail[j]</span> <span class="text-green-600 font-bold ml-4">// (b1) 累加當前全空區段的座位數</span></p>
+                            
+                            <p class="pl-8 mt-1">如果 cnt <span class="text-blue-600 font-bold">&gt;= c</span> <span class="text-green-600 font-bold ml-4">// (b2) 檢查累積座位是否已滿足需求</span></p>
+                            <p class="pl-12">輸出 "合併區段 : ", i, " 至 ", j</p>
+                            <p class="pl-12">離開 comZone <span class="text-gray-500 italic ml-4">// 找到後立即結束</span></p>
+                        </div>
+
+                        <div class="bg-gray-50 -mx-2 px-2 py-1 rounded my-1">
+                            <p class="pl-4">否則 <span class="text-gray-500 italic ml-4">// 如果區段 j 被佔用 (非全空)</span></p>
+                            <p class="pl-8">cnt &lt;- <span class="text-blue-600 font-bold">0</span> <span class="text-green-600 font-bold ml-4">// (b3) 連續性中斷，累計歸零</span></p>
+                            <p class="pl-8">i &lt;- <span class="text-blue-600 font-bold">j + 1</span> <span class="text-green-600 font-bold ml-4">// (b4) 將起始點重置為下一個區段</span></p>
+                            <p class="pl-8 text-gray-500 italic">// 因為區段 j 已被佔用，合併的起始點不可能在 j 或 j 之前</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part C: Split Zone -->
+            <div id="tab-c" class="tab-content space-y-6">
+                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i data-lucide="split" class="w-5 h-5 text-orange-600"></i>
+                        視覺化演示：splitZone (圖片情境)
+                    </h3>
+
+                    <div class="mb-6 p-4 bg-blue-50 rounded border border-blue-100 text-sm space-y-2">
+                        <p><strong>規則：</strong> 僅有被佔用且空位足夠的區段會進行分拆。</p>
+                        <ul class="list-disc list-inside ml-2 text-gray-600">
+                            <li>區段 0 (佔用): k = 3 (分拆出 3 個新區段)</li>
+                            <li>區段 2 (佔用): k = 0 (不分拆)</li>
+                            <li>區段 4 (佔用): k = 2 (分拆出 2 個新區段)</li>
+                        </ul>
+                    </div>
+
+                    <div class="flex gap-4 mb-8 justify-center">
+                        <button onclick="partC.toggle()" id="btn-toggle-c" class="px-6 py-2 rounded-full font-bold shadow-sm transition-all flex items-center gap-2 bg-orange-600 text-white hover:bg-orange-700">
+                            <i data-lucide="split" class="w-4 h-4"></i> 執行分拆
+                        </button>
+                    </div>
+
+                    <div class="min-h-[200px] bg-gray-100 rounded-xl p-6 border-inner border-gray-200 overflow-x-auto">
+                        <div id="container-c" class="flex gap-3 items-start min-w-max transition-all duration-500">
+                            <!-- Items injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                    <h3 class="text-lg font-bold text-yellow-800 mb-3 flex items-center gap-2">
+                        <i data-lucide="message-square" class="w-5 h-5"></i>
+                        題目答案詳解 (c) - 附詳細註釋
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        此算法的核心在於建立一個新陣列 (new_cap/new_avail)，將舊陣列的資料搬移過去。若區段符合分拆條件，則將其「一分為多」；若不符合，則直接「複製」。
+                    </p>
+                    <div class="bg-white p-4 rounded border border-gray-200 font-mono text-sm overflow-x-auto leading-relaxed">
+                        <div class="flex">
+                            <div class="text-gray-400 select-none pr-4 text-right border-r mr-4">
+                                1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8<br/>9<br/>10<br/>11<br/>12<br/>13<br/>14<br/>15<br/>16<br/>17<br/>18
+                            </div>
+                            <div class="w-full">
+                                <p><span class="text-purple-700">cnt</span> &lt;- 0 <span class="text-gray-500 italic ml-4">// 初始化新陣列的索引計數器</span></p>
+                                <p>設 i 由 0 至 zn - 1 <span class="text-gray-500 italic ml-4">// 遍歷所有舊區段</span></p>
+                                
+                                <div class="bg-blue-50/50 -mx-2 px-2 py-1 rounded my-1">
+                                    <p class="pl-4">如果 cap[i] <span class="text-blue-600 font-bold">&gt;</span> avail[i] <span class="text-green-600 font-bold ml-4">// (c1) 檢查條件：區段是否已被佔用</span></p>
+                                    <p class="pl-8 text-gray-500 italic">// 只有被佔用的區段才需要考慮分拆，全空區段不拆</p>
+                                    
+                                    <p class="pl-8 mt-2">k &lt;- floor(avail[i] / 2) <span class="text-gray-500 italic ml-4">// 計算可分拆出多少張 2 人桌</span></p>
+                                    <p class="pl-8">temp &lt;- <span class="text-blue-600 font-bold">k * 2</span> <span class="text-green-600 font-bold ml-4">// (c2) 計算將從原區段移出的總空位數</span></p>
+                                    
+                                    <p class="pl-8 mt-2 text-gray-500 italic">// 更新原區段：減去分拆出去的容量與空位</p>
+                                    <p class="pl-8">new_cap[cnt] &lt;- cap[i] - temp</p>
+                                    <p class="pl-8">new_avail[cnt] &lt;- avail[i] - temp</p>
+                                    <p class="pl-8">cnt &lt;- cnt + 1 <span class="text-gray-500 italic ml-4">// 準備填入下一個位置</span></p>
+                                    
+                                    <p class="pl-8 mt-2 text-gray-500 italic">// 產生 k 個新的 2 人區段</p>
+                                    <p class="pl-8">設 j 由 0 至 <span class="text-blue-600 font-bold">k - 1</span> <span class="text-green-600 font-bold ml-4">// (c3) 迴圈執行 k 次</span></p>
+                                    <p class="pl-12">new_cap[cnt] &lt;- 2</p>
+                                    <p class="pl-12">new_avail[cnt] &lt;- 2</p>
+                                    <p class="pl-12">cnt &lt;- cnt + 1</p>
+                                </div>
+
+                                <div class="bg-gray-50 -mx-2 px-2 py-1 rounded my-1">
+                                    <p class="pl-4">否則 <span class="text-gray-500 italic ml-4">// 處理不需要分拆的情況 (全空或已滿)</span></p>
+                                    <p class="pl-8 text-gray-500 italic">// 直接複製舊資料，確保資料不遺失</p>
+                                    <p class="pl-8">new_cap[cnt] &lt;- cap[i]</p>
+                                    <p class="pl-8">new_avail[cnt] &lt;- avail[i]</p>
+                                    <p class="pl-8">cnt &lt;- cnt + 1</p>
+                                </div>
+
+                                <p>zn &lt;- <span class="text-blue-600 font-bold">cnt</span> <span class="text-green-600 font-bold ml-4">// (c4) 更新全域變數：區段總數</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part D: Sensors -->
+            <div id="tab-d" class="tab-content space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                        <i data-lucide="eye" class="w-5 h-5 text-teal-600"></i>
+                        (d) 估算被佔用座位的傳感器技術
+                    </h3>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="p-2 bg-blue-100 rounded-full text-blue-600">
+                                    <i data-lucide="activity" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="font-bold text-lg">壓力傳感器 (Pressure Sensor)</h4>
+                            </div>
+                            <p class="text-gray-600 text-sm">
+                                安裝在椅子座墊下。當顧客坐下時，傳感器檢測到重量/壓力變化，數值超過閾值即視為「佔用」。
+                            </p>
+                        </div>
+
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="p-2 bg-red-100 rounded-full text-red-600">
+                                    <i data-lucide="info" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="font-bold text-lg">紅外線/動作傳感器 (Infrared/Motion Sensor)</h4>
+                            </div>
+                            <p class="text-gray-600 text-sm">
+                                安裝在桌子下方或天花板。檢測人體發出的紅外線熱能或動作。如果檢測到持續的信號，則視為有人入座。
+                            </p>
+                        </div>
+                        
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="p-2 bg-purple-100 rounded-full text-purple-600">
+                                    <i data-lucide="eye" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="font-bold text-lg">超聲波傳感器 (Ultrasonic Sensor)</h4>
+                            </div>
+                            <p class="text-gray-600 text-sm">
+                                測量距離。安裝在桌子前方，當有人坐下時，反射回來的聲波時間變短（距離變近），從而判斷有障礙物（人）。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <h4 class="font-bold text-yellow-800 mb-2">評分重點：</h4>
+                    <p class="text-sm text-gray-700">
+                        考生需列出具體的傳感器名稱（如壓力、紅外線、超聲波），並簡單描述其運作原理（如何區分有人/無人）。僅列出名稱可能無法獲得滿分。
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Constants
+        const INITIAL_CAP = [6, 6, 4, 4, 2, 2, 8, 4, 4];
+        const INITIAL_AVAIL = [0, 0, 1, 2, 2, 2, 7, 4, 4];
+
+        // --- Tab Switching Logic ---
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update button styles
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-blue-700', 'shadow', 'ring-white', 'ring-opacity-60', 'ring-offset-2', 'ring-offset-blue-400', 'focus:ring-2');
+                btn.classList.add('text-blue-800', 'hover:bg-white/[0.12]', 'hover:text-blue-900');
+            });
+            
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-blue-800', 'hover:bg-white/[0.12]', 'hover:text-blue-900');
+            activeBtn.classList.add('bg-white', 'text-blue-700', 'shadow', 'ring-white', 'ring-opacity-60', 'ring-offset-2', 'ring-offset-blue-400', 'focus:ring-2');
+        }
+
+        // --- Part A Logic ---
+        const partA = {
+            stepIndex: 0,
+            steps: [],
+            customerCount: 6,
+            
+            init: function() {
+                const input = document.getElementById('input-c-a');
+                input.addEventListener('change', (e) => {
+                    this.customerCount = parseInt(e.target.value) || 0;
+                    this.calculateSteps();
+                    this.stepIndex = 0;
+                    this.render();
+                });
+                this.calculateSteps();
+                this.render();
+            },
+
+            calculateSteps: function() {
+                this.steps = [];
+                let bestZone = -1;
+                const c = this.customerCount;
+
+                this.steps.push({
+                    i: -1, bestZone: -1,
+                    msg: `初始化：準備尋找 ${c} 人的座位。最佳區段 (zone) 設為 -1。`,
+                    highlight: 'init'
+                });
+
+                for (let i = 0; i < 9; i++) {
+                    const avail = INITIAL_AVAIL[i];
+                    this.steps.push({
+                        i: i, bestZone: bestZone,
+                        msg: `檢查區段 ${i} (空位: ${avail})...`,
+                        highlight: 'scanning'
+                    });
+
+                    if (avail >= c) {
+                        if (bestZone === -1) {
+                            bestZone = i;
+                            this.steps.push({
+                                i: i, bestZone: bestZone,
+                                msg: `區段 ${i} 空位足夠 (${avail} >= ${c})。目前尚未選定區段，故設 zone = ${i}。`,
+                                highlight: 'found_new'
+                            });
+                        } else {
+                            if (avail < INITIAL_AVAIL[bestZone]) {
+                                const oldZone = bestZone;
+                                bestZone = i;
+                                this.steps.push({
+                                    i: i, bestZone: bestZone,
+                                    msg: `區段 ${i} 空位 (${avail}) 比區段 ${oldZone} (${INITIAL_AVAIL[oldZone]}) 更接近 ${c}。更新 zone = ${i}。`,
+                                    highlight: 'found_better'
+                                });
+                            } else {
+                                this.steps.push({
+                                    i: i, bestZone: bestZone,
+                                    msg: `區段 ${i} 空位 (${avail}) 足夠，但不比當前最佳區段 ${bestZone} (${INITIAL_AVAIL[bestZone]}) 更接近。忽略。`,
+                                    highlight: 'rejected'
+                                });
+                            }
+                        }
+                    } else {
+                        this.steps.push({
+                            i: i, bestZone: bestZone,
+                            msg: `區段 ${i} 空位不足 (${avail} < ${c})。跳過。`,
+                            highlight: 'fail'
+                        });
+                    }
+                }
+                
+                this.steps.push({
+                    i: null, bestZone: bestZone,
+                    msg: bestZone !== -1 ? `搜尋結束。傳回最佳區段：${bestZone}。` : `搜尋結束。未找到合適區段，傳回 -1。`,
+                    highlight: 'end'
+                });
+            },
+
+            next: function() {
+                if (this.stepIndex < this.steps.length - 1) {
+                    this.stepIndex++;
+                    this.render();
+                }
+            },
+
+            prev: function() {
+                if (this.stepIndex > 0) {
+                    this.stepIndex--;
+                    this.render();
+                }
+            },
+
+            reset: function() {
+                this.stepIndex = 0;
+                this.render();
+            },
+
+            render: function() {
+                const step = this.steps[this.stepIndex];
+                const container = document.getElementById('chart-container-a');
+                container.innerHTML = '';
+
+                // Update controls
+                document.getElementById('step-counter-a').textContent = `${this.stepIndex} / ${this.steps.length - 1}`;
+                document.getElementById('btn-prev-a').disabled = this.stepIndex === 0;
+                document.getElementById('btn-next-a').disabled = this.stepIndex === this.steps.length - 1;
+                
+                // Update Log
+                const log = document.getElementById('log-a');
+                log.innerHTML = `<span class="mr-2 text-blue-400">></span> ${step.msg}`;
+
+                // Render Bars
+                INITIAL_CAP.forEach((cap, idx) => {
+                    const avail = INITIAL_AVAIL[idx];
+                    const isCurrentScanner = step.i === idx;
+                    const isBest = step.bestZone === idx;
+
+                    let barColor = 'bg-gray-300';
+                    if (isBest) barColor = 'bg-green-500';
+                    else if (isCurrentScanner && step.highlight === 'fail') barColor = 'bg-red-300';
+                    else if (isCurrentScanner) barColor = 'bg-blue-400';
+                    else if (avail >= this.customerCount) barColor = 'bg-blue-200';
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'flex flex-col items-center relative';
+                    
+                    let html = '';
+                    if (isCurrentScanner) {
+                        html += `<div class="absolute -top-8 text-blue-600 font-bold text-xs flex flex-col items-center"><i data-lucide="arrow-right" class="w-4 h-4 rotate-90"></i>掃描中</div>`;
+                    }
+                    if (isBest && !isCurrentScanner) {
+                        html += `<div class="absolute -top-8 text-green-600 font-bold text-xs flex flex-col items-center"><i data-lucide="check-circle" class="w-4 h-4"></i>暫定</div>`;
+                    }
+
+                    html += `<div class="text-[10px] text-gray-400 mb-1">C:${cap}</div>`;
+                    html += `<div class="relative w-full rounded-t-md overflow-hidden transition-all duration-300 border-b-0 ${isCurrentScanner ? 'ring-2 ring-blue-500 ring-offset-1' : ''} bg-gray-100" style="height: ${cap * 18}px">`;
+                    html += `<div class="absolute bottom-0 w-full transition-colors duration-300 ${barColor}" style="height: ${avail * 18}px"></div>`;
+                    html += `<div class="absolute inset-0 flex items-end justify-center pb-1 text-xs font-bold text-slate-700 z-10">${avail}</div>`;
+                    html += `</div>`;
+                    html += `<div class="mt-2 font-mono font-bold transition-colors ${isCurrentScanner ? 'text-blue-600' : (isBest ? 'text-green-600' : 'text-gray-500')}">${idx}</div>`;
+
+                    wrapper.innerHTML = html;
+                    container.appendChild(wrapper);
+                });
+                lucide.createIcons();
+            }
+        };
+
+        // --- Part B Logic ---
+        const partB = {
+            stepIndex: 0,
+            steps: [],
+            targetC: 7,
+
+            init: function() {
+                this.calculateSteps();
+                this.render();
+            },
+
+            calculateSteps: function() {
+                this.steps = [];
+                let i = 0;
+                let cnt = 0;
+                let found = false;
+
+                this.steps.push({
+                    j: -1, i, cnt, found,
+                    msg: `初始化：開始尋找連續空位總和 >= ${this.targetC}。起始指標 i = 0，累計 cnt = 0。`
+                });
+
+                for (let j = 0; j < 9; j++) {
+                    const avail = INITIAL_AVAIL[j];
+                    const cap = INITIAL_CAP[j];
+                    
+                    this.steps.push({
+                        j, i, cnt, found,
+                        msg: `掃描區段 ${j} (空位: ${avail}, 容量: ${cap})...`
+                    });
+
+                    if (avail === cap) {
+                        cnt += avail;
+                        if (cnt >= this.targetC) {
+                            found = true;
+                            this.steps.push({
+                                j, i, cnt, found,
+                                msg: `區段 ${j} 是全空的。累計空位 cnt 更新為 ${cnt}。已達到目標 (${this.targetC})！找到合併區段 ${i} 至 ${j}。`
+                            });
+                            break;
+                        } else {
+                            this.steps.push({
+                                j, i, cnt, found,
+                                msg: `區段 ${j} 是全空的。累計空位 cnt 更新為 ${cnt}。尚未達到目標 (${this.targetC})，繼續。`
+                            });
+                        }
+                    } else {
+                        cnt = 0;
+                        i = j + 1;
+                        this.steps.push({
+                            j, i, cnt, found,
+                            msg: `區段 ${j} 被佔用 (非全空)。連續性中斷。重置 cnt = 0，起始指標 i 移至 ${j + 1}。`
+                        });
+                    }
+                }
+
+                if (!found) {
+                    this.steps.push({
+                        j: 8, i, cnt, found,
+                        msg: `掃描結束。未找到符合條件的連續合併區段。`
+                    });
+                }
+            },
+
+            next: function() {
+                if (this.stepIndex < this.steps.length - 1) {
+                    this.stepIndex++;
+                    this.render();
+                }
+            },
+
+            prev: function() {
+                if (this.stepIndex > 0) {
+                    this.stepIndex--;
+                    this.render();
+                }
+            },
+
+            reset: function() {
+                this.stepIndex = 0;
+                this.render();
+            },
+
+            render: function() {
+                const step = this.steps[this.stepIndex];
+                const container = document.getElementById('grid-container-b');
+                container.innerHTML = '';
+
+                // Controls
+                document.getElementById('step-counter-b').textContent = `${this.stepIndex} / ${this.steps.length - 1}`;
+                document.getElementById('btn-prev-b').disabled = this.stepIndex === 0;
+                document.getElementById('btn-next-b').disabled = this.stepIndex === this.steps.length - 1;
+
+                // Stats
+                document.getElementById('stat-i-b').textContent = step.i;
+                document.getElementById('stat-j-b').textContent = step.j === -1 ? '-' : step.j;
+                document.getElementById('stat-cnt-b').textContent = step.cnt;
+
+                // Log
+                const log = document.getElementById('log-b');
+                log.innerHTML = `<span class="mr-2 opacity-50">></span> ${step.msg}`;
+                log.className = `mt-4 p-4 rounded-lg font-mono text-sm border shadow-sm transition-colors ${step.found ? 'bg-green-100 border-green-300 text-green-900' : 'bg-slate-800 text-slate-200 border-slate-700'}`;
+
+                // Grid
+                INITIAL_CAP.forEach((c, idx) => {
+                    const avail = INITIAL_AVAIL[idx];
+                    const isEmpty = avail === c;
+                    const isCurrentScanner = idx === step.j;
+                    const isStartPointer = idx === step.i;
+                    const isInRange = idx >= step.i && idx <= step.j && step.j !== -1;
+
+                    const div = document.createElement('div');
+                    div.className = `relative border rounded p-2 flex flex-col items-center transition-all duration-300 ${isInRange ? 'bg-purple-50 border-purple-300' : 'bg-gray-50'}`;
+
+                    let html = '';
+                    
+                    if (isStartPointer) {
+                        html += `<div class="absolute -top-8 text-purple-700 font-bold text-xs flex flex-col items-center z-20"><span class="bg-purple-100 px-1 rounded border border-purple-300">i</span><i data-lucide="arrow-right" class="w-4 h-4 rotate-90"></i></div>`;
+                    }
+                    if (isCurrentScanner) {
+                        html += `<div class="absolute -bottom-8 text-blue-600 font-bold text-xs flex flex-col items-center z-20"><i data-lucide="arrow-right" class="w-4 h-4 -rotate-90"></i><span class="bg-blue-100 px-1 rounded border border-blue-300">j</span></div>`;
+                    }
+
+                    html += `<span class="text-xs text-gray-500 mb-1">Zone ${idx}</span>`;
+                    html += `<div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm transition-colors ${isEmpty ? 'bg-green-500' : 'bg-red-400'} ${isCurrentScanner ? 'ring-2 ring-blue-400 ring-offset-2' : ''}">${avail}</div>`;
+                    html += `<span class="text-[10px] text-gray-400 mt-1">Cap: ${c}</span>`;
+
+                    div.innerHTML = html;
+                    container.appendChild(div);
+                });
+                lucide.createIcons();
+            }
+        };
+
+        // --- Part C Logic ---
+        const partC = {
+            isSplit: false,
+            initialZones: [
+                { id: 'z0', label: '0', cap: 12, avail: 7, occupied: true, k: 3 },
+                { id: 'z1', label: '1', cap: 6, avail: 6, occupied: false, k: 0 },
+                { id: 'z2', label: '2', cap: 4, avail: 1, occupied: true, k: 0 }, 
+                { id: 'z3', label: '3', cap: 2, avail: 2, occupied: false, k: 0 },
+                { id: 'z4', label: '4', cap: 6, avail: 4, occupied: true, k: 2 },
+                { id: 'z5', label: '5', cap: 2, avail: 2, occupied: false, k: 0 },
+                { id: 'z6', label: '6', cap: 4, avail: 4, occupied: false, k: 0 },
+                { id: 'z7', label: '7', cap: 4, avail: 4, occupied: false, k: 0 },
+            ],
+            finalZones: [
+                { id: 'z0', label: '0', cap: 6, avail: 1, source: 'old-0' },
+                { id: 'n1', label: '1', cap: 2, avail: 2, source: 'new-from-0', isNew: true },
+                { id: 'n2', label: '2', cap: 2, avail: 2, source: 'new-from-0', isNew: true },
+                { id: 'n3', label: '3', cap: 2, avail: 2, source: 'new-from-0', isNew: true },
+                { id: 'z1', label: '4', cap: 6, avail: 6, source: 'old-1' },
+                { id: 'z2', label: '5', cap: 4, avail: 1, source: 'old-2' },
+                { id: 'z3', label: '6', cap: 2, avail: 2, source: 'old-3' },
+                { id: 'z4', label: '7', cap: 2, avail: 0, source: 'old-4' },
+                { id: 'n8', label: '8', cap: 2, avail: 2, source: 'new-from-4', isNew: true },
+                { id: 'n9', label: '9', cap: 2, avail: 2, source: 'new-from-4', isNew: true },
+                { id: 'z5', label: '10', cap: 2, avail: 2, source: 'old-5' },
+                { id: 'z6', label: '11', cap: 4, avail: 4, source: 'old-6' },
+                { id: 'z7', label: '12', cap: 4, avail: 4, source: 'old-7' },
+            ],
+
+            init: function() {
+                this.render();
+            },
+
+            toggle: function() {
+                this.isSplit = !this.isSplit;
+                const btn = document.getElementById('btn-toggle-c');
+                if (this.isSplit) {
+                    btn.innerHTML = `<i data-lucide="rotate-ccw" class="w-4 h-4"></i> 重置還原`;
+                    btn.className = "px-6 py-2 rounded-full font-bold shadow-sm transition-all flex items-center gap-2 bg-gray-200 text-gray-700 hover:bg-gray-300";
+                } else {
+                    btn.innerHTML = `<i data-lucide="split" class="w-4 h-4"></i> 執行分拆`;
+                    btn.className = "px-6 py-2 rounded-full font-bold shadow-sm transition-all flex items-center gap-2 bg-orange-600 text-white hover:bg-orange-700";
+                }
+                lucide.createIcons();
+                this.render();
+            },
+
+            renderTableVisual: function(cap, avail, label, isNew, highlight) {
+                const occupiedCount = cap - avail;
+                const topRowSeats = Math.ceil(cap / 2);
+                const bottomRowSeats = Math.floor(cap / 2);
+
+                const renderRow = (isBottomRow, count) => {
+                    let html = '<div class="flex gap-1 justify-center">';
+                    for (let i = 0; i < count; i++) {
+                        let logicalIndex = isBottomRow ? i * 2 + 1 : i * 2;
+                        const isOccupied = logicalIndex < occupiedCount;
+                        html += `<div class="w-3 h-3 rounded-[1px] border border-gray-400 ${isOccupied ? 'bg-slate-700' : 'bg-white'}"></div>`;
+                    }
+                    html += '</div>';
+                    return html;
+                };
+
+                return `
+                    <div class="relative border-2 rounded-lg p-2 flex flex-col items-center justify-center min-w-[60px] shadow-sm transition-all-300
+                        ${isNew ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-white'}
+                        ${highlight ? 'ring-2 ring-orange-400 ring-offset-1 bg-orange-50' : ''}
+                    ">
+                        <div class="absolute -top-3 bg-white px-1 text-xs font-bold text-gray-500 border rounded">${label}</div>
+                        <div class="flex flex-col gap-1 w-full items-center mt-2">
+                            ${renderRow(false, topRowSeats)}
+                            <div class="h-8 w-full min-w-[30px] border-2 border-gray-400 bg-gray-100 rounded-sm flex items-center justify-center"></div>
+                            ${renderRow(true, bottomRowSeats)}
+                        </div>
+                        <div class="text-[10px] font-mono text-gray-500 w-full text-center border-t pt-1 mt-2">${cap}/${avail}</div>
+                    </div>
+                `;
+            },
+
+            render: function() {
+                const container = document.getElementById('container-c');
+                container.innerHTML = '';
+                
+                const data = this.isSplit ? this.finalZones : this.initialZones;
+
+                data.forEach(z => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = "flex flex-col items-center gap-2";
+                    
+                    let html = this.renderTableVisual(z.cap, z.avail, z.label, z.isNew, (z.k > 0 || z.source === 'old-0' || z.source === 'old-4'));
+
+                    if (!this.isSplit && z.k > 0) {
+                        html += `<div class="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">k=${z.k}</div>`;
+                    }
+                    if (this.isSplit && z.isNew) {
+                        html += `<div class="text-[10px] font-bold text-green-600">NEW</div>`;
+                    }
+
+                    wrapper.innerHTML = html;
+                    container.appendChild(wrapper);
+                });
+            }
+        };
+
+        // Initialize all parts
+        document.addEventListener('DOMContentLoaded', () => {
+            partA.init();
+            partB.init();
+            partC.init();
+            
+            // Set initial tab
+            switchTab('tab-a');
+        });
+
+    </script>
+</body>
+</html>
