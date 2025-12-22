@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2025 DSE ICT Elective C - Q13 解題分析</title>
+    <title>2025 DSE ICT Elective C - Q13 解題分析 (修正版)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -239,7 +239,7 @@
                     <div class="bg-white p-4 rounded border border-gray-200 font-mono text-sm overflow-x-auto leading-relaxed">
                         <div class="flex">
                             <div class="text-gray-400 select-none pr-4 text-right border-r mr-4">
-                                1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8<br/>9<br/>10<br/>11<br/>12<br/>13<br/>14<br/>15<br/>16<br/>17<br/>18
+                                1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8<br/>9<br/>10<br/>11<br/>12<br/>13<br/>14<br/>15<br/>16<br/>17<br/>18<br/>19<br/>20<br/>21
                             </div>
                             <div class="w-full">
                                 <p><span class="text-purple-700">cnt</span> &lt;- 0 <span class="text-gray-500 italic ml-4">// 初始化新陣列的索引計數器</span></p>
@@ -271,7 +271,10 @@
                                     <p class="pl-8">new_avail[cnt] &lt;- avail[i]</p>
                                     <p class="pl-8">cnt &lt;- cnt + 1</p>
                                 </div>
-
+                                
+                                <p class="mt-2 text-gray-500 italic">// 將新陣列覆寫回原陣列 (修正補充)</p>
+                                <p class="text-red-600 font-bold">cap &lt;- new_cap</p>
+                                <p class="text-red-600 font-bold">avail &lt;- new_avail</p>
                                 <p>zn &lt;- <span class="text-blue-600 font-bold">cnt</span> <span class="text-green-600 font-bold ml-4">// (c4) 更新全域變數：區段總數</span></p>
                             </div>
                         </div>
