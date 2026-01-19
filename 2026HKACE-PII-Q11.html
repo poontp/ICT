@@ -1,325 +1,503 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, ChevronRight, CornerDownRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-// --- 1. 數據與算法邏輯 ---
-
-const CODE_LINES = [
-  { id: 1, text: "輸入 N", indent: 0 },
-  { id: 2, text: "init(Q)", indent: 0 },
-  { id: 3, text: "temp ← N", indent: 0 },
-  { id: 4, text: "當 temp > 0 執行", indent: 0 },
-  { id: 5, text: "q ← (temp / 10) 的整數部分", indent: 1 },
-  { id: 6, text: "r ← temp - q * 10", indent: 1 },
-  { id: 7, text: "enqueue(Q, r)", indent: 1 },
-  { id: 8, text: "temp ← q", indent: 1 },
-  { id: 9, text: "A ← 0", indent: 0 },
-  { id: 10, text: "當 Q 不是空時 執行", indent: 0 },
-  { id: 11, text: "digit ← dequeue(Q)", indent: 1 },
-  { id: 12, text: "A ← A * 10 + digit", indent: 1 },
-  { id: 13, text: "輸出 A", indent: 0 },
-];
-
-const generateTrace = (inputN) => {
-  const steps = [];
-  let n = inputN;
-  let temp = 0; // Initial state usually implies variables exist but maybe undefined or 0
-  let q = 0;
-  let r = 0;
-  let Q = []; 
-  let A = 0;
-  let digit = 0;
-
-  // Helper to snapshot state
-  const addStep = (lineId, desc, changedVars = []) => {
-    steps.push({
-      lineId,
-      vars: { n, temp, q, r, A, digit },
-      queue: [...Q],
-      desc,
-      changedVars
-    });
-  };
-
-  // Step 1: Input N
-  addStep(1, `輸入 N = ${n}`, ['n']);
-  
-  // Step 2: Init Q
-  addStep(2, "初始化空隊列 Q", []);
-  
-  // Step 3: temp <- N
-  temp = n;
-  addStep(3, `temp 被賦值為 ${temp}`, ['temp']);
-
-  // Loop 1: Decomposition
-  while (true) {
-    addStep(4, `檢查 temp (${temp}) > 0 ?`, []);
-    if (temp <= 0) break;
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Visualizer (Full Solution)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     
-    q = Math.floor(temp / 10);
-    addStep(5, `q ← floor(${temp} / 10) = ${q}`, ['q']);
-    
-    r = temp - (q * 10);
-    addStep(6, `r ← ${temp} - ${q} * 10 = ${r}`, ['r']);
-    
-    Q.push(r);
-    addStep(7, `enqueue(Q, ${r})`, ['queue']);
-    
-    temp = q;
-    addStep(8, `temp ← ${q}`, ['temp']);
-  }
-
-  // Step 9: A <- 0
-  A = 0;
-  addStep(9, "A 初始化為 0", ['A']);
-
-  // Loop 2: Reconstruction
-  while (true) {
-    const notEmpty = Q.length > 0;
-    addStep(10, `檢查 Q 是否非空? (${notEmpty ? '是' : '否'})`, []);
-    if (!notEmpty) break;
-    
-    digit = Q.shift();
-    addStep(11, `digit ← dequeue(Q) = ${digit}`, ['digit', 'queue']);
-    
-    const oldA = A;
-    A = A * 10 + digit;
-    addStep(12, `A ← ${oldA} * 10 + ${digit} = ${A}`, ['A']);
-  }
-
-  // Step 13: Output
-  addStep(13, `輸出 A: ${A}`, []);
-  
-  return steps;
-};
-
-// --- 2. 子組件 ---
-
-const CodeLine = ({ line, isActive }) => (
-  <div 
-    id={`codeline-${line.id}`}
-    className={`
-      flex items-center py-2 px-6 font-mono text-sm transition-colors duration-200 border-l-4
-      ${isActive 
-        ? 'bg-[#fff9c4] border-yellow-500 text-slate-900 font-bold' 
-        : 'border-transparent text-slate-500 hover:bg-slate-50'}
-    `}
-  >
-    <span className="w-6 text-slate-300 text-xs text-right mr-4 select-none">{line.id}</span>
-    <div style={{ paddingLeft: `${line.indent * 1.5}rem` }} className="flex items-center whitespace-nowrap">
-      {line.indent > 0 && <CornerDownRight size={12} className="text-slate-300 mr-2 inline-block" />}
-      {line.text}
-    </div>
-  </div>
-);
-
-// --- 3. 主組件 ---
-
-export default function AlgorithmVisualizer() {
-  const [inputN, setInputN] = useState(489);
-  const [trace, setTrace] = useState([]);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const scrollRef = useRef(null);
-  const timerRef = useRef(null);
-
-  // 初始化 Trace
-  useEffect(() => {
-    const newTrace = generateTrace(inputN);
-    setTrace(newTrace);
-    setStepIndex(0);
-    setIsPlaying(false);
-  }, [inputN]);
-
-  // 自動播放邏輯
-  useEffect(() => {
-    if (isPlaying) {
-      timerRef.current = setInterval(() => {
-        setStepIndex(prev => {
-          if (prev < trace.length - 1) return prev + 1;
-          setIsPlaying(false);
-          return prev;
-        });
-      }, 800);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isPlaying, trace]);
-
-  // 代碼自動滾動
-  useEffect(() => {
-    if (scrollRef.current) {
-      const activeLine = document.getElementById(`codeline-${trace[stepIndex]?.lineId}`);
-      if (activeLine) {
-        activeLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }
-  }, [stepIndex, trace]);
-
-  const currentStep = trace[stepIndex] || { 
-    vars: { temp: inputN, q: 0, r: 0, digit: 0, A: 0 }, 
-    queue: [], 
-    desc: 'Ready', 
-    lineId: 0 
-  };
-
-  return (
-    <div className="w-full max-w-6xl mx-auto p-4 bg-slate-100 min-h-screen flex items-center justify-center font-sans">
-      
-      {/* 主容器：固定高度，Flex 佈局 */}
-      <div className="bg-white w-full h-[650px] rounded-xl shadow-xl overflow-hidden flex flex-col lg:flex-row border border-slate-200">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
         
-        {/* === 左側：偽代碼區域 (固定寬度) === */}
-        <div className="lg:w-[400px] flex-shrink-0 flex flex-col border-r border-slate-200 bg-white">
-          {/* Header */}
-          <div className="h-14 flex items-center px-6 border-b border-slate-100">
-            <h2 className="text-xs font-bold text-slate-400 tracking-widest uppercase">Pseudocode</h2>
-          </div>
-          
-          {/* Scrollable Code List */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar py-2" ref={scrollRef}>
-            {CODE_LINES.map(line => (
-              <CodeLine 
-                key={line.id} 
-                line={line} 
-                isActive={currentStep.lineId === line.id} 
-              />
-            ))}
-            {/* 底部留白，方便滾動 */}
-            <div className="h-20"></div>
-          </div>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 700; background-color: #eff6ff; }
+        .tab-inactive { border-bottom: 2px solid transparent; color: #64748b; font-weight: 500; }
+        .tab-inactive:hover { color: #334155; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <!-- 主容器 -->
+    <div class="bg-white w-full max-w-6xl h-[750px] rounded-xl shadow-xl overflow-hidden flex flex-col border border-slate-200">
+        
+        <!-- 頂部導航 Tabs -->
+        <div class="flex border-b border-slate-200 bg-white flex-shrink-0">
+            <button onclick="switchTab('sim')" id="tab-btn-sim" class="tab-active flex-1 py-4 text-sm text-center transition-all flex items-center justify-center gap-2">
+                <span class="bg-blue-100 text-blue-700 py-0.5 px-2 rounded text-xs font-bold">Part (a)</span>
+                模擬執行
+            </button>
+            <button onclick="switchTab('ans-b')" id="tab-btn-ans-b" class="tab-inactive flex-1 py-4 text-sm text-center transition-all flex items-center justify-center gap-2">
+                <span class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded text-xs font-bold">Part (b)</span>
+                算法目的
+            </button>
+            <button onclick="switchTab('ans-c')" id="tab-btn-ans-c" class="tab-inactive flex-1 py-4 text-sm text-center transition-all flex items-center justify-center gap-2">
+                <span class="bg-slate-100 text-slate-600 py-0.5 px-2 rounded text-xs font-bold">Part (c)</span>
+                程式修正
+            </button>
         </div>
 
-        {/* === 右側：執行與數據區域 (自適應寬度) === */}
-        <div className="flex-1 flex flex-col bg-[#f8f9fa] min-w-0">
-          
-          {/* 1. 控制列 (固定頂部) */}
-          <div className="h-20 px-6 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Input N</span>
-              <div className="flex bg-slate-100 rounded p-1">
-                {[489, 100].map(val => (
-                  <button
-                    key={val}
-                    onClick={() => setInputN(val)}
-                    className={`px-3 py-1 text-sm font-mono font-bold rounded transition-all ${
-                      inputN === val 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    {val}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded shadow-sm transition-colors"
-              >
-                {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
-                {isPlaying ? "暫停" : "播放"}
-              </button>
-              
-              <button 
-                onClick={() => {
-                  setIsPlaying(false);
-                  setStepIndex(prev => Math.min(prev + 1, trace.length - 1));
-                }}
-                disabled={stepIndex >= trace.length - 1}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded hover:bg-slate-50 disabled:opacity-50 transition-colors"
-              >
-                <ChevronRight size={16} /> 下一步
-              </button>
-
-              <button 
-                onClick={() => { setIsPlaying(false); setStepIndex(0); }}
-                className="p-2 bg-white border border-slate-200 text-slate-400 rounded hover:text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                <RotateCcw size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* 2. 可滾動內容區 */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+        <!-- 內容區域 -->
+        <div class="flex-1 overflow-hidden relative">
             
-            {/* 深色狀態框 */}
-            <div className="bg-[#1e293b] rounded-lg p-6 shadow-lg text-white relative overflow-hidden min-h-[120px] flex flex-col justify-center">
-              <div className="flex justify-between items-start mb-2">
-                <span className="bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500/30 tracking-wider">
-                  STEP {stepIndex + 1} / {trace.length}
-                </span>
-                <span className="text-slate-500 font-mono text-xs">Line {currentStep.lineId}</span>
-              </div>
-              <div className="text-lg font-medium tracking-wide">
-                {currentStep.desc}
-              </div>
-              {/* 裝飾性背景圖標 */}
-              <Play className="absolute -right-4 -bottom-4 text-white opacity-5 w-32 h-32 rotate-12" />
-            </div>
-
-            {/* 變數表格 */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <div className="grid grid-cols-5 border-b border-slate-100 bg-slate-50/50">
-                {['temp', 'q', 'r', 'digit', 'A'].map(header => (
-                  <div key={header} className="py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    {header}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-5 py-4">
-                {['temp', 'q', 'r', 'digit', 'A'].map(key => (
-                  <div key={key} className="text-center font-mono text-slate-700 font-medium">
-                    {currentStep.vars[key]}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 隊列視覺化 */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 min-h-[140px] flex flex-col">
-              <div className="flex justify-between items-center mb-6">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">QUEUE (Q)</span>
-                <span className="text-[10px] text-slate-300 font-mono">Front &larr; Rear</span>
-              </div>
-              
-              <div className="flex-1 flex items-center justify-center">
-                <div className="flex gap-3 overflow-x-auto w-full justify-center p-2">
-                  <AnimatePresence mode='popLayout'>
-                    {currentStep.queue.length === 0 ? (
-                      <motion.span 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="text-slate-300 italic text-sm w-full text-center border border-dashed border-slate-200 rounded py-2 bg-slate-50"
-                      >
-                        Empty
-                      </motion.span>
-                    ) : (
-                      currentStep.queue.map((val, idx) => (
-                        <motion.div
-                          key={`${idx}-${val}`}
-                          layout
-                          initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                          animate={{ opacity: 1, scale: 1, x: 0 }}
-                          exit={{ opacity: 0, scale: 0.8, x: -20 }}
-                          className="w-12 h-12 flex items-center justify-center bg-blue-50 text-blue-600 font-bold border border-blue-200 rounded shadow-sm flex-shrink-0"
-                        >
-                          {val}
-                        </motion.div>
-                      ))
-                    )}
-                  </AnimatePresence>
+            <!-- Tab 1: 模擬器 (原本的內容) -->
+            <div id="tab-content-sim" class="absolute inset-0 flex flex-col lg:flex-row h-full w-full bg-white">
+                <!-- 左側：偽代碼區域 -->
+                <div class="lg:w-[400px] flex-shrink-0 flex flex-col border-r border-slate-200 bg-white h-full">
+                    <div class="h-12 flex items-center px-6 border-b border-slate-100 flex-shrink-0 bg-slate-50">
+                        <h2 class="text-xs font-bold text-slate-500 tracking-widest uppercase">Pseudocode</h2>
+                    </div>
+                    <div id="code-container" class="flex-1 overflow-y-auto custom-scrollbar py-2 relative"></div>
                 </div>
-              </div>
+
+                <!-- 右側：執行與數據區域 -->
+                <div class="flex-1 flex flex-col bg-[#f8f9fa] min-w-0 h-full overflow-hidden">
+                    <!-- Control Bar -->
+                    <div class="p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm z-10 flex-shrink-0">
+                        <div class="flex items-center gap-3 bg-slate-100 p-2 rounded-lg border border-slate-200">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">輸入 N:</span>
+                            <div class="flex gap-1" id="input-buttons"></div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap justify-end">
+                            <button id="btn-play" class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all active:scale-95 mr-2">
+                                <span id="icon-play-pause"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span>
+                                <span id="text-play-pause">開始執行</span>
+                            </button>
+                            <button id="btn-prev" class="flex items-center gap-2 px-3 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                上一步
+                            </button>
+                            <button id="btn-next" class="flex items-center gap-2 px-3 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                下一步
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                            <button id="btn-reset" class="ml-2 flex items-center gap-2 px-3 py-2.5 bg-white border border-slate-300 text-slate-600 text-sm font-bold rounded-lg hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all" title="重置">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Data Display -->
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                        <div class="bg-[#1e293b] rounded-xl p-6 shadow-lg text-white relative overflow-hidden min-h-[130px] flex flex-col justify-center transition-all duration-300 border border-slate-700">
+                            <div class="flex justify-between items-start mb-3">
+                                <span id="step-counter" class="bg-blue-500 text-white text-[11px] font-bold px-2 py-0.5 rounded shadow-sm tracking-wider">STEP 1 / 10</span>
+                                <span id="line-indicator" class="text-slate-400 font-mono text-xs border border-slate-600 px-2 py-0.5 rounded">Line 1</span>
+                            </div>
+                            <div id="step-desc" class="text-xl font-medium tracking-wide leading-relaxed">Ready</div>
+                            <svg class="absolute -right-6 -bottom-6 text-white opacity-5 w-40 h-40 rotate-12 pointer-events-none" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        </div>
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="grid grid-cols-5 border-b border-slate-100 bg-slate-50">
+                                <div class="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">temp</div>
+                                <div class="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">q</div>
+                                <div class="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">r</div>
+                                <div class="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">digit</div>
+                                <div class="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">A (Result)</div>
+                            </div>
+                            <div class="grid grid-cols-5 py-4 font-mono text-slate-800 font-bold text-lg">
+                                <div id="val-temp" class="text-center transition-all">0</div>
+                                <div id="val-q" class="text-center transition-all">0</div>
+                                <div id="val-r" class="text-center transition-all">0</div>
+                                <div id="val-digit" class="text-center transition-all">0</div>
+                                <div id="val-A" class="text-center transition-all text-blue-600">0</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[160px] flex flex-col">
+                            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-2">
+                                <span class="text-sm font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                                    QUEUE (Q)
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-mono bg-slate-100 px-2 py-1 rounded">Front &larr; Rear</span>
+                            </div>
+                            <div class="flex-1 flex items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                <div id="queue-container" class="flex gap-3 overflow-x-auto w-full justify-center p-4 min-h-[60px] items-center"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-          </div>
+            <!-- Tab 2: Part (b) 解答 -->
+            <div id="tab-content-ans-b" class="hidden absolute inset-0 bg-slate-50 p-8 overflow-y-auto flex flex-col items-center">
+                <div class="max-w-2xl w-full">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">b</div>
+                            <h2 class="text-xl font-bold text-slate-800">問題：指出當輸入為正數時，該算法的目的。</h2>
+                        </div>
+                        <div class="pl-14 space-y-4">
+                            <div class="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r text-blue-900 font-medium text-lg">
+                                答案：將輸入的正整數 N 的數字順序反轉 (Reverse)。
+                            </div>
+                            <p class="text-slate-600 leading-relaxed">
+                                <strong class="text-slate-800">解析：</strong><br>
+                                該算法透過不斷地對 10 取餘數 (Modulus)，從輸入數字的個位數開始，依次取出每一個數字放入隊列 (Queue)。
+                                <br><br>
+                                由於隊列是「先進先出 (FIFO)」的結構，數字被取出的順序與放入的順序相同。
+                                <br><br>
+                                最後，算法從隊列中取出數字，並透過 <code>A * 10 + digit</code> 的方式重新組合成一個新的整數。這導致原本在個位的數字變成了最高位，從而實現了反轉。
+                            </p>
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div class="bg-slate-100 p-4 rounded text-center">
+                                    <div class="text-xs text-slate-500 uppercase font-bold mb-1">輸入 (Input)</div>
+                                    <div class="text-2xl font-mono font-bold text-slate-700">489</div>
+                                </div>
+                                <div class="bg-slate-100 p-4 rounded text-center">
+                                    <div class="text-xs text-slate-500 uppercase font-bold mb-1">輸出 (Output)</div>
+                                    <div class="text-2xl font-mono font-bold text-blue-600">984</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Part (c) 解答 -->
+            <div id="tab-content-ans-c" class="hidden absolute inset-0 bg-slate-50 p-8 overflow-y-auto flex flex-col items-center">
+                <div class="max-w-2xl w-full">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold">c</div>
+                            <h2 class="text-xl font-bold text-slate-800">問題：修改第 4 行，令此演算法能同時正確處理正數和負數。</h2>
+                        </div>
+                        
+                        <div class="pl-14 space-y-6">
+                            
+                            <!-- 錯誤分析 -->
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">當前問題</h3>
+                                <div class="bg-red-50 border border-red-100 rounded p-3 font-mono text-red-800 text-sm mb-2">
+                                    4: 當 temp > 0 執行
+                                </div>
+                                <p class="text-slate-600 text-sm">
+                                    如果輸入負數 (例如 -123)，<code>temp</code> 初始值為 -123。條件 <code>-123 > 0</code> 為假，迴圈完全不會執行，結果直接輸出 0，這是錯誤的。
+                                </p>
+                            </div>
+
+                            <!-- 修正方案 -->
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">修正後的代碼</h3>
+                                <div class="bg-green-50 border border-green-200 rounded p-4 font-mono text-green-800 text-lg font-bold shadow-sm flex items-center gap-3">
+                                    <span class="text-green-600 opacity-50 select-none">4:</span>
+                                    當 temp != 0 執行
+                                </div>
+                                <p class="text-slate-500 text-xs mt-1 ml-1">(或寫作 <code>temp &lt;&gt; 0</code>)</p>
+                            </div>
+
+                            <!-- 解析 -->
+                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <strong class="text-slate-800 block mb-2">為什麼這樣修改有效？</strong>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-3">
+                                    只要 <code>temp</code> 不等於 0，代表還有數字需要被處理。
+                                </p>
+                                <ul class="list-disc list-inside text-slate-600 text-sm space-y-1">
+                                    <li>對於正數，邏輯不變。</li>
+                                    <li>對於負數 (例如 -13)：
+                                        <ul class="pl-6 list-none space-y-1 mt-1 text-slate-500">
+                                            <li><span class="font-mono bg-white px-1 rounded border">Loop 1</span>: temp=-13. q=-1. r=-3. (Queue: -3)</li>
+                                            <li><span class="font-mono bg-white px-1 rounded border">Loop 2</span>: temp=-1. q=0. r=-1. (Queue: -3, -1)</li>
+                                            <li><span class="font-mono bg-white px-1 rounded border">End</span>: temp=0. 停止。</li>
+                                            <li><span class="font-mono bg-white px-1 rounded border">Result</span>: A = -3 * 10 + (-1) = -31. (成功反轉)</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-      </div>
     </div>
-  );
-}
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // --- Tab Switching Logic ---
+        function switchTab(tabId) {
+            // Hide all contents
+            document.getElementById('tab-content-sim').classList.add('hidden');
+            document.getElementById('tab-content-ans-b').classList.add('hidden');
+            document.getElementById('tab-content-ans-c').classList.add('hidden');
+
+            // Deactivate all buttons
+            const buttons = ['sim', 'ans-b', 'ans-c'];
+            buttons.forEach(id => {
+                const btn = document.getElementById('tab-btn-' + id);
+                btn.className = 'tab-inactive flex-1 py-4 text-sm text-center transition-all flex items-center justify-center gap-2';
+                // Reset inner span style
+                const span = btn.querySelector('span');
+                if(id === 'sim') span.className = 'bg-slate-100 text-slate-600 py-0.5 px-2 rounded text-xs font-bold'; 
+                else span.className = 'bg-slate-100 text-slate-600 py-0.5 px-2 rounded text-xs font-bold';
+            });
+
+            // Show selected content
+            document.getElementById('tab-content-' + tabId).classList.remove('hidden');
+
+            // Activate selected button
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+            activeBtn.className = 'tab-active flex-1 py-4 text-sm text-center transition-all flex items-center justify-center gap-2';
+            
+            // Style active span
+            const activeSpan = activeBtn.querySelector('span');
+            if(tabId === 'sim') activeSpan.className = 'bg-blue-100 text-blue-700 py-0.5 px-2 rounded text-xs font-bold';
+            else if(tabId === 'ans-b') activeSpan.className = 'bg-blue-100 text-blue-700 py-0.5 px-2 rounded text-xs font-bold';
+            else if(tabId === 'ans-c') activeSpan.className = 'bg-blue-100 text-blue-700 py-0.5 px-2 rounded text-xs font-bold';
+        }
+
+        // --- Visualizer Logic (Same as before) ---
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                var CODE_LINES = [
+                    { id: 1, text: "輸入 N", indent: 0 },
+                    { id: 2, text: "init(Q)", indent: 0 },
+                    { id: 3, text: "temp ← N", indent: 0 },
+                    { id: 4, text: "當 temp > 0 執行", indent: 0 },
+                    { id: 5, text: "q ← (temp / 10) 的整數部分", indent: 1 },
+                    { id: 6, text: "r ← temp - q * 10", indent: 1 },
+                    { id: 7, text: "enqueue(Q, r)", indent: 1 },
+                    { id: 8, text: "temp ← q", indent: 1 },
+                    { id: 9, text: "A ← 0", indent: 0 },
+                    { id: 10, text: "當 Q 不是空時 執行", indent: 0 },
+                    { id: 11, text: "digit ← dequeue(Q)", indent: 1 },
+                    { id: 12, text: "A ← A * 10 + digit", indent: 1 },
+                    { id: 13, text: "輸出 A", indent: 0 },
+                ];
+
+                var INPUT_OPTIONS = [489, 100, 753];
+
+                function generateTrace(inputN) {
+                    var steps = [];
+                    var n = inputN;
+                    var temp = 0;
+                    var q = 0;
+                    var r = 0;
+                    var Q = []; 
+                    var A = 0;
+                    var digit = 0;
+
+                    function addStep(lineId, desc) {
+                        steps.push({
+                            lineId: lineId,
+                            vars: { n: n, temp: temp, q: q, r: r, A: A, digit: digit },
+                            queue: Q.slice(),
+                            desc: desc
+                        });
+                    }
+
+                    addStep(1, "輸入 N = " + n);
+                    addStep(2, "初始化空隊列 Q");
+                    temp = n;
+                    addStep(3, "temp 被賦值為 " + temp);
+
+                    while (true) {
+                        addStep(4, "檢查 temp (" + temp + ") > 0 ?");
+                        if (temp <= 0) break;
+                        
+                        q = Math.floor(temp / 10);
+                        addStep(5, "q ← floor(" + temp + " / 10) = " + q);
+                        r = temp - (q * 10);
+                        addStep(6, "r ← " + temp + " - " + q + " * 10 = " + r);
+                        Q.push(r);
+                        addStep(7, "把 " + r + " 放入隊列 (enqueue)");
+                        temp = q;
+                        addStep(8, "temp 更新為 " + q);
+                    }
+
+                    A = 0;
+                    addStep(9, "A 初始化為 0");
+
+                    while (true) {
+                        var notEmpty = Q.length > 0;
+                        addStep(10, "檢查 Q 是否非空? (" + (notEmpty ? '是' : '否') + ")");
+                        if (!notEmpty) break;
+                        
+                        digit = Q.shift();
+                        addStep(11, "從隊列取出 " + digit + " (dequeue)");
+                        var oldA = A;
+                        A = A * 10 + digit;
+                        addStep(12, "A ← " + oldA + " * 10 + " + digit + " = " + A);
+                    }
+
+                    addStep(13, "算法結束，輸出 A: " + A);
+                    return steps;
+                }
+
+                var state = {
+                    inputN: 489,
+                    trace: [],
+                    stepIndex: 0,
+                    isPlaying: false,
+                    timer: null
+                };
+
+                var els = {
+                    codeContainer: document.getElementById('code-container'),
+                    inputButtons: document.getElementById('input-buttons'),
+                    btnPlay: document.getElementById('btn-play'),
+                    btnPrev: document.getElementById('btn-prev'),
+                    btnNext: document.getElementById('btn-next'),
+                    btnReset: document.getElementById('btn-reset'),
+                    iconPlayPause: document.getElementById('icon-play-pause'),
+                    textPlayPause: document.getElementById('text-play-pause'),
+                    stepCounter: document.getElementById('step-counter'),
+                    lineIndicator: document.getElementById('line-indicator'),
+                    stepDesc: document.getElementById('step-desc'),
+                    vars: {
+                        temp: document.getElementById('val-temp'),
+                        q: document.getElementById('val-q'),
+                        r: document.getElementById('val-r'),
+                        digit: document.getElementById('val-digit'),
+                        A: document.getElementById('val-A'),
+                    },
+                    queueContainer: document.getElementById('queue-container')
+                };
+
+                function initCodeList() {
+                    els.codeContainer.innerHTML = CODE_LINES.map(function(line) {
+                        var indentIcon = line.indent > 0 ? '<span class="inline-block w-4 text-slate-300">↳</span>' : '';
+                        return '<div id="codeline-' + line.id + '" class="flex items-center py-1.5 px-4 font-mono text-sm transition-colors duration-200 border-l-4 border-transparent text-slate-500 hover:bg-slate-50">' +
+                            '<span class="w-6 text-slate-300 text-xs text-right mr-3 select-none">' + line.id + '</span>' +
+                            '<div style="padding-left: ' + (line.indent * 1.5) + 'rem" class="flex items-center whitespace-nowrap">' + indentIcon + line.text + '</div>' +
+                        '</div>';
+                    }).join('') + '<div class="h-20"></div>';
+                }
+
+                function renderInputButtons() {
+                    els.inputButtons.innerHTML = INPUT_OPTIONS.map(function(val) {
+                        var activeClass = state.inputN === val ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 hover:text-blue-600';
+                        return '<button onclick="window.setInputN(' + val + ')" class="px-3 py-1.5 text-sm font-mono font-bold rounded transition-all ' + activeClass + '">' + val + '</button>';
+                    }).join('');
+                }
+
+                function updateUI() {
+                    var currentStep = state.trace[state.stepIndex];
+                    if (!currentStep) currentStep = { vars: {}, queue: [], desc: 'Ready', lineId: 0 };
+                    
+                    var allLines = document.querySelectorAll('[id^="codeline-"]');
+                    for (var i = 0; i < allLines.length; i++) allLines[i].className = "flex items-center py-1.5 px-4 font-mono text-sm transition-colors duration-200 border-l-4 border-transparent text-slate-500 hover:bg-slate-50";
+                    
+                    var activeLine = document.getElementById('codeline-' + currentStep.lineId);
+                    if (activeLine) {
+                        activeLine.className = "flex items-center py-1.5 px-4 font-mono text-sm transition-colors duration-200 border-l-4 bg-yellow-50 border-yellow-500 text-slate-900 font-bold shadow-sm";
+                        activeLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+
+                    els.stepCounter.textContent = 'STEP ' + (state.stepIndex + 1) + ' / ' + state.trace.length;
+                    els.lineIndicator.textContent = 'Line ' + currentStep.lineId;
+                    els.stepDesc.textContent = currentStep.desc;
+
+                    function safeVal(v) { return v !== undefined ? v : '-'; }
+                    els.vars.temp.textContent = safeVal(currentStep.vars.temp);
+                    els.vars.q.textContent = safeVal(currentStep.vars.q);
+                    els.vars.r.textContent = safeVal(currentStep.vars.r);
+                    els.vars.digit.textContent = safeVal(currentStep.vars.digit);
+                    els.vars.A.textContent = safeVal(currentStep.vars.A);
+
+                    if (currentStep.queue.length === 0) {
+                        els.queueContainer.innerHTML = '<span class="text-slate-400 italic text-sm">Queue is Empty (空)</span>';
+                    } else {
+                        els.queueContainer.innerHTML = currentStep.queue.map(function(val) {
+                            return '<div class="fade-in w-10 h-10 flex items-center justify-center bg-white text-blue-600 font-bold border-2 border-blue-100 rounded-lg shadow-sm flex-shrink-0">' + val + '</div>';
+                        }).join('');
+                    }
+
+                    els.btnPrev.disabled = state.stepIndex <= 0;
+                    els.btnNext.disabled = state.stepIndex >= state.trace.length - 1;
+                    
+                    if (state.isPlaying) {
+                        els.iconPlayPause.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+                        els.textPlayPause.textContent = "暫停";
+                        els.btnPlay.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        els.btnPlay.classList.add('bg-slate-700', 'hover:bg-slate-800');
+                    } else {
+                        els.iconPlayPause.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                        els.textPlayPause.textContent = (state.stepIndex >= state.trace.length - 1) ? "重新執行" : "開始執行";
+                        els.btnPlay.classList.remove('bg-slate-700', 'hover:bg-slate-800');
+                        els.btnPlay.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    }
+                }
+
+                window.setInputN = function(val) {
+                    state.inputN = val;
+                    state.isPlaying = false;
+                    if (state.timer) clearInterval(state.timer);
+                    state.trace = generateTrace(val);
+                    state.stepIndex = 0;
+                    renderInputButtons();
+                    updateUI();
+                };
+
+                function togglePlay() {
+                    state.isPlaying = !state.isPlaying;
+                    if (state.isPlaying) {
+                        if (state.stepIndex >= state.trace.length - 1) state.stepIndex = 0;
+                        state.timer = setInterval(function() {
+                            if (state.stepIndex < state.trace.length - 1) {
+                                state.stepIndex++;
+                                updateUI();
+                            } else {
+                                state.isPlaying = false;
+                                clearInterval(state.timer);
+                                updateUI();
+                            }
+                        }, 800);
+                    } else {
+                        if (state.timer) clearInterval(state.timer);
+                    }
+                    updateUI();
+                }
+
+                function nextStep() {
+                    state.isPlaying = false;
+                    if (state.timer) clearInterval(state.timer);
+                    if (state.stepIndex < state.trace.length - 1) {
+                        state.stepIndex++;
+                        updateUI();
+                    }
+                }
+
+                function prevStep() {
+                    state.isPlaying = false;
+                    if (state.timer) clearInterval(state.timer);
+                    if (state.stepIndex > 0) {
+                        state.stepIndex--;
+                        updateUI();
+                    }
+                }
+
+                function reset() {
+                    state.isPlaying = false;
+                    if (state.timer) clearInterval(state.timer);
+                    state.stepIndex = 0;
+                    updateUI();
+                }
+
+                els.btnPlay.addEventListener('click', togglePlay);
+                els.btnNext.addEventListener('click', nextStep);
+                els.btnPrev.addEventListener('click', prevStep);
+                els.btnReset.addEventListener('click', reset);
+
+                initCodeList();
+                window.setInputN(489); 
+
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    </script>
+</body>
+</html>
