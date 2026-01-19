@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKACE 演算法試題 - 互動詳解 (介面優化版)</title>
+    
+    <!-- 1. 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. 載入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 3. 載入 Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f3f4f6;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .cell-enter {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 滾動條美化 */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+        // --- 圖示 ---
+        const Icon = ({ path, size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Play: <path d="M5 3l14 9-14 9V3z" />,
+            Pause: <g><line x1="6" y1="4" x2="6" y2="20"></line><line x1="18" y1="4" x2="18" y2="20"></line></g>,
+            RotateCcw: <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />,
+            ChevronLeft: <path d="M15 18l-6-6 6-6" />,
+            ChevronRight: <path d="M9 18l6-6-6-6" />,
+            ArrowRight: <path d="M5 12h14M12 5l7 7-7 7" />,
+            ArrowDown: <path d="M12 5v14M19 12l-7 7-7-7" />,
+            Trophy: <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6m12 0h1.5a2.5 2.5 0 0 1 0 5H18m-6 10v-5m0 0V9m0 0a5 5 0 0 1 5-5h-5a5 5 0 0 1-5 5v5" />,
+            Scan: <path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2m-10 0H5a2 2 0 0 1-2-2v-2" />
+        };
+
+        // --- 資料 ---
+        const N = 4;
+        const DeliveriesData = [
+            [10, 5, 8, 12],
+            [7, 15, 3, 6],
+            [2, 18, 20, 4],
+            [9, 1, 31, 16]
+        ];
+
+        // --- 元件 ---
+
+        const Cell = ({ 
+            value, r, c, 
+            isActive, isScanned, isTarget, isHot, 
+            rank = null,
+            highlightColor = "bg-yellow-100", 
+            overlayText = null
+        }) => {
+            let bgClass = "bg-white";
+            let borderClass = "border-gray-200";
+            let scaleClass = "scale-100";
+            let zIndex = "z-10"; 
+            let textClass = "text-gray-700";
+            let shadowClass = "";
+
+            if (isTarget) {
+                bgClass = highlightColor;
+                borderClass = "border-yellow-300";
+                zIndex = "z-20 ring-2 ring-yellow-400";
+            }
+            if (isHot) {
+                bgClass = "bg-red-100";
+                borderClass = "border-red-400";
+                textClass = "text-red-700 font-extrabold";
+                zIndex = "z-20"; 
+            }
+            if (isScanned && !isHot) {
+                bgClass = "bg-gray-50";
+                textClass = "text-gray-400";
+            }
+            if (isActive) {
+                bgClass = "bg-blue-50";
+                borderClass = "border-blue-500";
+                scaleClass = "scale-110";
+                shadowClass = "shadow-lg";
+                zIndex = "z-30"; 
+            }
+
+            return (
+                <div className={`
+                    relative flex items-center justify-center h-12 w-12 border-2 rounded-lg text-lg font-bold transition-all duration-300
+                    ${bgClass} ${borderClass} ${scaleClass} ${zIndex} ${shadowClass}
+                `}>
+                    <span className="text-[8px] absolute top-0.5 left-1 text-gray-400 font-normal">{r},{c}</span>
+                    <span className={textClass}>{value}</span>
+                    
+                    {rank && (
+                        <div className="absolute -top-2 -right-2 bg-slate-700 text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full shadow-md border border-white z-40">
+                            #{rank}
+                        </div>
+                    )}
+
+                    {overlayText && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg cell-enter z-50">
+                            <span className="text-white text-xs font-bold">{overlayText}</span>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ControlBar = ({ onPlayPause, isPlaying, onNext, onPrev, onReset, canGoNext, canGoPrev, stepText }) => {
+            return (
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-100 p-3 rounded-lg mb-4 border border-gray-200 gap-3">
+                    <div className="flex items-center gap-2">
+                        <button onClick={onReset} className="p-2 rounded-full text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 active:scale-95 transition-transform" title="重置">
+                            <Icon path={Icons.RotateCcw} size={16} />
+                        </button>
+                        <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                        <button onClick={onPrev} disabled={!canGoPrev} className={`p-2 rounded-full transition-transform active:scale-95 ${!canGoPrev ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'}`}>
+                            <Icon path={Icons.ChevronLeft} size={20} />
+                        </button>
+                        <button onClick={onPlayPause} disabled={!canGoNext && !isPlaying} className={`flex items-center justify-center w-12 h-10 rounded text-white transition-transform active:scale-95 ${!canGoNext && !isPlaying ? 'bg-gray-400 cursor-not-allowed' : (isPlaying ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700')}`}>
+                            {isPlaying ? <Icon path={Icons.Pause} size={18} fill="currentColor" /> : <Icon path={Icons.Play} size={18} fill="currentColor" />}
+                        </button>
+                        <button onClick={onNext} disabled={!canGoNext} className={`p-2 rounded-full transition-transform active:scale-95 ${!canGoNext ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'}`}>
+                            <Icon path={Icons.ChevronRight} size={20} />
+                        </button>
+                    </div>
+                    <div className="text-sm font-mono text-gray-700 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-inner w-full sm:w-auto text-center sm:text-right min-w-[240px]">
+                        {stepText || "準備就緒"}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 邏輯產生器 ---
+
+        const generateStepsA = () => {
+            const steps = [];
+            steps.push({ r: null, c: null, m: 0, history: [], desc: "初始化 m = 0" });
+            let currentM = 0;
+            let history = [];
+            for (let i = 1; i <= 2; i++) {
+                for (let j = 1; j <= 3; j++) {
+                    const val = DeliveriesData[i][j];
+                    const isNewMax = val > currentM;
+                    steps.push({
+                        r: i, c: j, m: currentM, history: [...history],
+                        desc: `檢查 [${i}, ${j}]，數值為 ${val}`
+                    });
+                    if (isNewMax) {
+                        currentM = val;
+                        steps.push({
+                            r: i, c: j, m: currentM, history: [...history],
+                            desc: `發現新最大值！更新 m = ${val}`
+                        });
+                    }
+                    history.push(`${i},${j}`);
+                }
+            }
+            steps.push({ r: null, c: null, m: currentM, history: [...history], desc: "掃描完成，最終答案: " + currentM, finished: true });
+            return steps;
+        };
+
+        const generateStepsB = (r1, c1, r2, c2) => {
+            const steps = [];
+            steps.push({ desc: `準備計算區域 [${r1},${c1}] 到 [${r2},${c2}] 的總和`, overlays: [] });
+            steps.push({ desc: `1. 加上大矩形 S[${r2}, ${c2}] (綠色)`, overlays: [{ type: 'main', r: r2, c: c2 }] });
+            const overlays = [{ type: 'main', r: r2, c: c2 }];
+            
+            if (r1 > 0) {
+                overlays.push({ type: 'top', r: r1 - 1, c: c2 });
+                steps.push({ desc: `2. 減去上方多餘 S[${r1-1}, ${c2}] (紅色)`, overlays: [...overlays] });
+            } else {
+                steps.push({ desc: `2. 上方邊界為 0，無需減去上方區域`, overlays: [...overlays] });
+            }
+
+            if (c1 > 0) {
+                overlays.push({ type: 'left', r: r2, c: c1 - 1 });
+                steps.push({ desc: `3. 減去左方多餘 S[${r2}, ${c1-1}] (紅色)`, overlays: [...overlays] });
+            } else {
+                steps.push({ desc: `3. 左方邊界為 0，無需減去左方區域`, overlays: [...overlays] });
+            }
+
+            if (r1 > 0 && c1 > 0) {
+                overlays.push({ type: 'overlap', r: r1 - 1, c: c1 - 1 });
+                steps.push({ desc: `4. 補回重複扣除的 S[${r1-1}, ${c1-1}] (藍色重疊處)`, overlays: [...overlays] });
+            } else {
+                 steps.push({ desc: `4. 無需補回`, overlays: [...overlays] });
+            }
+
+            steps.push({ desc: "演示完成：這就是包含排除原理", overlays: [...overlays], finished: true });
+            return steps;
+        };
+
+        // Part C: Top K 邏輯
+        const generateStepsC = (kRank) => {
+            const steps = [];
+            
+            const flatList = [];
+            for (let r=0; r<N; r++) {
+                for (let c=0; c<N; c++) {
+                    flatList.push({ r, c, val: DeliveriesData[r][c] });
+                }
+            }
+            flatList.sort((a, b) => b.val - a.val);
+            const topKCells = flatList.slice(0, kRank);
+            const hotSet = new Set(topKCells.map(item => `${item.r},${item.c}`));
+            const isHot = (r, c) => hotSet.has(`${r},${c}`);
+
+            steps.push({ 
+                r: null, c: null, count: 0, lines: [], checkDir: null, 
+                desc: `找出前 ${kRank} 個最繁忙區域 (Top ${kRank})`,
+                phase: 'sorting'
+            });
+
+            let count = 0;
+            let lines = [];
+
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    const currentIsHot = isHot(i, j);
+                    
+                    if (currentIsHot) {
+                        steps.push({
+                            r: i, c: j, count, lines: [...lines], checkDir: null,
+                            desc: `[${i}, ${j}] 是第 ${kRank} 名內的熱點 (數值 ${DeliveriesData[i][j]})`,
+                            phase: 'scanning'
+                        });
+
+                        if (j < N - 1) {
+                            const rightHot = isHot(i, j + 1);
+                            steps.push({
+                                r: i, c: j, count, lines: [...lines], checkDir: 'right',
+                                desc: `檢查右方 [${i}, ${j+1}]... ${rightHot ? "也是熱點，連接成功 (+1)" : "非熱點，無連接"}`,
+                                phase: 'scanning'
+                            });
+                            if (rightHot) {
+                                count++;
+                                lines.push({ r1: i, c1: j, r2: i, c2: j + 1 });
+                                steps.push({
+                                    r: i, c: j, count, lines: [...lines], checkDir: 'right',
+                                    desc: `計數更新: ${count}`,
+                                    phase: 'scanning'
+                                });
+                            }
+                        }
+                        if (i < N - 1) {
+                            const downHot = isHot(i + 1, j);
+                            steps.push({
+                                r: i, c: j, count, lines: [...lines], checkDir: 'down',
+                                desc: `檢查下方 [${i+1}, ${j}]... ${downHot ? "也是熱點，連接成功 (+1)" : "非熱點，無連接"}`,
+                                phase: 'scanning'
+                            });
+                            if (downHot) {
+                                count++;
+                                lines.push({ r1: i, c1: j, r2: i + 1, c2: j });
+                                steps.push({
+                                    r: i, c: j, count, lines: [...lines], checkDir: 'down',
+                                    desc: `計數更新: ${count}`,
+                                    phase: 'scanning'
+                                });
+                            }
+                        }
+                    } else {
+                         steps.push({
+                            r: i, c: j, count, lines: [...lines], checkDir: null,
+                            desc: `[${i}, ${j}] 數值 ${DeliveriesData[i][j]} 未進入前 ${kRank} 名，跳過`,
+                            phase: 'scanning'
+                        });
+                    }
+                }
+            }
+            steps.push({ r: null, c: null, count, lines: [...lines], checkDir: null, desc: `完成！Top ${kRank} 熱點間的總連接數: ${count}`, finished: true, phase: 'finished' });
+            return { steps, flatList, topKCells };
+        };
+
+        const Select = ({ label, value, options, onChange }) => (
+            <div className="flex flex-col">
+                <label className="text-xs text-gray-500 font-semibold mb-1">{label}</label>
+                <select 
+                    value={value} 
+                    onChange={(e) => onChange(Number(e.target.value))}
+                    className="border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                    {options.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            </div>
+        );
+
+        // --- 主程式 ---
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('a');
+            const [rangeB, setRangeB] = useState({ r1: 1, c1: 1, r2: 2, c2: 3 });
+            const [kRank, setKRank] = useState(5);
+
+            const [stepsA] = useState(generateStepsA());
+            const stepsB = useMemo(() => generateStepsB(rangeB.r1, rangeB.c1, rangeB.r2, rangeB.c2), [rangeB]);
+            
+            const { steps: stepsC, flatList: sortedListC, topKCells: topKListC } = useMemo(() => generateStepsC(kRank), [kRank]);
+
+            const [idxA, setIdxA] = useState(0);
+            const [idxB, setIdxB] = useState(0);
+            const [idxC, setIdxC] = useState(0);
+
+            const [isPlaying, setIsPlaying] = useState(false);
+            const timerRef = useRef(null);
+
+            useEffect(() => { setIdxB(0); setIsPlaying(false); }, [rangeB]);
+            useEffect(() => { setIdxC(0); setIsPlaying(false); }, [kRank]);
+
+            const getCurrentContext = useCallback(() => {
+                switch(activeTab) {
+                    case 'a': return { steps: stepsA, idx: idxA, setIdx: setIdxA };
+                    case 'b': return { steps: stepsB, idx: idxB, setIdx: setIdxB };
+                    case 'c': return { steps: stepsC, idx: idxC, setIdx: setIdxC };
+                    default: return { steps: [], idx: 0, setIdx: () => {} };
+                }
+            }, [activeTab, idxA, idxB, idxC, stepsA, stepsB, stepsC]);
+
+            useEffect(() => {
+                setIsPlaying(false);
+                if (timerRef.current) clearInterval(timerRef.current);
+            }, [activeTab]);
+
+            useEffect(() => {
+                if (isPlaying) {
+                    timerRef.current = setInterval(() => {
+                        const { steps, idx, setIdx } = getCurrentContext();
+                        if (idx < steps.length - 1) {
+                            setIdx(i => i + 1);
+                        } else {
+                            setIsPlaying(false);
+                            clearInterval(timerRef.current);
+                        }
+                    }, activeTab === 'b' ? 1500 : 400);
+                } else {
+                    clearInterval(timerRef.current);
+                }
+                return () => clearInterval(timerRef.current);
+            }, [isPlaying, activeTab, getCurrentContext]);
+
+            const handleNext = () => {
+                const { steps, idx, setIdx } = getCurrentContext();
+                if (idx < steps.length - 1) {
+                    setIdx(idx + 1);
+                    setIsPlaying(false);
+                }
+            };
+
+            const handlePrev = () => {
+                const { idx, setIdx } = getCurrentContext();
+                if (idx > 0) {
+                    setIdx(idx - 1);
+                    setIsPlaying(false);
+                }
+            };
+
+            const handleReset = () => {
+                const { setIdx } = getCurrentContext();
+                setIdx(0);
+                setIsPlaying(false);
+            };
+
+            const handlePlayPause = () => {
+                const { steps, idx, setIdx } = getCurrentContext();
+                if (idx >= steps.length - 1) {
+                    setIdx(0);
+                    setIsPlaying(true);
+                } else {
+                    setIsPlaying(!isPlaying);
+                }
+            };
+
+            const updateRangeB = (key, val) => {
+                setRangeB(prev => {
+                    const next = { ...prev, [key]: val };
+                    if (key === 'r1' && next.r1 > next.r2) next.r2 = next.r1;
+                    if (key === 'r2' && next.r2 < next.r1) next.r1 = next.r2;
+                    if (key === 'c1' && next.c1 > next.c2) next.c2 = next.c1;
+                    if (key === 'c2' && next.c2 < next.c1) next.c1 = next.c2;
+                    return next;
+                });
+            };
+
+            const stateA = stepsA[idxA];
+            const stateB = stepsB[idxB];
+            const stateC = stepsC[idxC];
+            const { steps: currentSteps, idx: currentIdx } = getCurrentContext();
+            const canGoNext = currentIdx < currentSteps.length - 1;
+            const canGoPrev = currentIdx > 0;
+
+            const getRank = (r, c) => {
+                const index = sortedListC.findIndex(item => item.r === r && item.c === c);
+                return index + 1;
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden font-sans border border-gray-200">
+                    <div className="bg-slate-900 text-white p-6">
+                        <h1 className="text-2xl font-bold mb-2">HKACE 演算法試題 - 視覺化詳解</h1>
+                        <p className="text-slate-300 text-sm">互動式學習：最大值查找、前綴和公式、Top K 熱點連接。</p>
+                    </div>
+
+                    <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
+                        {[
+                            { id: 'a', label: '(a) 尋找最大值' },
+                            { id: 'b', label: '(b) SumGrid 公式原理' },
+                            { id: 'c', label: '(c) 熱點連接 (Top K)' }
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 py-4 px-4 text-sm font-bold tracking-wide transition-colors whitespace-nowrap ${
+                                    activeTab === tab.id
+                                        ? 'bg-white text-blue-600 border-t-4 border-blue-600 shadow-[0_4px_0_white]'
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-6 min-h-[600px] bg-white">
+                        <ControlBar
+                            onPlayPause={handlePlayPause}
+                            onNext={handleNext}
+                            onPrev={handlePrev}
+                            onReset={handleReset}
+                            isPlaying={isPlaying}
+                            canGoNext={canGoNext}
+                            canGoPrev={canGoPrev}
+                            stepText={activeTab === 'a' ? stateA.desc : activeTab === 'b' ? stateB.desc : stateC.desc}
+                        />
+
+                        {/* PART A */}
+                        {activeTab === 'a' && (
+                            <div className="space-y-6 fade-in-up">
+                                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r text-sm text-blue-900">
+                                    <strong>目標：</strong> 找出從 (1, 1) 到 (2, 3) 區域內的最大值。<br/>
+                                </div>
+                                <div className="flex flex-col md:flex-row gap-8 items-start">
+                                    <div className="relative p-4 bg-gray-100 rounded-xl border border-gray-300 shadow-inner">
+                                        <div className="grid grid-cols-4 gap-3">
+                                            {DeliveriesData.map((row, r) => (
+                                                row.map((val, c) => {
+                                                    const isTarget = r >= 1 && r <= 2 && c >= 1 && c <= 3;
+                                                    const isActive = stateA.r === r && stateA.c === c;
+                                                    const isScanned = stateA.history.includes(`${r},${c}`);
+                                                    return (
+                                                        <Cell key={`${r}-${c}`} value={val} r={r} c={c}
+                                                            isTarget={isTarget} isActive={isActive} isScanned={isScanned}
+                                                            highlightColor={isTarget ? "bg-yellow-50" : "bg-white"}
+                                                        />
+                                                    );
+                                                })
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 bg-slate-800 text-white p-5 rounded-lg shadow-lg font-mono">
+                                        <h3 className="text-gray-400 text-xs uppercase tracking-wider mb-4">Variables State</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between border-b border-gray-700 pb-2">
+                                                <span>Current m:</span>
+                                                <span className="text-2xl font-bold text-green-400">{stateA.m}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PART B */}
+                        {activeTab === 'b' && (
+                            <div className="space-y-6 fade-in-up">
+                                <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r text-sm text-purple-900 flex flex-col md:flex-row justify-between items-center gap-4">
+                                    <div>
+                                        <strong>公式：</strong> <code>Total = S[r2, c2] - S[r1-1, c2] - S[r2, c1-1] + S[r1-1, c1-1]</code>
+                                    </div>
+                                    <div className="bg-white p-2 rounded shadow-sm border border-purple-200 flex gap-4 items-center">
+                                        <div className="flex gap-2">
+                                            <div className="text-xs font-bold text-gray-400 writing-vertical-lr rotate-180 flex items-center">Start</div>
+                                            <Select label="r1" value={rangeB.r1} options={[0,1,2,3]} onChange={v => updateRangeB('r1', v)} />
+                                            <Select label="c1" value={rangeB.c1} options={[0,1,2,3]} onChange={v => updateRangeB('c1', v)} />
+                                        </div>
+                                        <div className="w-px h-8 bg-gray-300"></div>
+                                        <div className="flex gap-2">
+                                            <div className="text-xs font-bold text-gray-400 writing-vertical-lr rotate-180 flex items-center">End</div>
+                                            <Select label="r2" value={rangeB.r2} options={[0,1,2,3]} onChange={v => updateRangeB('r2', v)} />
+                                            <Select label="c2" value={rangeB.c2} options={[0,1,2,3]} onChange={v => updateRangeB('c2', v)} />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="relative p-6 bg-gray-100 rounded-xl border border-gray-300 shadow-inner flex justify-center">
+                                    <div className="relative grid grid-cols-4 gap-3 z-10 w-full max-w-[400px]">
+                                        {DeliveriesData.map((row, r) => (
+                                            row.map((val, c) => {
+                                                const inTarget = r >= rangeB.r1 && r <= rangeB.r2 && c >= rangeB.c1 && c <= rangeB.c2;
+                                                return <Cell key={`${r}-${c}`} value={val} r={r} c={c} highlightColor={inTarget ? "bg-purple-50" : "bg-white"} isTarget={inTarget} />;
+                                            })
+                                        ))}
+                                        {stateB.overlays.map((overlay, idx) => {
+                                            const style = {
+                                                width: `calc((100% + 0.75rem) * ${(overlay.c + 1) / 4} - 0.75rem)`,
+                                                height: `calc((100% + 0.75rem) * ${(overlay.r + 1) / 4} - 0.75rem)`
+                                            };
+                                            if (overlay.type === 'main') return <div key={idx} className="absolute top-0 left-0 bg-green-500/30 border-2 border-green-700 rounded pointer-events-none z-20" style={style} />;
+                                            if (overlay.type === 'top') return <div key={idx} className="absolute top-0 left-0 bg-red-500/60 border-b-4 border-red-800 pointer-events-none flex items-center justify-center z-30" style={style}><span className="text-white font-bold text-xl">- Top</span></div>;
+                                            if (overlay.type === 'left') return <div key={idx} className="absolute top-0 left-0 bg-red-500/60 border-r-4 border-red-800 pointer-events-none flex items-center justify-center z-30" style={style}><span className="text-white font-bold text-xl rotate-90">- Left</span></div>;
+                                            if (overlay.type === 'overlap') return <div key={idx} className="absolute top-0 left-0 bg-blue-500/80 border-4 border-blue-800 rounded pointer-events-none flex items-center justify-center z-40" style={style}><span className="text-white font-bold text-xs">+ Corner</span></div>;
+                                            return null;
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PART C: Top K */}
+                        {activeTab === 'c' && (
+                            <div className="space-y-6 fade-in-up">
+                                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r text-sm text-red-900 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <strong>定義：</strong> $k$ 代表「第 $k$ 個最繁忙區域」。<br/>
+                                        <strong>邏輯：</strong> 系統會先將所有格子排序，選出 <strong>Top {kRank}</strong> 作為熱點，再計算它們之間的連接。
+                                    </div>
+                                    
+                                    <div className="bg-white p-3 rounded shadow-sm border border-red-200 flex flex-col items-center">
+                                        <label className="text-xs text-gray-500 font-semibold mb-1">選擇 k 值 (Rank)</label>
+                                        <div className="flex items-center gap-2">
+                                            <input 
+                                                type="range" min="1" max="16" 
+                                                value={kRank} 
+                                                onChange={(e) => setKRank(Number(e.target.value))}
+                                                className="w-32 accent-red-600"
+                                            />
+                                            <span className="font-bold text-red-600 text-lg w-6 text-center">{kRank}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-6">
+                                    
+                                    {/* 新增：水平顯示的當前掃描狀態列 */}
+                                    <div className="flex flex-wrap items-center justify-between bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                        <div className="flex items-center gap-2 text-gray-700 font-bold mr-4">
+                                            <Icon path={Icons.Scan} size={20} className="text-blue-500" />
+                                            當前掃描
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap items-center gap-4 md:gap-8 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-gray-500">位置</span>
+                                                <span className="font-mono font-bold bg-gray-100 px-2 py-0.5 rounded text-sm">
+                                                    {stateC.r !== null ? `[${stateC.r}, ${stateC.c}]` : '-'}
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-gray-500">數值</span>
+                                                <span className="font-bold bg-gray-100 px-2 py-0.5 rounded text-sm min-w-[30px] text-center">
+                                                    {stateC.r !== null ? DeliveriesData[stateC.r][stateC.c] : '-'}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-gray-500">是熱點?</span>
+                                                <span className={`font-bold px-2 py-0.5 rounded text-xs border ${
+                                                    stateC.r !== null && getRank(stateC.r, stateC.c) <= kRank 
+                                                    ? 'bg-red-100 text-red-700 border-red-200' 
+                                                    : 'bg-gray-50 text-gray-400 border-gray-200'
+                                                }`}>
+                                                    {stateC.r !== null ? (getRank(stateC.r, stateC.c) <= kRank ? 'YES' : 'NO') : '-'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col lg:flex-row gap-8 items-start">
+                                        
+                                        {/* 網格 (Main) */}
+                                        <div className="relative p-4 bg-gray-100 rounded-xl border border-gray-300 shadow-inner flex-1 flex justify-center w-full">
+                                            <div className="grid grid-cols-4 gap-3 relative">
+                                                {DeliveriesData.map((row, r) => (
+                                                    row.map((val, c) => {
+                                                        const rank = getRank(r, c);
+                                                        const isHot = rank <= kRank;
+                                                        const isActive = stateC.r === r && stateC.c === c;
+                                                        let overlay = null;
+                                                        if (isActive && isHot) {
+                                                            if (stateC.checkDir === 'right') overlay = <Icon path={Icons.ArrowRight} className="text-white" />;
+                                                            if (stateC.checkDir === 'down') overlay = <Icon path={Icons.ArrowDown} className="text-white" />;
+                                                        }
+                                                        return (
+                                                            <Cell key={`${r}-${c}`} value={val} r={r} c={c} 
+                                                                isHot={isHot} isActive={isActive} overlayText={overlay} 
+                                                                rank={rank}
+                                                            />
+                                                        );
+                                                    })
+                                                ))}
+
+                                                {stateC.lines.map((line, idx) => {
+                                                    const isHorizontal = line.r1 === line.r2;
+                                                    const r = line.r1;
+                                                    const c = line.c1;
+                                                    
+                                                    if (isHorizontal) {
+                                                        return (
+                                                            <div key={idx} className="absolute h-2 bg-blue-500 z-0 cell-enter"
+                                                                style={{ 
+                                                                    top: `calc(${r} * 3.75rem + 1.5rem - 4px)`, 
+                                                                    left: `calc(${c} * 3.75rem + 1.5rem)`,
+                                                                    width: '3.75rem' 
+                                                                }} 
+                                                            />
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <div key={idx} className="absolute w-2 bg-blue-500 z-0 cell-enter"
+                                                                style={{ 
+                                                                    top: `calc(${r} * 3.75rem + 1.5rem)`, 
+                                                                    left: `calc(${c} * 3.75rem + 1.5rem - 4px)`,
+                                                                    height: '3.75rem' 
+                                                                }} 
+                                                            />
+                                                        );
+                                                    }
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* 統計 (Right) - 僅保留總數，因為掃描資訊已移至上方 */}
+                                        <div className="w-full lg:w-48 space-y-4">
+                                            <div className="p-6 bg-blue-50 border border-blue-100 rounded-lg text-center shadow-sm h-full flex flex-col justify-center">
+                                                <span className="text-blue-600 text-xs uppercase font-bold tracking-wider mb-2">Total Connections</span>
+                                                <div className="text-5xl font-bold text-blue-800 transition-all duration-300 transform key={stateC.count}">{stateC.count}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 底部：排名列表 */}
+                                    <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col">
+                                        <div className="p-3 bg-gray-100 border-b border-gray-200 font-bold text-gray-700 text-sm flex items-center gap-2">
+                                            <Icon path={Icons.Trophy} size={16} className="text-yellow-600" />
+                                            繁忙度排名 (由高到低)
+                                        </div>
+                                        <div className="overflow-x-auto p-4 custom-scrollbar">
+                                            <div className="flex gap-3">
+                                                {sortedListC.map((item, idx) => {
+                                                    const rank = idx + 1;
+                                                    const isTopK = rank <= kRank;
+                                                    return (
+                                                        <div key={`${item.r}-${item.c}`} 
+                                                            className={`flex flex-col items-center justify-center p-3 rounded-lg border min-w-[100px] transition-colors ${
+                                                                isTopK ? 'bg-red-50 border-red-200 shadow-sm' : 'bg-white border-gray-100 opacity-60'
+                                                            }`}
+                                                        >
+                                                            <div className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold mb-1 ${isTopK ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                                                {rank}
+                                                            </div>
+                                                            <div className="text-lg font-bold text-gray-800">{item.val}</div>
+                                                            <div className="text-xs text-gray-400 font-mono">[{item.r},{item.c}]</div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
