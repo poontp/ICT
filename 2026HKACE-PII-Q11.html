@@ -1,0 +1,325 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, ChevronRight, CornerDownRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// --- 1. 數據與算法邏輯 ---
+
+const CODE_LINES = [
+  { id: 1, text: "輸入 N", indent: 0 },
+  { id: 2, text: "init(Q)", indent: 0 },
+  { id: 3, text: "temp ← N", indent: 0 },
+  { id: 4, text: "當 temp > 0 執行", indent: 0 },
+  { id: 5, text: "q ← (temp / 10) 的整數部分", indent: 1 },
+  { id: 6, text: "r ← temp - q * 10", indent: 1 },
+  { id: 7, text: "enqueue(Q, r)", indent: 1 },
+  { id: 8, text: "temp ← q", indent: 1 },
+  { id: 9, text: "A ← 0", indent: 0 },
+  { id: 10, text: "當 Q 不是空時 執行", indent: 0 },
+  { id: 11, text: "digit ← dequeue(Q)", indent: 1 },
+  { id: 12, text: "A ← A * 10 + digit", indent: 1 },
+  { id: 13, text: "輸出 A", indent: 0 },
+];
+
+const generateTrace = (inputN) => {
+  const steps = [];
+  let n = inputN;
+  let temp = 0; // Initial state usually implies variables exist but maybe undefined or 0
+  let q = 0;
+  let r = 0;
+  let Q = []; 
+  let A = 0;
+  let digit = 0;
+
+  // Helper to snapshot state
+  const addStep = (lineId, desc, changedVars = []) => {
+    steps.push({
+      lineId,
+      vars: { n, temp, q, r, A, digit },
+      queue: [...Q],
+      desc,
+      changedVars
+    });
+  };
+
+  // Step 1: Input N
+  addStep(1, `輸入 N = ${n}`, ['n']);
+  
+  // Step 2: Init Q
+  addStep(2, "初始化空隊列 Q", []);
+  
+  // Step 3: temp <- N
+  temp = n;
+  addStep(3, `temp 被賦值為 ${temp}`, ['temp']);
+
+  // Loop 1: Decomposition
+  while (true) {
+    addStep(4, `檢查 temp (${temp}) > 0 ?`, []);
+    if (temp <= 0) break;
+    
+    q = Math.floor(temp / 10);
+    addStep(5, `q ← floor(${temp} / 10) = ${q}`, ['q']);
+    
+    r = temp - (q * 10);
+    addStep(6, `r ← ${temp} - ${q} * 10 = ${r}`, ['r']);
+    
+    Q.push(r);
+    addStep(7, `enqueue(Q, ${r})`, ['queue']);
+    
+    temp = q;
+    addStep(8, `temp ← ${q}`, ['temp']);
+  }
+
+  // Step 9: A <- 0
+  A = 0;
+  addStep(9, "A 初始化為 0", ['A']);
+
+  // Loop 2: Reconstruction
+  while (true) {
+    const notEmpty = Q.length > 0;
+    addStep(10, `檢查 Q 是否非空? (${notEmpty ? '是' : '否'})`, []);
+    if (!notEmpty) break;
+    
+    digit = Q.shift();
+    addStep(11, `digit ← dequeue(Q) = ${digit}`, ['digit', 'queue']);
+    
+    const oldA = A;
+    A = A * 10 + digit;
+    addStep(12, `A ← ${oldA} * 10 + ${digit} = ${A}`, ['A']);
+  }
+
+  // Step 13: Output
+  addStep(13, `輸出 A: ${A}`, []);
+  
+  return steps;
+};
+
+// --- 2. 子組件 ---
+
+const CodeLine = ({ line, isActive }) => (
+  <div 
+    id={`codeline-${line.id}`}
+    className={`
+      flex items-center py-2 px-6 font-mono text-sm transition-colors duration-200 border-l-4
+      ${isActive 
+        ? 'bg-[#fff9c4] border-yellow-500 text-slate-900 font-bold' 
+        : 'border-transparent text-slate-500 hover:bg-slate-50'}
+    `}
+  >
+    <span className="w-6 text-slate-300 text-xs text-right mr-4 select-none">{line.id}</span>
+    <div style={{ paddingLeft: `${line.indent * 1.5}rem` }} className="flex items-center whitespace-nowrap">
+      {line.indent > 0 && <CornerDownRight size={12} className="text-slate-300 mr-2 inline-block" />}
+      {line.text}
+    </div>
+  </div>
+);
+
+// --- 3. 主組件 ---
+
+export default function AlgorithmVisualizer() {
+  const [inputN, setInputN] = useState(489);
+  const [trace, setTrace] = useState([]);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const scrollRef = useRef(null);
+  const timerRef = useRef(null);
+
+  // 初始化 Trace
+  useEffect(() => {
+    const newTrace = generateTrace(inputN);
+    setTrace(newTrace);
+    setStepIndex(0);
+    setIsPlaying(false);
+  }, [inputN]);
+
+  // 自動播放邏輯
+  useEffect(() => {
+    if (isPlaying) {
+      timerRef.current = setInterval(() => {
+        setStepIndex(prev => {
+          if (prev < trace.length - 1) return prev + 1;
+          setIsPlaying(false);
+          return prev;
+        });
+      }, 800);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isPlaying, trace]);
+
+  // 代碼自動滾動
+  useEffect(() => {
+    if (scrollRef.current) {
+      const activeLine = document.getElementById(`codeline-${trace[stepIndex]?.lineId}`);
+      if (activeLine) {
+        activeLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [stepIndex, trace]);
+
+  const currentStep = trace[stepIndex] || { 
+    vars: { temp: inputN, q: 0, r: 0, digit: 0, A: 0 }, 
+    queue: [], 
+    desc: 'Ready', 
+    lineId: 0 
+  };
+
+  return (
+    <div className="w-full max-w-6xl mx-auto p-4 bg-slate-100 min-h-screen flex items-center justify-center font-sans">
+      
+      {/* 主容器：固定高度，Flex 佈局 */}
+      <div className="bg-white w-full h-[650px] rounded-xl shadow-xl overflow-hidden flex flex-col lg:flex-row border border-slate-200">
+        
+        {/* === 左側：偽代碼區域 (固定寬度) === */}
+        <div className="lg:w-[400px] flex-shrink-0 flex flex-col border-r border-slate-200 bg-white">
+          {/* Header */}
+          <div className="h-14 flex items-center px-6 border-b border-slate-100">
+            <h2 className="text-xs font-bold text-slate-400 tracking-widest uppercase">Pseudocode</h2>
+          </div>
+          
+          {/* Scrollable Code List */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar py-2" ref={scrollRef}>
+            {CODE_LINES.map(line => (
+              <CodeLine 
+                key={line.id} 
+                line={line} 
+                isActive={currentStep.lineId === line.id} 
+              />
+            ))}
+            {/* 底部留白，方便滾動 */}
+            <div className="h-20"></div>
+          </div>
+        </div>
+
+        {/* === 右側：執行與數據區域 (自適應寬度) === */}
+        <div className="flex-1 flex flex-col bg-[#f8f9fa] min-w-0">
+          
+          {/* 1. 控制列 (固定頂部) */}
+          <div className="h-20 px-6 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Input N</span>
+              <div className="flex bg-slate-100 rounded p-1">
+                {[489, 100].map(val => (
+                  <button
+                    key={val}
+                    onClick={() => setInputN(val)}
+                    className={`px-3 py-1 text-sm font-mono font-bold rounded transition-all ${
+                      inputN === val 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    {val}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded shadow-sm transition-colors"
+              >
+                {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+                {isPlaying ? "暫停" : "播放"}
+              </button>
+              
+              <button 
+                onClick={() => {
+                  setIsPlaying(false);
+                  setStepIndex(prev => Math.min(prev + 1, trace.length - 1));
+                }}
+                disabled={stepIndex >= trace.length - 1}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              >
+                <ChevronRight size={16} /> 下一步
+              </button>
+
+              <button 
+                onClick={() => { setIsPlaying(false); setStepIndex(0); }}
+                className="p-2 bg-white border border-slate-200 text-slate-400 rounded hover:text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <RotateCcw size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* 2. 可滾動內容區 */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+            
+            {/* 深色狀態框 */}
+            <div className="bg-[#1e293b] rounded-lg p-6 shadow-lg text-white relative overflow-hidden min-h-[120px] flex flex-col justify-center">
+              <div className="flex justify-between items-start mb-2">
+                <span className="bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500/30 tracking-wider">
+                  STEP {stepIndex + 1} / {trace.length}
+                </span>
+                <span className="text-slate-500 font-mono text-xs">Line {currentStep.lineId}</span>
+              </div>
+              <div className="text-lg font-medium tracking-wide">
+                {currentStep.desc}
+              </div>
+              {/* 裝飾性背景圖標 */}
+              <Play className="absolute -right-4 -bottom-4 text-white opacity-5 w-32 h-32 rotate-12" />
+            </div>
+
+            {/* 變數表格 */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+              <div className="grid grid-cols-5 border-b border-slate-100 bg-slate-50/50">
+                {['temp', 'q', 'r', 'digit', 'A'].map(header => (
+                  <div key={header} className="py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    {header}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-5 py-4">
+                {['temp', 'q', 'r', 'digit', 'A'].map(key => (
+                  <div key={key} className="text-center font-mono text-slate-700 font-medium">
+                    {currentStep.vars[key]}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 隊列視覺化 */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 min-h-[140px] flex flex-col">
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">QUEUE (Q)</span>
+                <span className="text-[10px] text-slate-300 font-mono">Front &larr; Rear</span>
+              </div>
+              
+              <div className="flex-1 flex items-center justify-center">
+                <div className="flex gap-3 overflow-x-auto w-full justify-center p-2">
+                  <AnimatePresence mode='popLayout'>
+                    {currentStep.queue.length === 0 ? (
+                      <motion.span 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        className="text-slate-300 italic text-sm w-full text-center border border-dashed border-slate-200 rounded py-2 bg-slate-50"
+                      >
+                        Empty
+                      </motion.span>
+                    ) : (
+                      currentStep.queue.map((val, idx) => (
+                        <motion.div
+                          key={`${idx}-${val}`}
+                          layout
+                          initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                          animate={{ opacity: 1, scale: 1, x: 0 }}
+                          exit={{ opacity: 0, scale: 0.8, x: -20 }}
+                          className="w-12 h-12 flex items-center justify-center bg-blue-50 text-blue-600 font-bold border border-blue-200 rounded shadow-sm flex-shrink-0"
+                        >
+                          {val}
+                        </motion.div>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
