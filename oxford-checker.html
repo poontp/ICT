@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oxford 5000 Level Checker (Case Insensitive)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --success-bg: #dcfce7;
+            --error: #dc2626;
+            --error-bg: #fee2e2;
+            
+            /* Level Colors */
+            --level-a-bg: #eff6ff;
+            --level-a-border: #bfdbfe;
+            --level-a-text: #1d4ed8;
+            --level-a-badge: #3b82f6;
+
+            --level-b-bg: #fefce8;
+            --level-b-border: #fde047;
+            --level-b-text: #a16207;
+            --level-b-badge: #eab308;
+
+            --level-c-bg: #faf5ff;
+            --level-c-border: #e9d5ff;
+            --level-c-text: #7e22ce;
+            --level-c-badge: #a855f7;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        h1 span { color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; }
+        .mode-badge { 
+            display: inline-block; 
+            background: #dbeafe; 
+            color: #1e40af; 
+            font-size: 0.8rem; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            border: 1px solid #93c5fd;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        @media (min-width: 900px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-label { font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+        .badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; background: #f1f5f9; color: var(--text-muted); }
+        .badge.success { background: var(--success-bg); color: var(--success); font-weight: bold; }
+
+        /* Inputs */
+        textarea {
+            flex: 1;
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            resize: none;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+
+        /* Upload Area */
+        .upload-area {
+            flex: 1;
+            border: 2px dashed var(--border);
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+            text-align: center;
+            padding: 1rem;
+        }
+        .upload-area:hover { border-color: var(--primary); background: #eff6ff; }
+        .upload-area.has-file { border-color: var(--success); background: #f0fdf4; }
+        
+        .icon-large { width: 48px; height: 48px; margin-bottom: 1rem; color: #94a3b8; }
+        .upload-area.has-file .icon-large { color: var(--success); }
+
+        /* Results Section */
+        .results-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.5s ease;
+        }
+        .results-container.active { display: block; }
+
+        .toolbar {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: #f8fafc;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats { display: flex; gap: 0.5rem; font-size: 0.875rem; }
+        .stat-item { padding: 0.35rem 0.75rem; border-radius: 0.375rem; border: 1px solid var(--border); background: white; font-weight: 500; }
+        .stat-found { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+        .stat-missing { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+
+        .controls { display: flex; gap: 0.75rem; }
+        select, button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--border);
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+        button.btn-primary {
+            background: #1e293b;
+            color: white;
+            border: none;
+        }
+        button.btn-primary:hover { background: #0f172a; }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 600px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th {
+            background: #f8fafc;
+            text-align: left;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        tr:hover { background-color: #f8fafc; }
+
+        /* Status Tags */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .status-found { background: var(--success-bg); color: var(--success); }
+        .status-missing { background: #f1f5f9; color: var(--text-muted); }
+
+        /* Level Badges */
+        .level-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .level-badge {
+            display: flex;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            font-size: 0.75rem;
+        }
+        .level-badge span:first-child { padding: 0.25rem 0.5rem; font-weight: bold; color: white; }
+        .level-badge span:last-child { padding: 0.25rem 0.5rem; font-weight: 600; background: rgba(255,255,255,0.5); }
+
+        /* Level Specific Colors */
+        .lvl-A { background: var(--level-a-bg); border-color: var(--level-a-border); }
+        .lvl-A span:first-child { background: var(--level-a-badge); }
+        .lvl-A span:last-child { color: var(--level-a-text); }
+
+        .lvl-B { background: var(--level-b-bg); border-color: var(--level-b-border); }
+        .lvl-B span:first-child { background: var(--level-b-badge); }
+        .lvl-B span:last-child { color: var(--level-b-text); }
+
+        .lvl-C { background: var(--level-c-bg); border-color: var(--level-c-border); }
+        .lvl-C span:first-child { background: var(--level-c-badge); }
+        .lvl-C span:last-child { color: var(--level-c-text); }
+
+        .error-msg {
+            color: var(--error);
+            background: var(--error-bg);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            display: none;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            Oxford 5000 <span>Level Checker</span> <span class="mode-badge">不區分大小寫</span>
+        </h1>
+        <p class="subtitle">貼上單字表，比對 Oxford CSV (格式: word, class, level)</p>
+    </header>
+
+    <div class="grid">
+        <!-- Text Input -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-label">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #3b82f6;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    1. 輸入單字列表
+                </div>
+                <span class="badge">空格 / 逗號 / 換行</span>
+            </div>
+            <textarea id="inputText" placeholder="請在此貼上單字...&#10;不區分大小寫 (Case Insensitive)&#10;例如：&#10;Apple (將會配對到 apple)&#10;PLAY (將會配對到 play)"></textarea>
+        </div>
+
+        <!-- CSV Upload -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-label">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #22c55e;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    2. 上傳 Oxford CSV
+                </div>
+                <span id="fileStatus" class="badge">未選擇檔案</span>
+            </div>
+            
+            <div class="upload-area" id="dropZone">
+                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                <div id="uploadPlaceholder">
+                    <svg class="icon-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <p style="font-weight: bold; color: #334155; margin-bottom: 0.5rem;">點擊上傳 .csv</p>
+                    <p style="font-size: 0.8rem; color: #94a3b8;">格式: word, class, level</p>
+                </div>
+                <div id="fileInfo" style="display: none;">
+                    <svg class="icon-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    <p id="fileNameDisplay" style="font-weight: bold; color: #1e293b; font-size: 1.1rem;"></p>
+                    <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">點擊更換檔案</p>
+                </div>
+            </div>
+            <div id="errorMsg" class="error-msg"></div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsContainer" class="results-container">
+        <div class="toolbar">
+            <div class="stats">
+                <div class="stat-item">總數: <span id="statTotal">0</span></div>
+                <div class="stat-item stat-found">Found: <span id="statFound">0</span></div>
+                <div class="stat-item stat-missing">Not Found: <span id="statMissing">0</span></div>
+            </div>
+            <div class="controls">
+                <select id="filterSelect">
+                    <option value="ALL">顯示全部 (All)</option>
+                    <option value="FOUND">在清單中 (Found)</option>
+                    <option value="NOT_FOUND">不在清單中 (Not Found)</option>
+                    <option disabled>--- By Level ---</option>
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                </select>
+                <button id="btnExport" class="btn-primary">匯出 CSV</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Input Word</th>
+                        <th style="width: 15%;">Status</th>
+                        <th style="width: 60%;">Oxford Details (Level & Class)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows will be injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State
+    let csvDataMap = new Map();
+    let analysisResults = [];
+    let currentFilter = 'ALL';
+
+    // DOM Elements
+    const inputText = document.getElementById('inputText');
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const fileStatus = document.getElementById('fileStatus');
+    const errorMsg = document.getElementById('errorMsg');
+    
+    const resultsContainer = document.getElementById('resultsContainer');
+    const tableBody = document.getElementById('tableBody');
+    const statTotal = document.getElementById('statTotal');
+    const statFound = document.getElementById('statFound');
+    const statMissing = document.getElementById('statMissing');
+    
+    const filterSelect = document.getElementById('filterSelect');
+    const btnExport = document.getElementById('btnExport');
+
+    // --- Helper Functions ---
+    const parseInputText = (text) => {
+        if (!text) return [];
+        return text.split(/[\n,;\t]+/).map(w => w.trim()).filter(w => w.length > 0);
+    };
+
+    // --- Event Listeners ---
+    
+    // File Upload Interaction
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleFileUpload(file);
+    });
+
+    // Input Text Change
+    inputText.addEventListener('input', runAnalysis);
+
+    // Filter Change
+    filterSelect.addEventListener('change', (e) => {
+        currentFilter = e.target.value;
+        renderTable();
+    });
+
+    // Export
+    btnExport.addEventListener('click', exportCSV);
+
+    // --- Core Logic ---
+
+    function handleFileUpload(file) {
+        const reader = new FileReader();
+        
+        // Reset UI
+        errorMsg.style.display = 'none';
+        errorMsg.textContent = '';
+        
+        reader.onload = (e) => {
+            const text = e.target.result;
+            try {
+                processCSV(text);
+                
+                // Update UI for success
+                fileNameDisplay.textContent = file.name;
+                uploadPlaceholder.style.display = 'none';
+                fileInfo.style.display = 'block';
+                dropZone.classList.add('has-file');
+                fileStatus.textContent = `已載入 ${csvDataMap.size} 字`;
+                fileStatus.classList.add('success');
+                
+                // Re-run analysis if text exists
+                if (inputText.value.trim()) runAnalysis();
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = "解析 CSV 失敗: " + err.message;
+                errorMsg.style.display = 'block';
+                csvDataMap.clear();
+            }
+        };
+        
+        reader.readAsText(file);
+    }
+
+    function processCSV(text) {
+        const lines = text.split(/\r?\n/);
+        const newMap = new Map();
+        let count = 0;
+
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            const parts = line.split(',');
+            
+            // 格式檢查: word, class, level
+            if (parts.length < 2) return;
+
+            const rawWord = parts[0].trim();
+            
+            // 如果只有兩欄，嘗試容錯
+            let rawClass = parts.length >= 2 ? parts[1].trim() : '';
+            let rawLevel = parts.length >= 3 ? parts[2].trim() : '';
+
+            if (parts.length === 2) {
+                rawLevel = rawClass;
+                rawClass = '?';
+            }
+
+            // Skip header (simple check)
+            if (rawWord.toLowerCase() === 'word' && rawLevel.toLowerCase().includes('level')) return;
+            if (!rawWord || !rawLevel) return;
+
+            // CASE INSENSITIVE LOGIC:
+            // Use LOWERCASE as the map key for lookup
+            const key = rawWord.toLowerCase();
+            
+            const entry = {
+                original: rawWord, // Keep original casing for display
+                class: rawClass,
+                level: rawLevel.toUpperCase()
+            };
+
+            if (newMap.has(key)) {
+                newMap.get(key).push(entry);
+            } else {
+                newMap.set(key, [entry]);
+            }
+            count++;
+        });
+
+        if (count === 0) throw new Error("找不到有效資料，請確認格式為 word, class, level");
+        csvDataMap = newMap;
+    }
+
+    function runAnalysis() {
+        const text = inputText.value;
+        const words = parseInputText(text);
+        
+        if (words.length === 0) {
+            resultsContainer.classList.remove('active');
+            return;
+        }
+
+        // 去重
+        const uniqueWords = [...new Set(words)];
+
+        analysisResults = uniqueWords.map(inputWord => {
+            // CASE INSENSITIVE LOGIC:
+            // Lookup using LOWERCASE key
+            const key = inputWord.toLowerCase();
+            const matches = csvDataMap.get(key);
+            
+            return {
+                input: inputWord,
+                found: !!matches,
+                matches: matches || []
+            };
+        });
+
+        resultsContainer.classList.add('active');
+        renderTable();
+    }
+
+    function renderTable() {
+        // Filter Logic
+        let displayData = analysisResults;
+
+        if (currentFilter === 'FOUND') {
+            displayData = analysisResults.filter(r => r.found);
+        } else if (currentFilter === 'NOT_FOUND') {
+            displayData = analysisResults.filter(r => !r.found);
+        } else if (currentFilter !== 'ALL') {
+            // Specific Level (A1, B2 etc)
+            displayData = analysisResults.filter(r => {
+                if (!r.found) return false;
+                return r.matches.some(m => m.level.includes(currentFilter));
+            });
+        }
+
+        // Update Stats
+        const total = analysisResults.length;
+        const found = analysisResults.filter(r => r.found).length;
+        statTotal.textContent = total;
+        statFound.textContent = found;
+        statMissing.textContent = total - found;
+
+        // Render Rows
+        tableBody.innerHTML = '';
+        
+        if (displayData.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 3rem; color: #94a3b8;">沒有符合篩選條件的單字</td></tr>`;
+            return;
+        }
+
+        displayData.forEach(item => {
+            const tr = document.createElement('tr');
+            
+            // 1. Input Word
+            const tdWord = document.createElement('td');
+            tdWord.textContent = item.input;
+            tdWord.style.fontWeight = '500';
+            
+            // 2. Status
+            const tdStatus = document.createElement('td');
+            const statusSpan = document.createElement('span');
+            statusSpan.className = `status-tag ${item.found ? 'status-found' : 'status-missing'}`;
+            statusSpan.textContent = item.found ? 'Found' : 'Not Found';
+            tdStatus.appendChild(statusSpan);
+
+            // 3. Details
+            const tdDetails = document.createElement('td');
+            if (item.found) {
+                const group = document.createElement('div');
+                group.className = 'level-group';
+                
+                item.matches.forEach(m => {
+                    const badge = document.createElement('div');
+                    // Determine color class based on level start letter
+                    let colorClass = '';
+                    if (m.level.startsWith('A')) colorClass = 'lvl-A';
+                    else if (m.level.startsWith('B')) colorClass = 'lvl-B';
+                    else if (m.level.startsWith('C')) colorClass = 'lvl-C';
+                    
+                    badge.className = `level-badge ${colorClass}`;
+                    
+                    const spanLevel = document.createElement('span');
+                    spanLevel.textContent = m.level;
+                    
+                    const spanClass = document.createElement('span');
+                    // Display original word from CSV if needed, or just class
+                    // Here we show class to keep it clean
+                    spanClass.textContent = m.class || 'word';
+                    
+                    badge.appendChild(spanLevel);
+                    badge.appendChild(spanClass);
+                    group.appendChild(badge);
+                });
+                tdDetails.appendChild(group);
+            } else {
+                tdDetails.textContent = '-';
+                tdDetails.style.color = '#cbd5e1';
+            }
+
+            tr.appendChild(tdWord);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdDetails);
+            tableBody.appendChild(tr);
+        });
+    }
+
+    function exportCSV() {
+        if (analysisResults.length === 0) return;
+
+        const header = "Input Word,Found,Max Level,All Details\n";
+        const rows = analysisResults.map(r => {
+            const foundStr = r.found ? 'Yes' : 'No';
+            const details = r.matches.map(m => `[${m.level}] ${m.class} (${m.original})`).join('; ');
+            const simpleLevel = r.matches.length > 0 ? r.matches[0].level : '-';
+            // Escape quotes
+            const safeDetails = `"${details.replace(/"/g, '""')}"`;
+            return `${r.input},${foundStr},${simpleLevel},${safeDetails}`;
+        }).join("\n");
+
+        const csvContent = header + rows;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'oxford_check_result.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>
