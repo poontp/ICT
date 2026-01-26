@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oxford Smart Checker (UK/US + Stemming)</title>
+    <title>Oxford Smart Checker (Irregular Verbs + UK/US)</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -208,8 +208,10 @@
             border: 1px solid;
             white-space: nowrap;
         }
-        .note-lemma { color: #d97706; background: #fffbeb; border-color: #fcd34d; }
-        .note-variant { color: #0284c7; background: #e0f2fe; border-color: #7dd3fc; }
+        /* Colors for different match types */
+        .note-lemma { color: #d97706; background: #fffbeb; border-color: #fcd34d; } /* Regular Stemming */
+        .note-variant { color: #0284c7; background: #e0f2fe; border-color: #7dd3fc; } /* UK/US */
+        .note-irregular { color: #7e22ce; background: #f3e8ff; border-color: #d8b4fe; } /* Irregular Verbs */
 
         /* Level Badges */
         .level-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -245,9 +247,9 @@
     <header>
         <h1>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-            Oxford 5000 Checker <span class="smart-badge">UK/US + Stemming</span>
+            Oxford 5000 Checker <span class="smart-badge">Irregular + UK/US + Stem</span>
         </h1>
-        <p style="color: var(--text-muted);">Supports: Plurals, Tenses, UK/US Swapping (Colour ↔ Color, Organise ↔ Organize)</p>
+        <p style="color: var(--text-muted);">Supports: <strong>Irregular Verbs</strong> (went → go), UK/US Swaps, Plurals & Tenses</p>
     </header>
 
     <div class="grid">
@@ -259,7 +261,7 @@
                     1. Input Word List
                 </div>
             </div>
-            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;coloured (UK Past -> finds color)&#10;organising (UK Continuous -> finds organize)&#10;theatres (UK Plural -> finds theater)"></textarea>
+            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;went (Irregular -> finds go)&#10;bought (Irregular -> finds buy)&#10;coloured (UK Past -> finds color)&#10;organising (UK Continuous -> finds organize)"></textarea>
         </div>
 
         <!-- CSV Upload -->
@@ -355,6 +357,149 @@
     const filterSelect = document.getElementById('filterSelect');
     const btnExport = document.getElementById('btnExport');
 
+    // --- IRREGULAR VERBS DATABASE ---
+    const irregularVerbs = {
+        "arose": "arise", "arisen": "arise",
+        "awoke": "awake", "awoken": "awake",
+        "bore": "bear", "born": "bear", "borne": "bear",
+        "beat": "beat", "beaten": "beat",
+        "became": "become", "become": "become",
+        "began": "begin", "begun": "begin",
+        "bent": "bend",
+        "bet": "bet",
+        "bound": "bind",
+        "bit": "bite", "bitten": "bite",
+        "bled": "bleed",
+        "blew": "blow", "blown": "blow",
+        "broke": "break", "broken": "break",
+        "bred": "breed",
+        "brought": "bring",
+        "built": "build",
+        "burned": "burn", "burnt": "burn",
+        "burst": "burst",
+        "bought": "buy",
+        "caught": "catch",
+        "chose": "choose", "chosen": "choose",
+        "clung": "cling",
+        "came": "come", "come": "come",
+        "cost": "cost",
+        "crept": "creep",
+        "cut": "cut",
+        "dealt": "deal",
+        "dug": "dig",
+        "did": "do", "done": "do",
+        "drew": "draw", "drawn": "draw",
+        "dreamed": "dream", "dreamt": "dream",
+        "drank": "drink", "drunk": "drink",
+        "drove": "drive", "driven": "drive",
+        "ate": "eat", "eaten": "eat",
+        "fell": "fall", "fallen": "fall",
+        "fed": "feed",
+        "felt": "feel",
+        "fought": "fight",
+        "found": "find",
+        "fled": "flee",
+        "flew": "fly", "flown": "fly",
+        "forbade": "forbid", "forbidden": "forbid",
+        "forgot": "forget", "forgotten": "forget",
+        "forgave": "forgive", "forgiven": "forgive",
+        "froze": "freeze", "frozen": "freeze",
+        "got": "get", "gotten": "get",
+        "gave": "give", "given": "give",
+        "went": "go", "gone": "go",
+        "ground": "grind",
+        "grew": "grow", "grown": "grow",
+        "hung": "hang",
+        "had": "have", "has": "have",
+        "heard": "hear",
+        "hid": "hide", "hidden": "hide",
+        "hit": "hit",
+        "held": "hold",
+        "hurt": "hurt",
+        "kept": "keep",
+        "knelt": "kneel",
+        "knew": "know", "known": "know",
+        "laid": "lay",
+        "led": "lead",
+        "leapt": "leap", "leaped": "leap",
+        "learned": "learn", "learnt": "learn",
+        "left": "leave",
+        "lent": "lend",
+        "let": "let",
+        "lay": "lie", "lain": "lie", // lie down
+        "lit": "light", "lighted": "light",
+        "lost": "lose",
+        "made": "make",
+        "meant": "mean",
+        "met": "meet",
+        "mistook": "mistake", "mistaken": "mistake",
+        "paid": "pay",
+        "put": "put",
+        "read": "read",
+        "rode": "ride", "ridden": "ride",
+        "rang": "ring", "rung": "ring",
+        "rose": "rise", "risen": "rise",
+        "ran": "run", "run": "run",
+        "said": "say",
+        "saw": "see", "seen": "see",
+        "sought": "seek",
+        "sold": "sell",
+        "sent": "send",
+        "set": "set",
+        "sewed": "sew", "sewn": "sew",
+        "shook": "shake", "shaken": "shake",
+        "shone": "shine",
+        "shot": "shoot",
+        "showed": "show", "shown": "show",
+        "shrank": "shrink", "shrunk": "shrink",
+        "shut": "shut",
+        "sang": "sing", "sung": "sing",
+        "sank": "sink", "sunk": "sink",
+        "sat": "sit",
+        "slept": "sleep",
+        "slid": "slide",
+        "smelled": "smell", "smelt": "smell",
+        "spoke": "speak", "spoken": "speak",
+        "sped": "speed",
+        "spelled": "spell", "spelt": "spell",
+        "spent": "spend",
+        "spilled": "spill", "spilt": "spill",
+        "spun": "spin",
+        "spat": "spit",
+        "split": "split",
+        "spoiled": "spoil", "spoilt": "spoil",
+        "spread": "spread",
+        "sprang": "spring", "sprung": "spring",
+        "stood": "stand",
+        "stole": "steal", "stolen": "steal",
+        "stuck": "stick",
+        "stung": "sting",
+        "stank": "stink", "stunk": "stink",
+        "struck": "strike",
+        "swore": "swear", "sworn": "swear",
+        "swept": "sweep",
+        "swam": "swim", "swum": "swim",
+        "swung": "swing",
+        "took": "take", "taken": "take",
+        "taught": "teach",
+        "tore": "tear", "torn": "tear",
+        "told": "tell",
+        "thought": "think",
+        "threw": "throw", "thrown": "throw",
+        "understood": "understand",
+        "upset": "upset",
+        "woke": "wake", "woken": "wake",
+        "wore": "wear", "worn": "wear",
+        "wept": "weep",
+        "won": "win",
+        "wound": "wind",
+        "withdrew": "withdraw", "withdrawn": "withdraw",
+        "wrote": "write", "written": "write",
+        // Adjectives/Adverbs Irregular
+        "better": "good", "best": "good",
+        "worse": "bad", "worst": "bad"
+    };
+
     // --- Algorithm: UK/US Spelling & Stemming ---
 
     // 1. Generate Spelling Variants (UK <-> US)
@@ -362,43 +507,21 @@
         const variants = new Set();
         const w = word.toLowerCase();
         
-        // Helper: if regex matches, add replacement
         const trySwap = (regex, replacement) => {
             if (regex.test(w)) {
                 variants.add(w.replace(regex, replacement));
             }
         };
 
-        // --- Common UK/US Patterns ---
-        
-        // -our (UK) <-> -or (US)  e.g., colour/color, behaviour/behavior
-        trySwap(/our$/, 'or');
-        trySwap(/or$/, 'our');
-        
-        // -ise (UK) <-> -ize (US) e.g., organise/organize
-        trySwap(/ise$/, 'ize');
-        trySwap(/ize$/, 'ise');
-        
-        // -yse (UK) <-> -yze (US) e.g., analyse/analyze
-        trySwap(/yse$/, 'yze');
-        trySwap(/yze$/, 'yse');
-
-        // -re (UK) <-> -er (US) e.g., centre/center, theatre/theater
-        trySwap(/re$/, 'er');
-        trySwap(/er$/, 're');
-
-        // -ence (UK) <-> -ense (US) e.g., defence/defense
-        trySwap(/ence$/, 'ense');
-        trySwap(/ense$/, 'ence');
-
-        // -ogue (UK) <-> -og (US) e.g., catalogue/catalog
-        trySwap(/ogue$/, 'og');
-        trySwap(/og$/, 'ogue');
-
-        // Double L (UK) <-> Single L (US) e.g., cancelled/canceled, travelling/traveling
+        // Common UK/US Patterns
+        trySwap(/our$/, 'or'); trySwap(/or$/, 'our');
+        trySwap(/ise$/, 'ize'); trySwap(/ize$/, 'ise');
+        trySwap(/yse$/, 'yze'); trySwap(/yze$/, 'yse');
+        trySwap(/re$/, 'er'); trySwap(/er$/, 're');
+        trySwap(/ence$/, 'ense'); trySwap(/ense$/, 'ence');
+        trySwap(/ogue$/, 'og'); trySwap(/og$/, 'ogue');
         if (w.includes('ll')) variants.add(w.replace('ll', 'l'));
 
-        // Irregulars (Hardcoded common ones)
         const irregulars = {
             'programme': 'program', 'program': 'programme',
             'aeroplane': 'airplane', 'airplane': 'aeroplane',
@@ -412,7 +535,7 @@
         return Array.from(variants);
     }
 
-    // 2. Generate Stemmed Forms
+    // 2. Generate Stemmed Forms (Regular Rules)
     function getStemmedForms(word) {
         const forms = new Set();
         const w = word.toLowerCase();
@@ -428,10 +551,9 @@
         if (w.endsWith('ed')) {
             forms.add(w.slice(0, -1)); // liked -> like
             forms.add(w.slice(0, -2)); // played -> play
-            // Double consonant: stopped -> stop
             const base = w.slice(0, -2);
             if (base.length > 2 && base[base.length-1] === base[base.length-2]) {
-                forms.add(base.slice(0, -1));
+                forms.add(base.slice(0, -1)); // stopped -> stop
             }
         }
 
@@ -439,10 +561,9 @@
         if (w.endsWith('ing')) {
             forms.add(w.slice(0, -3)); // playing -> play
             forms.add(w.slice(0, -3) + 'e'); // making -> make
-            // Double consonant: running -> run
             const base = w.slice(0, -3);
             if (base.length > 2 && base[base.length-1] === base[base.length-2]) {
-                forms.add(base.slice(0, -1));
+                forms.add(base.slice(0, -1)); // running -> run
             }
         }
 
@@ -459,12 +580,21 @@
     function findMatch(inputWord) {
         const lowerInput = inputWord.toLowerCase();
 
-        // A. Exact Match
+        // A. Exact Match (Prioritize this)
         if (csvDataMap.has(lowerInput)) {
             return { found: true, type: 'exact', matchWord: lowerInput, data: csvDataMap.get(lowerInput) };
         }
 
-        // B. Check Spelling Variants (e.g. Input: color -> Try: colour)
+        // B. Check Irregular Verbs (NEW STEP)
+        // e.g. input: "went", map says "go". Check "go".
+        if (irregularVerbs[lowerInput]) {
+            const baseForm = irregularVerbs[lowerInput];
+            if (csvDataMap.has(baseForm)) {
+                return { found: true, type: 'irregular', matchWord: baseForm, data: csvDataMap.get(baseForm) };
+            }
+        }
+
+        // C. Check Spelling Variants (e.g. Input: color -> Try: colour)
         const directVariants = getSpellingVariants(lowerInput);
         for (const v of directVariants) {
             if (csvDataMap.has(v)) {
@@ -472,14 +602,14 @@
             }
         }
 
-        // C. Check Stemmed Forms (e.g. Input: played -> Try: play)
+        // D. Check Stemmed Forms (e.g. Input: played -> Try: play)
         const stems = getStemmedForms(lowerInput);
         for (const s of stems) {
-            // C1. Stem match
+            // D1. Stem match
             if (csvDataMap.has(s)) {
                 return { found: true, type: 'lemma', matchWord: s, data: csvDataMap.get(s) };
             }
-            // C2. Stem + Variant match (e.g. Input: coloured -> Stem: colour -> Try: color)
+            // D2. Stem + Variant match (e.g. Input: coloured -> Stem: colour -> Try: color)
             const stemVariants = getSpellingVariants(s);
             for (const sv of stemVariants) {
                 if (csvDataMap.has(sv)) {
@@ -649,13 +779,24 @@
 
             if (item.found && item.matchType !== 'exact') {
                 const note = document.createElement('div');
-                note.className = 'match-note ' + (item.matchType.includes('variant') ? 'note-variant' : 'note-lemma');
-                
+                let noteClass = 'match-note ';
                 let noteText = "";
-                if (item.matchType === 'lemma') noteText = `→ ${item.matchWord} (Base)`;
-                else if (item.matchType === 'variant') noteText = `→ ${item.matchWord} (UK/US)`;
-                else if (item.matchType === 'variant_lemma') noteText = `→ ${item.matchWord} (Var+Base)`;
+
+                if (item.matchType === 'irregular') {
+                    noteClass += 'note-irregular';
+                    noteText = `→ ${item.matchWord} (Irregular)`;
+                } else if (item.matchType === 'lemma') {
+                    noteClass += 'note-lemma';
+                    noteText = `→ ${item.matchWord} (Base)`;
+                } else if (item.matchType === 'variant') {
+                    noteClass += 'note-variant';
+                    noteText = `→ ${item.matchWord} (UK/US)`;
+                } else if (item.matchType === 'variant_lemma') {
+                    noteClass += 'note-variant';
+                    noteText = `→ ${item.matchWord} (Var+Base)`;
+                }
                 
+                note.className = noteClass;
                 note.textContent = noteText;
                 tdWord.style.display = 'flex';
                 tdWord.style.alignItems = 'center';
@@ -719,7 +860,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'oxford_smart_check_full.csv';
+        link.download = 'oxford_smart_check_irregular.csv';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
