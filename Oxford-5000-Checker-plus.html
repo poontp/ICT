@@ -175,7 +175,7 @@
             top: 0;
             z-index: 10;
         }
-        td { padding: 0.85rem 1.5rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        td { padding: 0.85rem 1.5rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
         tr:hover { background-color: #f8fafc; }
 
         /* Status Tags */
@@ -190,18 +190,30 @@
         .status-found { background: var(--success-bg); color: var(--success); }
         .status-missing { background: #f1f5f9; color: var(--text-muted); }
         
-        .match-note {
-            display: inline-block;
-            font-size: 0.75rem;
-            padding: 2px 6px;
+        /* Context/Transformation Info */
+        .transformation-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .arrow-icon { color: #94a3b8; font-family: monospace; }
+        .base-word { font-weight: 700; color: #2563eb; }
+        .context-badge {
+            font-size: 0.7rem;
+            padding: 1px 6px;
             border-radius: 4px;
-            margin-left: 8px;
             border: 1px solid;
             white-space: nowrap;
         }
-        .note-lemma { color: #d97706; background: #fffbeb; border-color: #fcd34d; }
-        .note-variant { color: #0284c7; background: #e0f2fe; border-color: #7dd3fc; }
-        .note-irregular { color: #7e22ce; background: #f3e8ff; border-color: #d8b4fe; }
+        
+        /* Context Colors */
+        .ctx-irregular { color: #7e22ce; background: #f3e8ff; border-color: #d8b4fe; }
+        .ctx-plural { color: #d97706; background: #fffbeb; border-color: #fcd34d; }
+        .ctx-tense { color: #059669; background: #ecfdf5; border-color: #6ee7b7; }
+        .ctx-variant { color: #0284c7; background: #e0f2fe; border-color: #7dd3fc; }
 
         /* Level Badges */
         .level-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -247,7 +259,7 @@
             <div class="card-header">
                 <div class="card-label">1. Input Word List</div>
             </div>
-            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;went (Irregular -> finds go)&#10;bought (Irregular -> finds buy)&#10;coloured (UK Past -> find color)&#10;organising (UK Continuous -> find organize)"></textarea>
+            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;goes (3rd Person -> finds go)&#10;apples (Plural -> finds apple)&#10;went (Irregular -> finds go)&#10;coloured (UK Past -> find color)"></textarea>
         </div>
 
         <!-- CSV Upload -->
@@ -292,9 +304,9 @@
             <table id="resultTable">
                 <thead>
                     <tr>
-                        <th style="width: 30%;">Input Word</th>
+                        <th style="width: 35%;">Input Word & Context</th>
                         <th style="width: 15%;">Status</th>
-                        <th style="width: 55%;">Oxford Details</th>
+                        <th style="width: 50%;">Oxford Details</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -342,7 +354,7 @@
         "flew": "fly", "flown": "fly", "forbade": "forbid", "forbidden": "forbid",
         "forgot": "forget", "forgotten": "forget", "forgave": "forgive", "forgiven": "forgive",
         "froze": "freeze", "frozen": "freeze", "got": "get", "gotten": "get",
-        "gave": "give", "given": "give", "went": "go", "gone": "go",
+        "gave": "give", "given": "give", "went": "go", "gone": "go", "goes": "go", // Added goes for safety in irregular map too
         "ground": "grind", "grew": "grow", "grown": "grow", "hung": "hang",
         "had": "have", "has": "have", "heard": "hear", "hid": "hide", "hidden": "hide",
         "hit": "hit", "held": "hold", "hurt": "hurt", "kept": "keep", "knelt": "kneel",
@@ -427,13 +439,8 @@
             const baseForm = irregularVerbs[lowerInput];
             if (csvDataMap.has(baseForm)) {
                 const allMatches = csvDataMap.get(baseForm);
-                
-                // *** FIX: Filter out nouns if we matched via irregular verb list ***
                 const verbMatches = allMatches.filter(m => isVerbClass(m.class));
-                
-                // If filtering leaves nothing (rare), fallback to all. Otherwise use filtered.
                 const finalMatches = verbMatches.length > 0 ? verbMatches : allMatches;
-
                 return { found: true, type: 'irregular', matchWord: baseForm, data: finalMatches };
             }
         }
@@ -497,7 +504,6 @@
             const rawWord = parts[0].trim();
             if (!rawWord || (rawWord.toLowerCase() === 'word' && parts[1].includes('class'))) return;
             
-            // Handle different CSV formats (word, class, level OR word, level)
             let rawClass = parts.length >= 3 ? parts[1].trim() : '?';
             let rawLevel = parts.length >= 3 ? parts[2].trim() : parts[1].trim();
 
@@ -543,42 +549,72 @@
         displayData.forEach(item => {
             const tr = document.createElement('tr');
             
-            // Word + Note
+            // --- 1. Word & Context Column ---
             const tdWord = document.createElement('td');
             const wordDiv = document.createElement('div');
             wordDiv.style.fontWeight = '500';
+            wordDiv.style.fontSize = '1rem';
             wordDiv.textContent = item.input;
             tdWord.appendChild(wordDiv);
 
-            if (item.found && item.matchType !== 'exact') {
-                const note = document.createElement('div');
-                let noteClass = 'match-note ';
-                let noteText = "";
-                if (item.matchType === 'irregular') {
-                    noteClass += 'note-irregular';
-                    noteText = `→ ${item.matchWord} (Irregular)`;
-                } else if (item.matchType === 'lemma') {
-                    noteClass += 'note-lemma';
-                    noteText = `→ ${item.matchWord} (Base)`;
-                } else {
-                    noteClass += 'note-variant';
-                    noteText = `→ ${item.matchWord} (Var)`;
+            // Logic for Transformation Display
+            if (item.found && item.type !== 'exact') {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'transformation-info';
+
+                let labelText = "";
+                let labelClass = "context-badge ";
+
+                if (item.type === 'irregular') {
+                    labelText = "Irregular: Past Tense & Participle";
+                    labelClass += "ctx-irregular";
+                } else if (item.type === 'variant' || item.type === 'variant_lemma') {
+                    labelText = "US/UK Swap";
+                    labelClass += "ctx-variant";
+                } else if (item.type === 'lemma') {
+                    // Infer context based on suffix AND destination class
+                    const inp = item.input.toLowerCase();
+                    
+                    // Check if the matched base word is a Verb
+                    const isDestVerb = item.matches.some(m => 
+                        m.class && (m.class.toLowerCase().includes('verb') || m.class.toLowerCase() === 'v')
+                    );
+
+                    if (inp.endsWith('ing') || inp.endsWith('ed')) {
+                        labelText = "Tense -> Base Form";
+                        labelClass += "ctx-tense";
+                    } else if (inp.endsWith('s') || inp.endsWith('es') || inp.endsWith('ies')) {
+                        if (isDestVerb) {
+                            // It ends in 's' but matches a verb (e.g. goes -> go)
+                            labelText = "3rd Person -> Base Form";
+                            labelClass += "ctx-tense";
+                        } else {
+                            // It ends in 's' and matches a noun (e.g. apples -> apple)
+                            labelText = "Plurals -> Singular";
+                            labelClass += "ctx-plural";
+                        }
+                    } else {
+                        labelText = "Form -> Base";
+                        labelClass += "ctx-plural"; // Fallback color
+                    }
                 }
-                note.className = noteClass;
-                note.textContent = noteText;
-                tdWord.style.display = 'flex';
-                tdWord.style.alignItems = 'center';
-                tdWord.appendChild(note);
+
+                infoDiv.innerHTML = `
+                    <span class="arrow-icon">↳</span>
+                    <span class="base-word">${item.matchWord}</span>
+                    <span class="${labelClass}">${labelText}</span>
+                `;
+                tdWord.appendChild(infoDiv);
             }
             
-            // Status
+            // --- 2. Status Column ---
             const tdStatus = document.createElement('td');
             const statusSpan = document.createElement('span');
             statusSpan.className = `status-tag ${item.found ? 'status-found' : 'status-missing'}`;
             statusSpan.textContent = item.found ? 'Found' : 'Not Found';
             tdStatus.appendChild(statusSpan);
 
-            // Details
+            // --- 3. Details Column ---
             const tdDetails = document.createElement('td');
             if (item.found) {
                 const group = document.createElement('div');
@@ -606,10 +642,27 @@
 
     function exportCSV() {
         if (analysisResults.length === 0) return;
-        const header = "Input Word,Found,Match Type,Matched Word,Details\n";
+        const header = "Input Word,Found,Converted Word,Context,Details\n";
         const rows = analysisResults.map(r => {
             const details = r.matches.map(m => `[${m.level}] ${m.class}`).join('; ');
-            return `${r.input},${r.found ? 'Yes' : 'No'},${r.matchType || '-'},${r.matchWord || '-'},"${details.replace(/"/g, '""')}"`;
+            let context = "Exact Match";
+            if (r.type === 'irregular') context = "Irregular: Past Tense & Participle";
+            else if (r.type === 'variant') context = "US/UK Swap";
+            else if (r.type === 'lemma') {
+                const inp = r.input.toLowerCase();
+                const isDestVerb = r.matches.some(m => m.class && (m.class.toLowerCase().includes('verb') || m.class.toLowerCase() === 'v'));
+                
+                if (inp.endsWith('ing') || inp.endsWith('ed')) context = "Tense -> Base Form";
+                else if (inp.endsWith('s') || inp.endsWith('es') || inp.endsWith('ies')) {
+                    if (isDestVerb) context = "3rd Person -> Base Form";
+                    else context = "Plurals -> Singular";
+                }
+                else context = "Form -> Base";
+            }
+            
+            const converted = (r.found && r.type !== 'exact') ? r.matchWord : r.input;
+            
+            return `${r.input},${r.found ? 'Yes' : 'No'},${converted},${context},"${details.replace(/"/g, '""')}"`;
         }).join("\n");
         const link = document.createElement('a');
         link.href = URL.createObjectURL(new Blob([header + rows], { type: 'text/csv;charset=utf-8;' }));
