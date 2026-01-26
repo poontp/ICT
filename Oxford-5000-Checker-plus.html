@@ -259,7 +259,7 @@
             <div class="card-header">
                 <div class="card-label">1. Input Word List</div>
             </div>
-            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;goes (3rd Person -> finds go)&#10;apples (Plural -> finds apple)&#10;went (Irregular -> finds go)&#10;coloured (UK Past -> find color)"></textarea>
+            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;goes (finds go)&#10;apples (finds apple)&#10;went (finds go)&#10;coloured (finds color)"></textarea>
         </div>
 
         <!-- CSV Upload -->
@@ -354,7 +354,7 @@
         "flew": "fly", "flown": "fly", "forbade": "forbid", "forbidden": "forbid",
         "forgot": "forget", "forgotten": "forget", "forgave": "forgive", "forgiven": "forgive",
         "froze": "freeze", "frozen": "freeze", "got": "get", "gotten": "get",
-        "gave": "give", "given": "give", "went": "go", "gone": "go", "goes": "go", // Added goes for safety in irregular map too
+        "gave": "give", "given": "give", "went": "go", "gone": "go", "goes": "go", 
         "ground": "grind", "grew": "grow", "grown": "grow", "hung": "hang",
         "had": "have", "has": "have", "heard": "hear", "hid": "hide", "hidden": "hide",
         "hit": "hit", "held": "hold", "hurt": "hurt", "kept": "keep", "knelt": "kneel",
@@ -531,6 +531,42 @@
         renderTable();
     }
 
+    function getContextLabel(item) {
+        let labelText = "";
+        let labelClass = "context-badge ";
+
+        if (item.type === 'irregular') {
+            labelText = "Base Form";
+            labelClass += "ctx-irregular";
+        } else if (item.type === 'variant' || item.type === 'variant_lemma') {
+            labelText = "US/UK Swap";
+            labelClass += "ctx-variant";
+        } else if (item.type === 'lemma') {
+            const inp = item.input.toLowerCase();
+            // Check if the matched base word is a Verb
+            const isDestVerb = item.matches.some(m => 
+                m.class && (m.class.toLowerCase().includes('verb') || m.class.toLowerCase() === 'v')
+            );
+
+            if (inp.endsWith('ing') || inp.endsWith('ed')) {
+                labelText = "Base Form";
+                labelClass += "ctx-tense";
+            } else if (inp.endsWith('s') || inp.endsWith('es') || inp.endsWith('ies')) {
+                if (isDestVerb) {
+                    labelText = "Base Form";
+                    labelClass += "ctx-tense";
+                } else {
+                    labelText = "Singular";
+                    labelClass += "ctx-plural";
+                }
+            } else {
+                labelText = "Base Form";
+                labelClass += "ctx-plural"; 
+            }
+        }
+        return { text: labelText, css: labelClass };
+    }
+
     function renderTable() {
         let displayData = analysisResults;
         if (currentFilter === 'FOUND') displayData = analysisResults.filter(r => r.found);
@@ -561,48 +597,13 @@
             if (item.found && item.type !== 'exact') {
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'transformation-info';
-
-                let labelText = "";
-                let labelClass = "context-badge ";
-
-                if (item.type === 'irregular') {
-                    labelText = "Irregular: Past Tense & Participle";
-                    labelClass += "ctx-irregular";
-                } else if (item.type === 'variant' || item.type === 'variant_lemma') {
-                    labelText = "US/UK Swap";
-                    labelClass += "ctx-variant";
-                } else if (item.type === 'lemma') {
-                    // Infer context based on suffix AND destination class
-                    const inp = item.input.toLowerCase();
-                    
-                    // Check if the matched base word is a Verb
-                    const isDestVerb = item.matches.some(m => 
-                        m.class && (m.class.toLowerCase().includes('verb') || m.class.toLowerCase() === 'v')
-                    );
-
-                    if (inp.endsWith('ing') || inp.endsWith('ed')) {
-                        labelText = "Tense -> Base Form";
-                        labelClass += "ctx-tense";
-                    } else if (inp.endsWith('s') || inp.endsWith('es') || inp.endsWith('ies')) {
-                        if (isDestVerb) {
-                            // It ends in 's' but matches a verb (e.g. goes -> go)
-                            labelText = "3rd Person -> Base Form";
-                            labelClass += "ctx-tense";
-                        } else {
-                            // It ends in 's' and matches a noun (e.g. apples -> apple)
-                            labelText = "Plurals -> Singular";
-                            labelClass += "ctx-plural";
-                        }
-                    } else {
-                        labelText = "Form -> Base";
-                        labelClass += "ctx-plural"; // Fallback color
-                    }
-                }
+                
+                const ctx = getContextLabel(item);
 
                 infoDiv.innerHTML = `
                     <span class="arrow-icon">↳</span>
                     <span class="base-word">${item.matchWord}</span>
-                    <span class="${labelClass}">${labelText}</span>
+                    <span class="${ctx.css}">${ctx.text}</span>
                 `;
                 tdWord.appendChild(infoDiv);
             }
@@ -646,18 +647,9 @@
         const rows = analysisResults.map(r => {
             const details = r.matches.map(m => `[${m.level}] ${m.class}`).join('; ');
             let context = "Exact Match";
-            if (r.type === 'irregular') context = "Irregular: Past Tense & Participle";
-            else if (r.type === 'variant') context = "US/UK Swap";
-            else if (r.type === 'lemma') {
-                const inp = r.input.toLowerCase();
-                const isDestVerb = r.matches.some(m => m.class && (m.class.toLowerCase().includes('verb') || m.class.toLowerCase() === 'v'));
-                
-                if (inp.endsWith('ing') || inp.endsWith('ed')) context = "Tense -> Base Form";
-                else if (inp.endsWith('s') || inp.endsWith('es') || inp.endsWith('ies')) {
-                    if (isDestVerb) context = "3rd Person -> Base Form";
-                    else context = "Plurals -> Singular";
-                }
-                else context = "Form -> Base";
+            
+            if (r.found && r.type !== 'exact') {
+                context = getContextLabel(r).text;
             }
             
             const converted = (r.found && r.type !== 'exact') ? r.matchWord : r.input;
