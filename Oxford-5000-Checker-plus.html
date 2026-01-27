@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oxford Smart Checker (Context Aware)</title>
+    <title>Oxford Smart Checker (v4 - Strict Morphology)</title>
     <style>
         :root {
-            --primary: #2563eb;
-            --bg-page: #f8fafc;
+            --primary: #4f46e5;
+            --bg-page: #f3f4f6;
             --bg-card: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --success: #10b981;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --success: #059669;
             --success-bg: #d1fae5;
             
             /* Level Colors */
@@ -46,10 +46,10 @@
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
-            color: #1e293b;
+            color: #1f2937;
         }
         .smart-badge {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             color: white;
             font-size: 0.75rem;
             padding: 4px 10px;
@@ -57,6 +57,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             vertical-align: middle;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
         }
 
         /* Grid Layout */
@@ -113,14 +114,14 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
-            background: #f8fafc;
+            background: #f9fafb;
             text-align: center;
             padding: 1rem;
         }
         .upload-area:hover { border-color: var(--primary); background: #eff6ff; }
         .upload-area.has-file { border-color: var(--success); background: #f0fdf4; }
         
-        .icon-large { width: 48px; height: 48px; margin-bottom: 1rem; color: #94a3b8; }
+        .icon-large { width: 48px; height: 48px; margin-bottom: 1rem; color: #9ca3af; }
         .upload-area.has-file .icon-large { color: var(--success); }
 
         /* Results Section */
@@ -137,7 +138,7 @@
         .toolbar {
             padding: 1rem;
             border-bottom: 1px solid var(--border);
-            background: #f8fafc;
+            background: #f9fafb;
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
@@ -159,13 +160,13 @@
             cursor: pointer;
             background: white;
         }
-        button.btn-primary { background: #1e293b; color: white; border: none; }
+        button.btn-primary { background: #1f2937; color: white; border: none; }
 
         /* Table */
         .table-wrapper { overflow-x: auto; max-height: 600px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th {
-            background: #f8fafc;
+            background: #f9fafb;
             text-align: left;
             padding: 1rem 1.5rem;
             font-weight: 600;
@@ -175,8 +176,8 @@
             top: 0;
             z-index: 10;
         }
-        td { padding: 0.85rem 1.5rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
-        tr:hover { background-color: #f8fafc; }
+        td { padding: 0.85rem 1.5rem; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+        tr:hover { background-color: #f9fafb; }
 
         /* Status Tags */
         .status-tag {
@@ -188,7 +189,7 @@
             font-weight: 700;
         }
         .status-found { background: var(--success-bg); color: var(--success); }
-        .status-missing { background: #f1f5f9; color: var(--text-muted); }
+        .status-missing { background: #f3f4f6; color: var(--text-muted); }
         
         /* Context/Transformation Info */
         .transformation-info {
@@ -197,10 +198,10 @@
             gap: 6px;
             margin-top: 4px;
             font-size: 0.8rem;
-            color: #64748b;
+            color: #6b7280;
         }
-        .arrow-icon { color: #94a3b8; font-family: monospace; }
-        .base-word { font-weight: 700; color: #2563eb; }
+        .arrow-icon { color: #9ca3af; font-family: monospace; }
+        .base-word { font-weight: 700; color: #4f46e5; }
         .context-badge {
             font-size: 0.7rem;
             padding: 1px 6px;
@@ -246,10 +247,10 @@
 <div class="container">
     <header>
         <h1>
-            Oxford Smart Checker <span class="smart-badge">Context Aware</span>
+            Oxford Smart Checker <span class="smart-badge">v4 Strict</span>
         </h1>
         <p style="color: var(--text-muted);">
-            Supports: <strong>Irregular Verbs, UK/US Swaps, Plurals & Tenses</strong>
+            Fixes: <strong>citys ≠ city</strong> (Consonant+y rule), <strong>applees ≠ apple</strong>, <strong>news</strong> preserved.
         </p>
     </header>
 
@@ -259,7 +260,7 @@
             <div class="card-header">
                 <div class="card-label">1. Input Word List</div>
             </div>
-            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;goes (finds go)&#10;apples (finds apple)&#10;went (finds go)&#10;coloured (finds color)"></textarea>
+            <textarea id="inputText" placeholder="Paste your words here...&#10;Examples:&#10;citys (should be Missing)&#10;boys (finds boy)&#10;applees (Missing)&#10;apples (finds apple)"></textarea>
         </div>
 
         <!-- CSV Upload -->
@@ -385,9 +386,36 @@
         "withdrew": "withdraw", "withdrawn": "withdraw", "wrote": "write", "written": "write"
     };
 
+    // --- IRREGULAR NOUNS (Plural -> Singular) ---
+    const irregularNouns = {
+        "children": "child", "men": "man", "women": "woman", "people": "person",
+        "feet": "foot", "teeth": "tooth", "geese": "goose", "mice": "mouse",
+        "lives": "life", "wives": "wife", "leaves": "leaf", "thieves": "thief",
+        "knives": "knife", "halves": "half", "shelves": "shelf", "wolves": "wolf",
+        "potatoes": "potato", "tomatoes": "tomato", "heroes": "hero", "echoes": "echo",
+        "analyses": "analysis", "crises": "crisis", "theses": "thesis", "axes": "axis",
+        "phenomena": "phenomenon", "criteria": "criterion", "data": "datum",
+        "fungi": "fungus", "nuclei": "nucleus", "cacti": "cactus", "foci": "focus",
+        "calves": "calf", "elves": "elf", "loaves": "loaf", "sheaves": "sheaf",
+        "scarves": "scarf", "hooves": "hoof", "dwarves": "dwarf", "wharves": "wharf",
+        "oases": "oasis", "diagnoses": "diagnosis", "parentheses": "parenthesis",
+        "synopses": "synopsis", "hypotheses": "hypothesis", "ellipses": "ellipse",
+        "appendices": "appendix", "indices": "index", "matrices": "matrix",
+        "vertebrae": "vertebra", "larvae": "larva", "alumni": "alumnus",
+        "bacilli": "bacillus", "stimuli": "stimulus", "syllabi": "syllabus",
+        "curricula": "curriculum", "media": "medium", "bacteria": "bacterium"
+    };
+    
+    // --- STEMMING EXCEPTIONS ---
+    const noStemming = new Set([
+        "news", "series", "species", "lens", "mathematics", "physics", "politics", 
+        "economics", "athletics", "gymnastics", "mechanics", "diabetes", "rabies",
+        "chaos", "bias", "bus", "gas", "virus", "status", "focus", "campus", "chorus"
+    ]);
+
     // --- HELPER: Is this class a verb? ---
     function isVerbClass(cls) {
-        if (!cls) return true; // Keep empty classes just in case
+        if (!cls) return true; 
         const c = cls.toLowerCase();
         return c.includes('verb') || c === 'v' || c === 'v.' || c === '?';
     }
@@ -409,20 +437,65 @@
         const forms = new Set();
         const w = word.toLowerCase();
         if (w.length < 3) return [];
+        
+        // Safety Check: Do not stem special words like "news"
+        if (noStemming.has(w)) return [];
+
+        // 1. Handle -ies (flies -> fly)
         if (w.endsWith('ies')) forms.add(w.slice(0, -3) + 'y');
-        if (w.endsWith('es')) forms.add(w.slice(0, -2));
-        if (w.endsWith('s') && !w.endsWith('ss')) forms.add(w.slice(0, -1));
-        if (w.endsWith('ied')) forms.add(w.slice(0, -3) + 'y');
-        if (w.endsWith('ed')) {
-            forms.add(w.slice(0, -1)); forms.add(w.slice(0, -2));
+
+        // 2. Handle -es (Strict Rule: Only strip -es if base ends in s, x, z, ch, sh, or o)
+        if (w.endsWith('es')) {
             const base = w.slice(0, -2);
-            if (base.length > 2 && base[base.length-1] === base[base.length-2]) forms.add(base.slice(0, -1));
+            // Regex checks if base ends in s, x, z, ch, sh, or o
+            if (/(s|x|z|ch|sh|o)$/.test(base)) {
+                forms.add(base);
+            }
         }
+
+        // 3. Handle -s (Strict Rule: Handle -ys ending)
+        if (w.endsWith('s') && !w.endsWith('ss')) {
+            // FIX for "citys" vs "boys"
+            if (w.endsWith('ys')) {
+                // Check letter before 'y'. 
+                // If vowel (a,e,i,o,u) + y + s -> Valid (boys -> boy)
+                // If consonant + y + s -> Invalid (citys -> city is WRONG)
+                const preYChar = w.length > 2 ? w[w.length - 3] : null;
+                if (preYChar && /[aeiou]/.test(preYChar)) {
+                    forms.add(w.slice(0, -1));
+                }
+                // If consonant, do nothing (do not add to forms)
+            } else {
+                // Normal -s handling (cats -> cat)
+                forms.add(w.slice(0, -1));
+            }
+        }
+
+        // 4. Handle -ied (studied -> study)
+        if (w.endsWith('ied')) forms.add(w.slice(0, -3) + 'y');
+
+        // 5. Handle -ed (Past tense)
+        if (w.endsWith('ed')) {
+            forms.add(w.slice(0, -1)); // loved -> love
+            forms.add(w.slice(0, -2)); // walked -> walk
+            const base = w.slice(0, -2);
+            // Handle doubled consonants (stopped -> stop)
+            if (base.length > 2 && base[base.length-1] === base[base.length-2]) {
+                forms.add(base.slice(0, -1));
+            }
+        }
+
+        // 6. Handle -ing (Gerund)
         if (w.endsWith('ing')) {
-            forms.add(w.slice(0, -3)); forms.add(w.slice(0, -3) + 'e');
+            forms.add(w.slice(0, -3)); // walking -> walk
+            forms.add(w.slice(0, -3) + 'e'); // loving -> love
             const base = w.slice(0, -3);
-            if (base.length > 2 && base[base.length-1] === base[base.length-2]) forms.add(base.slice(0, -1));
+            // Handle doubled consonants (stopping -> stop)
+            if (base.length > 2 && base[base.length-1] === base[base.length-2]) {
+                forms.add(base.slice(0, -1));
+            }
         }
+
         return Array.from(forms);
     }
 
@@ -445,13 +518,21 @@
             }
         }
 
-        // 3. Spelling Variants
+        // 3. Irregular Nouns (PLURAL -> SINGULAR)
+        if (irregularNouns[lowerInput]) {
+            const baseNoun = irregularNouns[lowerInput];
+            if (csvDataMap.has(baseNoun)) {
+                return { found: true, type: 'irregular_noun', matchWord: baseNoun, data: csvDataMap.get(baseNoun) };
+            }
+        }
+
+        // 4. Spelling Variants
         const variants = getSpellingVariants(lowerInput);
         for (const v of variants) {
             if (csvDataMap.has(v)) return { found: true, type: 'variant', matchWord: v, data: csvDataMap.get(v) };
         }
 
-        // 4. Stemming
+        // 5. Stemming
         const stems = getStemmedForms(lowerInput);
         for (const s of stems) {
             if (csvDataMap.has(s)) return { found: true, type: 'lemma', matchWord: s, data: csvDataMap.get(s) };
@@ -481,10 +562,11 @@
                 uploadPlaceholder.style.display = 'none';
                 fileInfo.style.display = 'block';
                 dropZone.classList.add('has-file');
-                fileStatus.textContent = `Loaded ${csvDataMap.size} words`;
+                fileStatus.textContent = `Loaded ${csvDataMap.size} unique words`;
                 fileStatus.style.color = 'var(--success)';
                 if (inputText.value.trim()) runAnalysis();
             } catch (err) {
+                console.error(err);
                 errorMsg.textContent = "CSV Error: " + err.message;
                 errorMsg.style.display = 'block';
                 csvDataMap.clear();
@@ -494,18 +576,26 @@
     }
 
     function processCSV(text) {
+        // 1. Remove BOM (Byte Order Mark) which ruins the first word
+        text = text.replace(/^\uFEFF/, '');
+        
         const lines = text.split(/\r?\n/);
         const newMap = new Map();
         let count = 0;
+        
         lines.forEach(line => {
             if (!line.trim()) return;
-            const parts = line.split(',');
-            if (parts.length < 2) return;
-            const rawWord = parts[0].trim();
-            if (!rawWord || (rawWord.toLowerCase() === 'word' && parts[1].includes('class'))) return;
             
-            let rawClass = parts.length >= 3 ? parts[1].trim() : '?';
-            let rawLevel = parts.length >= 3 ? parts[2].trim() : parts[1].trim();
+            // 2. Handle Quotes and split safely
+            const cleanLine = line.replace(/"/g, ''); 
+            const parts = cleanLine.split(',');
+            
+            // 3. Robust Access
+            const rawWord = parts[0] ? parts[0].trim() : '';
+            if (!rawWord || (rawWord.toLowerCase() === 'word' && parts.length > 1 && parts[1].includes('class'))) return;
+            
+            const rawClass = parts.length >= 2 ? parts[1].trim() : '?';
+            const rawLevel = parts.length >= 3 ? parts[2].trim() : (parts.length >= 2 ? parts[1].trim() : '?');
 
             const key = rawWord.toLowerCase();
             const entry = { original: rawWord, class: rawClass, level: rawLevel.toUpperCase() };
@@ -514,7 +604,8 @@
             else newMap.set(key, [entry]);
             count++;
         });
-        if (count === 0) throw new Error("No valid data found");
+        
+        if (count === 0) throw new Error("No valid data found. Check CSV format.");
         csvDataMap = newMap;
     }
 
@@ -538,15 +629,15 @@
         if (item.type === 'irregular') {
             labelText = "Base Form";
             labelClass += "ctx-irregular";
+        } else if (item.type === 'irregular_noun') {
+            labelText = "Singular";
+            labelClass += "ctx-plural";
         } else if (item.type === 'variant' || item.type === 'variant_lemma') {
             labelText = "US/UK Swap";
             labelClass += "ctx-variant";
         } else if (item.type === 'lemma') {
             const inp = item.input.toLowerCase();
-            // Check if the matched base word is a Verb
-            const isDestVerb = item.matches.some(m => 
-                m.class && (m.class.toLowerCase().includes('verb') || m.class.toLowerCase() === 'v')
-            );
+            const isDestVerb = item.matches.some(m => isVerbClass(m.class));
 
             if (inp.endsWith('ing') || inp.endsWith('ed')) {
                 labelText = "Base Form";
@@ -593,13 +684,10 @@
             wordDiv.textContent = item.input;
             tdWord.appendChild(wordDiv);
 
-            // Logic for Transformation Display
             if (item.found && item.type !== 'exact') {
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'transformation-info';
-                
                 const ctx = getContextLabel(item);
-
                 infoDiv.innerHTML = `
                     <span class="arrow-icon">↳</span>
                     <span class="base-word">${item.matchWord}</span>
@@ -647,13 +735,10 @@
         const rows = analysisResults.map(r => {
             const details = r.matches.map(m => `[${m.level}] ${m.class}`).join('; ');
             let context = "Exact Match";
-            
             if (r.found && r.type !== 'exact') {
                 context = getContextLabel(r).text;
             }
-            
             const converted = (r.found && r.type !== 'exact') ? r.matchWord : r.input;
-            
             return `${r.input},${r.found ? 'Yes' : 'No'},${converted},${context},"${details.replace(/"/g, '""')}"`;
         }).join("\n");
         const link = document.createElement('a');
