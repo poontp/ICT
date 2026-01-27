@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICT 2025 S5 第一次考試 Q7 互動模擬</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #f59e0b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+            --highlight-current: #3b82f6;
+            --highlight-compare: #f97316;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { color: var(--secondary); margin-top: 0; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .tab { padding: 8px 16px; background: #e2e8f0; border-radius: 6px; cursor: pointer; transition: 0.2s; user-select: none; }
+        .tab.active { background: var(--primary); color: white; font-weight: bold; }
+        .tab:hover:not(.active) { background: #cbd5e1; }
+        .hidden { display: none; }
+
+        /* Code Block Styling */
+        .code-block {
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 20px; 
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+            overflow-x: auto; 
+            margin-bottom: 15px;
+            line-height: 1.5;
+            font-size: 15px;
+            border: 1px solid #333;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            white-space: pre; 
+        }
+
+        .keyword { color: #569cd6; font-weight: bold; } 
+        .variable { color: #9cdcfe; } 
+        .string { color: #ce9178; } 
+        .comment { color: #6a9955; font-style: italic; }
+        .number { color: #b5cea8; }
+        .answer-highlight { background-color: rgba(245, 158, 11, 0.2); border-bottom: 2px solid var(--accent); padding: 0 4px; font-weight: bold; color: #fff; }
+
+        /* Simulation Grid */
+        .sim-container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .grid-panel { flex: 1; min-width: 320px; }
+        .control-panel { flex: 1; min-width: 320px; display: flex; flex-direction: column; }
+
+        .sim-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .sim-cell {
+            background: #f1f5f9; padding: 12px 5px; text-align: center;
+            border-radius: 6px; border: 2px solid transparent;
+            position: relative; transition: all 0.3s ease;
+        }
+
+        .sim-header { font-weight: bold; background: #e2e8f0; color: #475569; }
+        
+        /* Cell States */
+        .st-E { background-color: #d1fae5; color: #065f46; } 
+        .st-H { background-color: #fee2e2; color: #991b1b; } 
+        .st-L { background-color: #ffedd5; color: #9a3412; } 
+
+        /* Active Highlights */
+        .cell-target {
+            border-color: #94a3b8;
+            border-style: dashed;
+            background-color: #e0f2fe;
+        }
+
+        .cell-current {
+            border-color: var(--highlight-current);
+            border-style: solid;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+            z-index: 10; transform: scale(1.05);
+            background-color: #fff;
+        }
+        .cell-compare {
+            border-color: var(--highlight-compare);
+            box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2);
+            z-index: 10;
+        }
+        
+        .badge {
+            position: absolute; top: -8px; right: -8px;
+            font-size: 10px; padding: 2px 6px; border-radius: 10px;
+            color: white; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+        }
+        .badge-current { background: var(--highlight-current); }
+        .badge-compare { background: var(--highlight-compare); }
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* Controls & Log */
+        .settings-box {
+            background: #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px;
+            display: flex; flex-direction: column; gap: 10px; border: 1px solid #cbd5e1;
+        }
+        .input-group { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .input-group label { font-weight: bold; color: var(--text); flex: 1; }
+        .input-group input {
+            padding: 8px; border-radius: 6px; border: 1px solid #94a3b8; width: 60px; font-size: 16px; text-align: center;
+        }
+
+        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn {
+            border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;
+            font-size: 16px; font-weight: bold; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { background-color: var(--primary); color: white; flex: 2; }
+        .btn-primary:hover { background-color: var(--secondary); transform: translateY(-1px); }
+        .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; }
+        
+        .btn-secondary { background-color: var(--secondary); color: white; width: 100%; margin-top: 5px; }
+        .btn-secondary:hover { opacity: 0.9; }
+
+        .btn-reset { background-color: #e2e8f0; color: #475569; flex: 1; }
+        .btn-reset:hover { background-color: #cbd5e1; }
+
+        .log-box {
+            background: #1e1e1e; color: #fff; padding: 20px; border-radius: 8px;
+            font-family: 'Consolas', monospace; height: 300px; overflow-y: auto;
+            border: 1px solid #333; display: flex; flex-direction: column;
+        }
+        .log-entry { margin-bottom: 8px; padding-left: 12px; border-left: 3px solid #555; animation: fadeIn 0.3s; }
+        .log-entry.highlight { border-left-color: var(--accent); background: rgba(255,255,255,0.05); }
+        .log-err-x { color: #ef4444; font-weight: bold; border-left-color: #ef4444; }
+        .log-err-y { color: #f59e0b; font-weight: bold; border-left-color: #f59e0b; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .status-bar {
+            background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;
+            font-weight: bold; color: var(--secondary); display: flex; justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ICT 2025 S5 第一次考試 Q7 題目解析與互動模擬</h1>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('part-a')">分題 (a) 答案解析</div>
+        <div class="tab" onclick="switchTab('part-b')">分題 (b) 程式碼解析</div>
+        <div class="tab" onclick="switchTab('simulation')">互動模擬器 (自選 R, J)</div>
+    </div>
+
+    <!-- Part A Section (Default Active) -->
+    <div id="part-a" class="card">
+        <h2>分題 (a)：偽代碼填空</h2>
+        <div class="code-block">
+            <pre>10 j ← 0
+20 當 j < <span class="answer-highlight">(a1) M</span>
+30     如果 entry[r][j] = GOAL[j]
+40         state[r][j] ← 'E'
+50     否則 如果 <span class="answer-highlight">(a2) entry[r][j] > GOAL[j]</span>
+60         state[r][j] ← 'H'
+70     否則
+80         state[r][j] ← 'L'
+90     j ← j + 1</pre>
+        </div>
+    </div>
+
+    <!-- Part B Section -->
+    <div id="part-b" class="card hidden">
+        <h2>分題 (b)：Python 程式編寫</h2>
+        <p>以下是完整的 Python 實作代碼，包含詳細註解：</p>
+        <div class="code-block">
+<pre><code><span class="keyword">def</span> <span class="variable">logic_check</span>(r, j):
+    <span class="comment"># 檢查當前單元格是否尚未猜對 ('E')</span>
+    <span class="comment"># 只有當狀態不是 'E' 時，才需要檢查是否犯了邏輯錯誤</span>
+    <span class="keyword">if</span> state[r][j] != <span class="string">'E'</span>:
+        
+        <span class="comment"># 遍歷當前行 (r) 之前的所有行 (k)</span>
+        <span class="comment"># range(0, r) 會產生 0, 1, ..., r-1</span>
+        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="variable">range</span>(<span class="number">0</span>, r):
+            
+            <span class="comment"># --- 錯誤 X 檢測 ---</span>
+            <span class="comment"># 情況：之前的第 k 行已經猜對了 (狀態為 'E')</span>
+            <span class="comment"># 但目前的第 r 行卻沒有跟隨這個正確答案</span>
+            <span class="keyword">if</span> state[k][j] == <span class="string">'E'</span>:
+                <span class="variable">print</span>(<span class="string">'r='</span>, r, <span class="string">'j='</span>, j, <span class="string">'錯誤 X'</span>)
+            
+            <span class="comment"># --- 錯誤 Y 檢測 ---</span>
+            <span class="comment"># 情況：之前的第 k 行猜錯了，而現在第 r 行</span>
+            <span class="comment"># 猜了一個跟第 k 行完全一樣的數值，重複了錯誤</span>
+            <span class="keyword">if</span> entry[k][j] == entry[r][j]:
+                <span class="variable">print</span>(<span class="string">'r='</span>, r, <span class="string">'j='</span>, j, <span class="string">'錯誤 Y'</span>)</code></pre>
+        </div>
+    </div>
+
+    <!-- Simulation Section -->
+    <div id="simulation" class="card hidden">
+        <h2>Logic Check 逐步模擬器</h2>
+        <p>此工具模擬 <code>logic_check(r, j)</code> 的執行過程。請設定具體的 <code>r</code> (行) 和 <code>j</code> (欄) 來開始檢查。</p>
+        
+        <div class="sim-container">
+            <!-- Left: Grid -->
+            <div class="grid-panel">
+                <div class="status-bar">
+                    <span>目標 (GOAL): [50, 20, 88]</span>
+                    <span id="step-counter">準備就緒</span>
+                </div>
+                <div class="sim-grid" id="game-grid">
+                    <!-- Grid generated by JS -->
+                </div>
+                <div style="margin-top: 15px; font-size: 0.9em; color: #64748b;">
+                    <span style="display:inline-block; width:12px; height:12px; background:var(--highlight-current); margin-right:5px;"></span>當前檢查 (r, j)
+                    <span style="display:inline-block; width:12px; height:12px; background:var(--highlight-compare); margin-left:10px; margin-right:5px;"></span>歷史對比 (k, j)
+                </div>
+            </div>
+
+            <!-- Right: Controls & Log -->
+            <div class="control-panel">
+                
+                <div class="settings-box">
+                    <div class="input-group">
+                        <label for="input-r">設定行數 (r) [0-3]:</label>
+                        <input type="number" id="input-r" min="0" max="3" value="2">
+                    </div>
+                    <div class="input-group">
+                        <label for="input-j">設定欄數 (j) [0-2]:</label>
+                        <input type="number" id="input-j" min="0" max="2" value="0">
+                    </div>
+                    <button class="btn btn-secondary" onclick="setCustomCoordinates()">確認座標 & 重置</button>
+                </div>
+
+                <div class="btn-group">
+                    <button id="btn-next" class="btn btn-primary" onclick="nextStep()">
+                        <span>▶ 下一步</span>
+                    </button>
+                    <button class="btn btn-reset" onclick="resetSim()">
+                        <span>⟲ 重置</span>
+                    </button>
+                </div>
+                <div class="log-box" id="console-log">
+                    <div class="log-entry">請設定 r 和 j 值，然後點擊「下一步」開始檢查...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- Data Model ---
+    const M = 3;
+    const GOAL = [50, 20, 88];
+    const entry = [
+        [40, 30, 88], // r=0
+        [55, 10, 90], // r=1
+        [50, 10, 90], // r=2 (Target)
+        [50, 20, 88]  // r=3
+    ];
+    const state = [
+        ['L', 'H', 'E'],
+        ['H', 'L', 'H'],
+        ['E', 'L', 'H'],
+        ['E', 'E', 'E']
+    ];
+
+    // --- Simulation State ---
+    let steps = [];
+    let currentStepIndex = -1;
+    let targetR = 2; // Default value
+    let targetJ = 0; // Default value
+
+    // --- Generate Steps Logic ---
+    function generateSteps(rValue, jValue) {
+        const s = [];
+        
+        s.push({
+            type: 'START', r: rValue, j: jValue,
+            msg: `開始檢查單元格 (r=${rValue}, j=${jValue})...`
+        });
+
+        // Basic check: Is it 'E'?
+        if (state[rValue][jValue] === 'E') {
+            s.push({
+                type: 'SKIP', r: rValue, j: jValue,
+                msg: `此格狀態為 'E' (猜對了)。根據題目邏輯，無需檢查錯誤。`
+            });
+            s.push({ type: 'END', msg: '檢查完成。' });
+            return s;
+        }
+
+        // Handle r=0 case
+        if (rValue === 0) {
+            s.push({
+                type: 'INFO', 
+                msg: `這是第一行 (r=0)，沒有歷史數據 (k) 可以比對。`
+            });
+            s.push({ type: 'END', msg: '檢查完成。' });
+            return s;
+        }
+
+        // Loop through previous rows (k) for this specific j
+        for (let k = 0; k < rValue; k++) {
+            s.push({
+                type: 'COMPARE', r: rValue, j: jValue, k: k,
+                msg: `與第 ${k} 行對比 (k=${k}, j=${jValue})...`
+            });
+
+            // Check Error X
+            if (state[k][jValue] === 'E') {
+                s.push({
+                    type: 'ERROR_X', r: rValue, j: jValue, k: k,
+                    msg: `❌ 發現錯誤 X！第 ${k} 行已經猜對 (狀態 'E')，但現在 r=${rValue} 卻猜錯了。`
+                });
+            }
+
+            // Check Error Y
+            if (entry[k][jValue] === entry[rValue][jValue]) {
+                s.push({
+                    type: 'ERROR_Y', r: rValue, j: jValue, k: k,
+                    msg: `⚠️ 發現錯誤 Y！這次猜的數值 ${entry[rValue][jValue]} 與第 ${k} 行完全相同，重複了錯誤。`
+                });
+            }
+        }
+        s.push({ type: 'END', msg: '檢查完成。' });
+        return s;
+    }
+
+    // --- UI Rendering ---
+    function renderGrid() {
+        const grid = document.getElementById('game-grid');
+        grid.innerHTML = '';
+        
+        // Headers
+        grid.innerHTML += `<div class="sim-cell sim-header">嘗試</div>`;
+        [0, 1, 2].forEach(j => grid.innerHTML += `<div class="sim-cell sim-header">j=${j}</div>`);
+
+        // Rows
+        for (let r = 0; r < 4; r++) {
+            grid.innerHTML += `<div class="sim-cell sim-header" style="display:flex;align-items:center;justify-content:center;">r=${r}</div>`;
+            for (let j = 0; j < 3; j++) {
+                const val = entry[r][j];
+                const st = state[r][j];
+                const id = `cell-${r}-${j}`;
+                
+                // Check if this is the target cell to add a subtle highlight
+                let extraClass = '';
+                if (r === targetR && j === targetJ) {
+                    extraClass = 'cell-target';
+                }
+
+                grid.innerHTML += `
+                    <div id="${id}" class="sim-cell st-${st} ${extraClass}">
+                        <div style="font-size:1.2em; font-weight:bold;">${val}</div>
+                        <div style="font-size:0.8em; opacity:0.8;">${st}</div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function updateUI(step) {
+        // Clear previous active highlights (keep target highlight)
+        document.querySelectorAll('.sim-cell').forEach(el => {
+            el.classList.remove('cell-current', 'cell-compare');
+            const badge = el.querySelector('.badge');
+            if(badge) badge.remove();
+        });
+
+        // Add Log
+        const logBox = document.getElementById('console-log');
+        let logClass = 'log-entry';
+        if (step.type.includes('ERROR_X')) logClass += ' log-err-x';
+        if (step.type.includes('ERROR_Y')) logClass += ' log-err-y';
+        if (step.type === 'START') logClass += ' highlight';
+        
+        const logHtml = `<div class="${logClass}">${step.msg}</div>`;
+        logBox.insertAdjacentHTML('beforeend', logHtml);
+        logBox.scrollTop = logBox.scrollHeight;
+
+        // Update Status Counter
+        document.getElementById('step-counter').innerText = 
+            step.type === 'END' ? '完成' : `步驟 ${currentStepIndex + 1}/${steps.length}`;
+
+        if (step.type === 'END' || step.type === 'INFO') return;
+
+        // Highlights
+        if (step.r !== undefined && step.j !== undefined) {
+            const currentCell = document.getElementById(`cell-${step.r}-${step.j}`);
+            if (currentCell) {
+                currentCell.classList.add('cell-current');
+                currentCell.innerHTML += `<div class="badge badge-current">目標 (r,j)</div>`;
+            }
+        }
+
+        if (step.k !== undefined) {
+            const compareCell = document.getElementById(`cell-${step.k}-${step.j}`);
+            if (compareCell) {
+                compareCell.classList.add('cell-compare');
+                compareCell.innerHTML += `<div class="badge badge-compare">比對 k=${step.k}</div>`;
+            }
+        }
+    }
+
+    function nextStep() {
+        if (currentStepIndex >= steps.length - 1) return;
+        
+        currentStepIndex++;
+        const step = steps[currentStepIndex];
+        updateUI(step);
+
+        if (step.type === 'END') {
+            document.getElementById('btn-next').disabled = true;
+            document.getElementById('btn-next').innerText = '執行完畢';
+        }
+    }
+
+    function setCustomCoordinates() {
+        const inputR = document.getElementById('input-r');
+        const inputJ = document.getElementById('input-j');
+        
+        let valR = parseInt(inputR.value);
+        let valJ = parseInt(inputJ.value);
+        
+        if (isNaN(valR) || valR < 0 || valR > 3) {
+            alert("請輸入有效的 r 值 (0-3)");
+            return;
+        }
+        if (isNaN(valJ) || valJ < 0 || valJ > 2) {
+            alert("請輸入有效的 j 值 (0-2)");
+            return;
+        }
+        
+        targetR = valR;
+        targetJ = valJ;
+        resetSim();
+        
+        // Add a system message
+        const logBox = document.getElementById('console-log');
+        logBox.innerHTML = `<div class="log-entry highlight">已鎖定座標 (r=${targetR}, j=${targetJ})。點擊「下一步」開始。</div>`;
+    }
+
+    function resetSim() {
+        currentStepIndex = -1;
+        steps = generateSteps(targetR, targetJ);
+        renderGrid(); // Re-render to update the static target highlight
+        
+        // Reset Log
+        document.getElementById('console-log').innerHTML = `<div class="log-entry">準備執行 logic_check(${targetR}, ${targetJ})...</div>`;
+        
+        // Reset Button
+        const btn = document.getElementById('btn-next');
+        btn.disabled = false;
+        btn.innerText = '▶ 下一步';
+        document.getElementById('step-counter').innerText = '準備就緒';
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.card').forEach(el => el.classList.add('hidden'));
+        document.getElementById(tabId).classList.remove('hidden');
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    // Init
+    steps = generateSteps(targetR, targetJ);
+    renderGrid();
+
+</script>
+
+</body>
+</html>

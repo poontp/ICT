@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>演算法視覺化演示：合併與對分檢索</title>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* 簡單的過渡動畫設定 */
+        .transition-all-300 {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .array-item {
+            transition: transform 0.3s, background-color 0.3s, border-color 0.3s;
+        }
+
+        .scale-up {
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 font-sans text-slate-800">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden min-h-[700px]">
+        
+        <!-- 頂部導航 -->
+        <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold text-slate-800" id="header-title">(a) 合併降序陣列</h1>
+            <div class="flex gap-2 bg-slate-100 p-1 rounded-lg">
+                <button onclick="switchMode('merge')" id="btn-mode-merge" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white shadow-sm text-blue-600">
+                    (a) 合併演算法
+                </button>
+                <button onclick="switchMode('search')" id="btn-mode-search" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-600 hover:bg-white/50">
+                    (b) 對分檢索
+                </button>
+            </div>
+        </div>
+
+        <!-- 主要內容區域 -->
+        <div id="app-content" class="p-6">
+            <!-- 內容將由 JavaScript 動態渲染 -->
+        </div>
+
+    </div>
+
+    <script>
+        // --- 全域變數與狀態 ---
+        let currentMode = 'merge'; // 'merge' or 'search'
+        
+        // 初始資料
+        let initialA = [95, 88, 72, 60];
+        let initialB = [92, 85, 78, 65, 50];
+
+        // Merge State
+        let mergeState = {
+            A: [...initialA],
+            B: [...initialB],
+            idxA: 0,
+            idxB: 0,
+            k: 0,
+            allScores: [],
+            message: "準備開始合併...",
+            completed: false,
+            history: [] // 堆疊用於儲存上一步
+        };
+
+        // Search State
+        let searchState = {
+            list: [], // 將由 A + B 排序後生成
+            target: 88,
+            low: 0,
+            high: 0,
+            mid: null,
+            found: false,
+            notFound: false,
+            step: 0, // 0: 計算 Mid, 1: 比較
+            active: false,
+            message: "請設定目標並開始搜尋...",
+            history: [] // 堆疊用於儲存上一步
+        };
+
+        // 輸入框暫存值
+        let inputStrA = initialA.join(", ");
+        let inputStrB = initialB.join(", ");
+        let inputSearchTarget = "88";
+
+        // --- 初始化 ---
+        function init() {
+            // 初始化 Search List
+            updateSearchListFromMergeArrays();
+            render();
+        }
+
+        function updateSearchListFromMergeArrays() {
+            // 合併並降序排序
+            const combined = [...mergeState.A, ...mergeState.B].sort((a, b) => b - a);
+            searchState.list = combined;
+            resetSearch();
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // 更新按鈕樣式
+            const btnMerge = document.getElementById('btn-mode-merge');
+            const btnSearch = document.getElementById('btn-mode-search');
+            const title = document.getElementById('header-title');
+
+            if (mode === 'merge') {
+                btnMerge.className = "px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white shadow-sm text-blue-600";
+                btnSearch.className = "px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-600 hover:bg-white/50";
+                title.innerText = "(a) 合併降序陣列";
+            } else {
+                btnMerge.className = "px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-600 hover:bg-white/50";
+                btnSearch.className = "px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white shadow-sm text-indigo-600";
+                title.innerText = "(b) 對分檢索 (降序)";
+            }
+            render();
+        }
+
+        // --- 邏輯控制: Merge Sort ---
+
+        function applyMergeSettings() {
+            const strA = document.getElementById('input-class-a').value;
+            const strB = document.getElementById('input-class-b').value;
+            
+            const parseArr = (str) => str.split(/[,，\s]+/).map(Number).filter(n => !isNaN(n));
+            const newA = parseArr(strA);
+            const newB = parseArr(strB);
+
+            if (newA.length === 0 || newB.length === 0) {
+                alert("錯誤：陣列不能為空。");
+                return;
+            }
+
+            // 檢查降序
+            const isDesc = (arr) => {
+                for(let i=0; i<arr.length-1; i++) if(arr[i] < arr[i+1]) return false;
+                return true;
+            };
+
+            if (!isDesc(newA) || !isDesc(newB)) {
+                alert("錯誤：輸入的陣列必須是由大到小排列 (降序)。");
+                return;
+            }
+
+            mergeState.A = newA;
+            mergeState.B = newB;
+            inputStrA = strA;
+            inputStrB = strB;
+            
+            resetMerge();
+            updateSearchListFromMergeArrays(); // 同步更新搜尋的資料來源
+            render();
+        }
+
+        function resetMerge() {
+            mergeState.idxA = 0;
+            mergeState.idxB = 0;
+            mergeState.k = 0;
+            mergeState.allScores = [];
+            mergeState.message = "陣列已更新，準備開始合併...";
+            mergeState.completed = false;
+            mergeState.history = [];
+            render();
+        }
+
+        function nextMergeStep() {
+            if (mergeState.completed) return;
+
+            // 1. 儲存當前狀態到 History (Deep Copy)
+            const snapshot = JSON.parse(JSON.stringify({
+                idxA: mergeState.idxA,
+                idxB: mergeState.idxB,
+                k: mergeState.k,
+                allScores: mergeState.allScores,
+                message: mergeState.message,
+                completed: mergeState.completed
+            }));
+            mergeState.history.push(snapshot);
+
+            // 2. 執行邏輯
+            const { A, B, idxA, idxB } = mergeState;
+            let nextVal, msg = "";
+            let nextIdxA = idxA;
+            let nextIdxB = idxB;
+
+            if (idxA < A.length && idxB < B.length) {
+                if (A[idxA] >= B[idxB]) {
+                    nextVal = A[idxA];
+                    nextIdxA++;
+                    msg = `比較: A[${idxA}] (${A[idxA]}) >= B[${idxB}] (${B[idxB]})。取 A。`;
+                } else {
+                    nextVal = B[idxB];
+                    nextIdxB++;
+                    msg = `比較: A[${idxA}] (${A[idxA]}) < B[${idxB}] (${B[idxB]})。取 B。`;
+                }
+            } else if (idxA < A.length) {
+                nextVal = A[idxA];
+                nextIdxA++;
+                msg = "B 已空，取 A 剩餘元素。";
+            } else {
+                nextVal = B[idxB];
+                nextIdxB++;
+                msg = "A 已空，取 B 剩餘元素。";
+            }
+
+            mergeState.allScores.push(nextVal);
+            mergeState.idxA = nextIdxA;
+            mergeState.idxB = nextIdxB;
+            mergeState.k++;
+            mergeState.message = msg;
+
+            if (nextIdxA >= A.length && nextIdxB >= B.length) {
+                mergeState.completed = true;
+                mergeState.message += " 合併完成！";
+            }
+
+            render();
+        }
+
+        function prevMergeStep() {
+            if (mergeState.history.length === 0) return;
+            
+            // 取出上一個狀態
+            const prevState = mergeState.history.pop();
+            
+            // 還原
+            mergeState.idxA = prevState.idxA;
+            mergeState.idxB = prevState.idxB;
+            mergeState.k = prevState.k;
+            mergeState.allScores = prevState.allScores;
+            mergeState.message = prevState.message;
+            mergeState.completed = prevState.completed;
+
+            render();
+        }
+
+        // --- 邏輯控制: Binary Search ---
+
+        function resetSearch() {
+            searchState.low = 0;
+            searchState.high = searchState.list.length - 1;
+            searchState.mid = null;
+            searchState.found = false;
+            searchState.notFound = false;
+            searchState.step = 0;
+            searchState.active = false;
+            searchState.message = "請設定目標並開始搜尋...";
+            searchState.history = [];
+        }
+
+        function startSearch() {
+            const val = parseInt(document.getElementById('input-search-target').value);
+            if (isNaN(val)) {
+                alert("請輸入有效數字");
+                return;
+            }
+            inputSearchTarget = val;
+            searchState.target = val;
+            resetSearch();
+            searchState.active = true;
+            searchState.message = `準備開始搜尋 ${val}...`;
+            render();
+        }
+
+        function nextSearchStep() {
+            if (!searchState.active || searchState.found || searchState.notFound) return;
+
+            // 1. 儲存歷史
+            const snapshot = JSON.parse(JSON.stringify({
+                low: searchState.low,
+                high: searchState.high,
+                mid: searchState.mid,
+                found: searchState.found,
+                notFound: searchState.notFound,
+                step: searchState.step,
+                message: searchState.message
+            }));
+            searchState.history.push(snapshot);
+
+            // 2. 執行邏輯
+            const { low, high, step, list, target } = searchState;
+
+            if (step === 0) {
+                // 計算 Mid
+                if (low > high) {
+                    searchState.notFound = true;
+                    searchState.message = "Low > High，搜尋結束，找不到目標值。";
+                } else {
+                    const newMid = Math.floor((low + high) / 2);
+                    searchState.mid = newMid;
+                    searchState.step = 1;
+                    searchState.message = `計算中位數索引: (${low} + ${high}) / 2 = ${newMid}。數值為 ${list[newMid]}。`;
+                }
+            } else {
+                // 比較
+                const midVal = list[searchState.mid];
+                if (target === midVal) {
+                    searchState.found = true;
+                    searchState.message = `找到目標值 ${target}！索引為 ${searchState.mid}。`;
+                } else if (target > midVal) {
+                    // 降序陣列：若目標比中間大，目標在左邊 (索引較小)
+                    searchState.high = searchState.mid - 1;
+                    searchState.step = 0;
+                    searchState.mid = null;
+                    searchState.message = `${target} > ${midVal}。因降序排列，目標在左側 (High = Mid - 1)。`;
+                } else {
+                    // 降序陣列：若目標比中間小，目標在右邊 (索引較大)
+                    searchState.low = searchState.mid + 1;
+                    searchState.step = 0;
+                    searchState.mid = null;
+                    searchState.message = `${target} < ${midVal}。因降序排列，目標在右側 (Low = Mid + 1)。`;
+                }
+            }
+            render();
+        }
+
+        function prevSearchStep() {
+            if (searchState.history.length === 0) return;
+            const prev = searchState.history.pop();
+            
+            searchState.low = prev.low;
+            searchState.high = prev.high;
+            searchState.mid = prev.mid;
+            searchState.found = prev.found;
+            searchState.notFound = prev.notFound;
+            searchState.step = prev.step;
+            searchState.message = prev.message;
+            
+            render();
+        }
+
+        // --- 渲染 (Render) ---
+
+        function render() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = ''; // 清空
+
+            if (currentMode === 'merge') {
+                renderMergeView(container);
+            } else {
+                renderSearchView(container);
+            }
+            
+            // 重新初始化圖示
+            lucide.createIcons();
+        }
+
+        function renderMergeView(container) {
+            // 設定區塊
+            const settingsHtml = `
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm mb-6">
+                    <div class="flex items-center gap-2 mb-3 text-slate-700 font-semibold">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                        <span>自訂陣列設定</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Class A (X)</label>
+                            <input type="text" id="input-class-a" value="${inputStrA}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Class B (Y)</label>
+                            <input type="text" id="input-class-b" value="${inputStrB}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 outline-none">
+                        </div>
+                        <button onclick="applyMergeSettings()" class="px-4 py-2 bg-slate-800 text-white text-sm rounded-md hover:bg-slate-900 transition-colors">
+                            套用並重置
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // 陣列顯示
+            const renderArray = (arr, currentIndex, label, color) => {
+                return arr.map((val, idx) => {
+                    const isActive = !mergeState.completed && idx === currentIndex;
+                    const isPast = !mergeState.completed && idx < currentIndex;
+                    
+                    let bgClass = "bg-white";
+                    let borderClass = "border-slate-300";
+                    let textClass = "text-slate-700";
+                    let scaleClass = "";
+
+                    if (isActive) {
+                        bgClass = color === 'blue' ? "bg-blue-100" : "bg-green-100";
+                        borderClass = color === 'blue' ? "border-blue-500" : "border-green-500";
+                        textClass = color === 'blue' ? "text-blue-700" : "text-green-700";
+                        scaleClass = "scale-up";
+                    } else if (isPast) {
+                        bgClass = "bg-slate-100";
+                        borderClass = "border-slate-200";
+                        textClass = "text-slate-300";
+                    }
+
+                    return `
+                        <div class="flex flex-col items-center mx-2 relative">
+                            <span class="text-xs font-mono text-slate-500 mb-1">${idx}</span>
+                            <div class="w-12 h-12 flex items-center justify-center rounded-md border-2 text-lg font-bold array-item ${bgClass} ${borderClass} ${textClass} ${scaleClass}">
+                                ${val}
+                            </div>
+                            <div class="h-8 w-full flex justify-center mt-1">
+                                ${isActive ? `
+                                    <div class="flex flex-col items-center ${color === 'blue' ? 'text-blue-600' : 'text-green-600'} fade-in">
+                                        <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                                        <span class="text-xs font-bold">${label}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            // 結果陣列
+            const resultHtml = mergeState.allScores.map((score, idx) => `
+                <div class="flex flex-col items-center fade-in">
+                    <span class="text-xs text-slate-400 mb-1">${idx}</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-md border-2 border-purple-500 bg-purple-50 text-purple-900 text-lg font-bold shadow-sm">
+                        ${score}
+                    </div>
+                </div>
+            `).join('');
+
+            const kIndicator = !mergeState.completed ? `
+                <div class="flex flex-col items-center opacity-50">
+                   <span class="text-xs text-slate-400 mb-1">${mergeState.k}</span>
+                   <div class="w-12 h-12 flex items-center justify-center rounded-md border-2 border-dashed border-slate-400 bg-transparent text-slate-400">k</div>
+                </div>
+            ` : '';
+
+            // 組合 HTML
+            container.innerHTML = `
+                ${settingsHtml}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                        <h3 class="text-lg font-semibold text-blue-700 mb-4">Class A</h3>
+                        <div class="flex flex-wrap justify-center md:justify-start">
+                            ${renderArray(mergeState.A, mergeState.idxA, 'idxA', 'blue')}
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                        <h3 class="text-lg font-semibold text-green-700 mb-4">Class B</h3>
+                        <div class="flex flex-wrap justify-center md:justify-start">
+                            ${renderArray(mergeState.B, mergeState.idxB, 'idxB', 'green')}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-300 mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-4">合併結果 (AllScores)</h3>
+                    <div class="flex gap-2 flex-wrap min-h-[80px] items-start">
+                        ${resultHtml}
+                        ${kIndicator}
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center gap-4">
+                    <div class="bg-blue-50 text-blue-800 px-6 py-3 rounded-full text-sm font-medium shadow-sm border border-blue-100 w-full text-center">
+                        ${mergeState.message}
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="resetMerge()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> 重置
+                        </button>
+                        <button onclick="prevMergeStep()" ${mergeState.history.length === 0 ? 'disabled' : ''} class="flex items-center gap-2 px-4 py-2 bg-amber-100 border border-amber-200 text-amber-800 rounded-lg hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i data-lucide="skip-back" class="w-4 h-4"></i> 上一步
+                        </button>
+                        <button onclick="nextMergeStep()" ${mergeState.completed ? 'disabled' : ''} class="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md">
+                            <i data-lucide="skip-forward" class="w-4 h-4"></i> 下一步
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSearchView(container) {
+            // 搜尋設定列
+            const controlsHtml = `
+                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                    <div class="flex items-center gap-2 text-indigo-900">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                        <span class="font-semibold text-sm">資料來源：已根據 (a) 的 Class A 與 Class B 自動生成</span>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <label class="text-sm font-medium text-indigo-800 whitespace-nowrap">搜尋目標：</label>
+                        <input type="number" id="input-search-target" value="${inputSearchTarget}" class="px-3 py-1.5 rounded border border-indigo-300 text-sm w-24 text-center focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <button onclick="startSearch()" class="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors">
+                            開始搜尋
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // 搜尋陣列視覺化
+            const arrayHtml = searchState.list.map((score, idx) => {
+                const isMid = idx === searchState.mid;
+                const inRange = idx >= searchState.low && idx <= searchState.high;
+                const isFound = searchState.found && idx === searchState.mid;
+                const isLow = idx === searchState.low && searchState.active && !searchState.found && !searchState.notFound;
+                const isHigh = idx === searchState.high && searchState.active && !searchState.found && !searchState.notFound;
+
+                let boxClass = "bg-slate-100 border-slate-200 text-slate-300"; // 預設：非範圍內
+                
+                if (isFound) {
+                    boxClass = "bg-green-500 border-green-600 text-white scale-up ring-4 ring-green-200";
+                } else if (isMid) {
+                    boxClass = "bg-purple-100 border-purple-500 text-purple-900 scale-up";
+                } else if (inRange && searchState.active) {
+                    boxClass = "bg-white border-slate-400 text-slate-800";
+                }
+
+                return `
+                    <div class="relative flex flex-col items-center mx-1">
+                        <span class="text-xs text-slate-500 font-mono mb-1">${idx}</span>
+                        <div class="h-6 relative w-full flex justify-center">
+                            ${isLow ? '<span class="absolute -top-1 text-xs font-bold text-green-600 bg-green-100 px-1 rounded fade-in">Low</span>' : ''}
+                            ${isHigh ? '<span class="absolute -top-1 text-xs font-bold text-red-600 bg-red-100 px-1 rounded fade-in">High</span>' : ''}
+                            ${isMid ? '<span class="absolute -top-6 text-xs font-bold text-purple-600 bg-purple-100 px-1 rounded flex flex-col items-center fade-in">Mid <i data-lucide="arrow-down" class="w-3 h-3"></i></span>' : ''}
+                        </div>
+                        <div class="w-12 h-12 flex items-center justify-center rounded-md border-2 text-lg font-bold array-item ${boxClass}">
+                            ${score}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 狀態顯示
+            let statusIcon = '';
+            if (searchState.found) {
+                statusIcon = `<div class="text-green-600 flex flex-col items-center gap-2 fade-in"><i data-lucide="check-circle" class="w-10 h-10"></i><span class="font-bold text-lg">找到目標！</span></div>`;
+            } else if (searchState.notFound) {
+                statusIcon = `<div class="text-red-500 flex flex-col items-center gap-2 fade-in"><i data-lucide="x-circle" class="w-10 h-10"></i><span class="font-bold text-lg">找不到目標</span></div>`;
+            } else {
+                statusIcon = `<p class="text-slate-600 font-medium">${searchState.message}</p>`;
+            }
+
+            container.innerHTML = `
+                ${controlsHtml}
+
+                <div class="bg-white p-6 rounded-lg border border-slate-200 shadow-sm overflow-x-auto mb-8">
+                    <div class="flex gap-1 min-w-max justify-center pt-8 pb-4">
+                        ${arrayHtml}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 flex flex-col justify-center">
+                        <h4 class="font-bold text-slate-700 mb-2 flex items-center gap-2"><i data-lucide="search" class="w-4 h-4"></i> 搜尋狀態</h4>
+                        <div class="text-sm text-slate-600 space-y-1">
+                            <p>目標值 (Target): <span class="font-mono font-bold text-indigo-600">${searchState.target}</span></p>
+                            <p>搜尋範圍 (Low ~ High): <span class="font-mono">${searchState.active ? `[${searchState.low}, ${searchState.high}]` : '-'}</span></p>
+                            <p>中位數 (Mid): <span class="font-mono">${searchState.mid !== null ? `index ${searchState.mid} (val: ${searchState.list[searchState.mid]})` : '-'}</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 flex flex-col justify-center items-center text-center min-h-[120px]">
+                        ${statusIcon}
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-4">
+                    <button onclick="prevSearchStep()" ${searchState.history.length === 0 ? 'disabled' : ''} class="flex items-center gap-2 px-6 py-3 bg-amber-100 border border-amber-200 text-amber-800 rounded-lg hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+                        <i data-lucide="skip-back" class="w-5 h-5"></i> 上一步
+                    </button>
+                    <button onclick="nextSearchStep()" ${!searchState.active || searchState.found || searchState.notFound ? 'disabled' : ''} class="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-lg font-medium">
+                        <i data-lucide="play" class="w-5 h-5"></i> 下一步
+                    </button>
+                </div>
+            `;
+        }
+
+        // 啟動應用程式
+        init();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICT 迷宮算法演示 (含傳感器備註)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --wall: #1e293b;
+            --path: #ffffff;
+            --highlight-blue: #3b82f6;
+            --highlight-green: #22c55e;
+            --highlight-purple: #a855f7;
+            --highlight-orange: #f97316;
+            --highlight-k: #f59e0b; 
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover { background: #f1f5f9; }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Main Layout */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-layout { grid-template-columns: 1fr; }
+        }
+
+        /* Maze Visualization */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+        }
+
+        .maze-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 5px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 20px;
+        }
+
+        .ctrl-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: 0.2s;
+        }
+
+        .ctrl-btn:hover { background: white; shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .ctrl-btn.active { color: var(--primary); background: #dbeafe; }
+
+        .maze-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .col-indices {
+            display: grid;
+            grid-template-columns: repeat(8, 30px);
+            gap: 2px;
+            margin-bottom: 4px;
+            margin-left: 24px; /* Offset for row index */
+        }
+        
+        .col-idx { 
+            text-align: center; 
+            font-size: 11px; 
+            color: #94a3b8; 
+            width: 30px;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        .maze-row {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .row-idx {
+            width: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #94a3b8;
+            margin-right: 2px;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        /* Index Highlight */
+        .idx-active {
+            background-color: var(--highlight-k); /* Default Orange */
+            color: white !important;
+            font-weight: bold;
+            transform: scale(1.1);
+        }
+        
+        .idx-active.purple-mode {
+            background-color: var(--highlight-purple);
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 4px;
+            transition: all 0.3s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .cell.wall { background-color: var(--wall); color: #475569; }
+        .cell.path { background-color: var(--path); color: #cbd5e1; }
+        
+        /* Highlights */
+        .cell.hl-blue { background-color: var(--highlight-blue) !important; color: white !important; transform: scale(1.1); z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .cell.hl-green { background-color: var(--highlight-green) !important; color: white !important; transform: scale(1.1); z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .cell.hl-purple { background-color: var(--highlight-purple) !important; color: white !important; transform: scale(1.1); z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .cell.hl-orange { background-color: var(--highlight-orange) !important; color: white !important; }
+
+        .legend {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            justify-content: center;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 10px; height: 10px; border-radius: 2px; border: 1px solid #ccc; }
+
+        /* Explanation Content */
+        .content-section { display: none; animation: fadeIn 0.3s ease; }
+        .content-section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            overflow-x: auto;
+        }
+
+        .code-line { display: block; padding: 2px 0; }
+        .indent-1 { padding-left: 20px; border-left: 2px solid #334155; }
+        .indent-2 { padding-left: 40px; border-left: 2px solid #334155; }
+        
+        .answer-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .answer-title { color: #166534; font-weight: bold; margin-bottom: 5px; display: block; }
+        .answer-text { color: #14532d; font-size: 0.95rem; }
+
+        .status-bar {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+            color: var(--primary);
+            font-weight: bold;
+            border: 1px solid #e2e8f0;
+            min-height: 24px;
+        }
+        
+        .var-display {
+            display: inline-block;
+            background: var(--highlight-k);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-right: 8px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            ICT 2025: 迷宮算法解析 (Q8)
+        </h1>
+        <div class="subtitle">互動式解析：二維陣列邊界檢查與算法邏輯</div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('intro')">題目概覽</button>
+        <button class="tab-btn" onclick="switchTab('partA')">(a) 填空題</button>
+        <button class="tab-btn" onclick="switchTab('partB')">(b) 循環用途</button>
+        <button class="tab-btn" onclick="switchTab('partC')">(c) 傳回值</button>
+        <button class="tab-btn" onclick="switchTab('partD')">(d) 傳感器</button>
+    </div>
+
+    <div class="grid-layout">
+        <!-- Left Column: Visualization -->
+        <div class="card">
+            <div class="maze-header">
+                <span style="font-weight: bold; font-size: 0.9rem;">地圖 M (8x8)</span>
+                <div class="controls" id="animControls">
+                    <button class="ctrl-btn" onclick="prevStep()" title="上一步">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" title="播放/暫停">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    <button class="ctrl-btn" onclick="nextStep()" title="下一步">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                    <button class="ctrl-btn" onclick="resetSim()" title="重置">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="maze-container">
+                <div class="col-indices" id="colIndices"></div>
+                <div id="mazeGrid"></div>
+            </div>
+
+            <div class="status-bar" id="statusBar">準備就緒</div>
+
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="background:var(--wall)"></div> 牆 (1)</div>
+                <div class="legend-item"><div class="dot" style="background:var(--path)"></div> 路 (0)</div>
+                <div class="legend-item"><div class="dot" style="background:var(--highlight-k)"></div> 變量索引</div>
+            </div>
+        </div>
+
+        <!-- Right Column: Explanations -->
+        <div class="card">
+            
+            <!-- Intro Tab -->
+            <div id="intro" class="content-section active">
+                <h2 style="margin-top:0">題目背景</h2>
+                <p>志文正在設計一款迷宮遊戲。地圖是一個 8x8 的二維陣列 <code>M</code>。</p>
+                <ul>
+                    <li><strong>目標：</strong> 檢查地圖是否有出口。</li>
+                    <li><strong>出口定義：</strong> 位於地圖邊界（四邊）上的 '0'。</li>
+                </ul>
+                <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:10px; font-size:0.9rem; color:#1e40af;">
+                    <strong>提示：</strong> 點擊上方的分頁標籤 (a) - (d) 來查看每一題的詳細解析與動態演示。
+                </div>
+            </div>
+
+            <!-- Part A Tab -->
+            <div id="partA" class="content-section">
+                <h2 style="margin-top:0">分題 (a) 填寫偽代碼</h2>
+                <div class="code-block">
+                    <span class="code-line text-muted">// checkExit(M)</span>
+                    <span class="code-line">設 k 由 0 至 7</span>
+                    <span class="code-line indent-1">如果 M[0][k] + M[7][k] + <span style="color:#4ade80; font-weight:bold;">(a1)</span> + <span style="color:#4ade80; font-weight:bold;">(a2)</span> < 4</span>
+                    <span class="code-line indent-2">傳回 TRUE</span>
+                    <span class="code-line">傳回 FALSE</span>
+                </div>
+                
+                <p style="font-size:0.9rem;">
+                    <strong>邏輯分析：</strong><br>
+                    <span style="color:var(--highlight-blue)">● 藍色</span> 檢查上邊界 (Row 0) 和 下邊界 (Row 7)。<br>
+                    <span style="color:var(--highlight-green)">● 綠色</span> 需要檢查左邊界 (Col 0) 和 右邊界 (Col 7)。<br>
+                    <span style="color:var(--highlight-k)">● 橙色</span> 顯示當前循環變量 <code>k</code> 的位置。
+                </p>
+
+                <div class="answer-box">
+                    <span class="answer-title">答案：</span>
+                    <ul class="answer-text" style="margin:0; padding-left:20px;">
+                        <li>(a1): <code>M[k][0]</code></li>
+                        <li>(a2): <code>M[k][7]</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Part B Tab -->
+            <div id="partB" class="content-section">
+                <h2 style="margin-top:0">分題 (b) 循環用途</h2>
+                <p style="font-size:0.9rem; color:#64748b;">題目要求第 1 至 4 行代碼要有縮排：</p>
+                
+                <div class="code-block">
+                    <span class="code-line">1 ct ← 0</span>
+                    <span class="code-line">2 設 i 由 0 至 1 執行</span>
+                    <span class="code-line indent-1" style="background:rgba(255,255,255,0.1);">3 設 j 由 0 至 1 執行</span>
+                    <span class="code-line indent-2" style="background:rgba(255,255,255,0.1);">4 ct ← ct + M[7*i][7*j]</span>
+                </div>
+
+                <p style="font-size:0.9rem;">
+                    <strong>變量變化演示：</strong><br>
+                    左側動畫展示了 <code>i</code> 和 <code>j</code> 如何控制檢查的座標。<br>
+                    當 i=0, 7*i = 0 (第一行)<br>
+                    當 i=1, 7*i = 7 (最後一行)
+                </p>
+
+                <div class="answer-box">
+                    <span class="answer-title">答案：</span>
+                    <p class="answer-text" style="margin:0;">
+                        這段代碼用於計算地圖四個角落 (Corners) 的數值總和。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Part C Tab -->
+            <div id="partC" class="content-section">
+                <h2 style="margin-top:0">分題 (c) 傳回值</h2>
+                <p>算法 <code>alg1(M)</code> 結合了四個角 (Part B) 和其餘的邊界檢查。</p>
+                
+                <div class="answer-box" style="border-color:#fdba74; background:#fff7ed;">
+                    <span class="answer-title" style="color:#c2410c">觀察左圖：</span>
+                    <p class="answer-text" style="color:#9a3412; margin:0;">
+                        所有橘色高亮的格子都會被加總。這包含了地圖最外圈的所有格子。
+                    </p>
+                </div>
+
+                <div class="answer-box">
+                    <span class="answer-title">答案：</span>
+                    <p class="answer-text" style="margin:0;">
+                        該算法傳回地圖 M <strong>所有邊界（周界）上數值的總和</strong>。
+                        <br><span style="font-size:0.8em; opacity:0.8">(即計算邊界上有多少個 '1' / 牆壁)</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Part D Tab -->
+            <div id="partD" class="content-section">
+                <h2 style="margin-top:0">分題 (d) 硬件建議</h2>
+                <div style="display:flex; justify-content:center; margin: 20px 0;">
+                    <div style="width:60px; height:60px; background:#e2e8f0; border-radius:50%; display:flex; align-items:center; justify-content:center; border:3px solid #94a3b8;">
+                        👁️
+                    </div>
+                </div>
+                <p>機器人需要偵測前方是否有障礙物（牆壁）。</p>
+
+                <div class="answer-box">
+                    <span class="answer-title">建議答案：</span>
+                    <ul class="answer-text" style="margin:0; padding-left:20px;">
+                        <li>超聲波傳感器 (Ultrasonic Sensor)</li>
+                        <li>紅外線傳感器 (Infrared Sensor)</li>
+                    </ul>
+                    <p style="margin-top: 10px; font-size: 0.85rem; color: #15803d; font-style: italic;">
+                        * 超聲波傳感器是迷宮機器人最常用的非接觸式測距工具。
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // 迷宮數據 (1=牆, 0=路)
+    const mazeData = [
+        [1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1],
+        [0, 0, 1, 0, 0, 0, 0, 1], // M[3][0] is exit
+        [1, 0, 1, 0, 0, 1, 0, 1],
+        [1, 0, 1, 1, 0, 1, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0], // M[6][7] is exit
+        [1, 1, 1, 1, 1, 1, 1, 1],
+    ];
+
+    let activeTab = 'intro';
+    let currentStep = 0;
+    let isPlaying = false;
+    let timer = null;
+
+    // 初始化
+    function init() {
+        renderColIndices();
+        renderMaze();
+        updateStatus();
+    }
+
+    // 渲染列索引
+    function renderColIndices() {
+        const container = document.getElementById('colIndices');
+        container.innerHTML = '';
+        for(let i=0; i<8; i++) {
+            const div = document.createElement('div');
+            div.className = 'col-idx';
+            div.id = `col-idx-${i}`; // Add ID for highlighting
+            div.textContent = i;
+            container.appendChild(div);
+        }
+    }
+
+    // 渲染迷宮網格
+    function renderMaze() {
+        const container = document.getElementById('mazeGrid');
+        container.innerHTML = '';
+
+        mazeData.forEach((row, rIdx) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'maze-row';
+            
+            // 行索引
+            const idxDiv = document.createElement('div');
+            idxDiv.className = 'row-idx';
+            idxDiv.id = `row-idx-${rIdx}`; // Add ID for highlighting
+            idxDiv.textContent = rIdx;
+            rowDiv.appendChild(idxDiv);
+
+            row.forEach((cellVal, cIdx) => {
+                const cell = document.createElement('div');
+                cell.className = `cell ${cellVal === 1 ? 'wall' : 'path'}`;
+                cell.id = `cell-${rIdx}-${cIdx}`;
+                cell.textContent = cellVal;
+                rowDiv.appendChild(cell);
+            });
+            container.appendChild(rowDiv);
+        });
+    }
+
+    // 清除所有高亮
+    function clearHighlights() {
+        // Clear cells
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            cell.classList.remove('hl-blue', 'hl-green', 'hl-purple', 'hl-orange');
+        });
+        
+        // Clear indices
+        const indices = document.querySelectorAll('.col-idx, .row-idx');
+        indices.forEach(idx => {
+            idx.classList.remove('idx-active', 'purple-mode');
+        });
+    }
+
+    // 應用高亮邏輯
+    function applyHighlights() {
+        clearHighlights();
+        const statusEl = document.getElementById('statusBar');
+
+        if (activeTab === 'partA') {
+            // k 從 0 到 7
+            const k = currentStep;
+            
+            // Highlight Indices (顯示 k 的變化)
+            const colIdx = document.getElementById(`col-idx-${k}`);
+            const rowIdx = document.getElementById(`row-idx-${k}`);
+            if(colIdx) colIdx.classList.add('idx-active');
+            if(rowIdx) rowIdx.classList.add('idx-active');
+
+            // Highlight Cells
+            highlightCell(0, k, 'hl-blue');
+            highlightCell(7, k, 'hl-blue');
+            highlightCell(k, 0, 'hl-green');
+            highlightCell(k, 7, 'hl-green');
+            
+            statusEl.innerHTML = `<span class="var-display">k = ${k}</span> 檢查: M[0][${k}], M[7][${k}], M[${k}][0], M[${k}][7]`;
+        } 
+        else if (activeTab === 'partB') {
+            // 4個角落，基於 i 和 j
+            // Step 0: i=0, j=0
+            // Step 1: i=0, j=1
+            // Step 2: i=1, j=0
+            // Step 3: i=1, j=1
+            
+            const i = Math.floor(currentStep / 2);
+            const j = currentStep % 2;
+            
+            const r = i * 7;
+            const c = j * 7;
+
+            // Highlight Indices (紫色模式)
+            const colIdx = document.getElementById(`col-idx-${c}`);
+            const rowIdx = document.getElementById(`row-idx-${r}`);
+            if(colIdx) colIdx.classList.add('idx-active', 'purple-mode');
+            if(rowIdx) rowIdx.classList.add('idx-active', 'purple-mode');
+
+            highlightCell(r, c, 'hl-purple');
+            
+            statusEl.innerHTML = `
+                <span class="var-display" style="background:var(--highlight-purple)">i = ${i}</span>
+                <span class="var-display" style="background:var(--highlight-purple)">j = ${j}</span>
+                檢查: M[7×${i}][7×${j}] = M[${r}][${c}]
+            `;
+        }
+        else if (activeTab === 'partC') {
+            // 全邊界
+            for(let k=0; k<8; k++) {
+                highlightCell(0, k, 'hl-orange');
+                highlightCell(7, k, 'hl-orange');
+                highlightCell(k, 0, 'hl-orange');
+                highlightCell(k, 7, 'hl-orange');
+            }
+            statusEl.textContent = `算法遍歷所有邊界單元格`;
+        }
+        else {
+            statusEl.textContent = `請選擇上方分頁以開始演示`;
+        }
+    }
+
+    function highlightCell(r, c, className) {
+        const cell = document.getElementById(`cell-${r}-${c}`);
+        if(cell) cell.classList.add(className);
+    }
+
+    // 控制邏輯
+    function getMaxSteps() {
+        if (activeTab === 'partA') return 7;
+        if (activeTab === 'partB') return 3;
+        return 0;
+    }
+
+    function nextStep() {
+        const max = getMaxSteps();
+        if (currentStep < max) {
+            currentStep++;
+        } else {
+            currentStep = 0; // Loop
+        }
+        applyHighlights();
+    }
+
+    function prevStep() {
+        const max = getMaxSteps();
+        if (currentStep > 0) {
+            currentStep--;
+        } else {
+            currentStep = max;
+        }
+        applyHighlights();
+    }
+
+    function resetSim() {
+        stopPlay();
+        currentStep = 0;
+        applyHighlights();
+    }
+
+    function togglePlay() {
+        if (isPlaying) {
+            stopPlay();
+        } else {
+            startPlay();
+        }
+    }
+
+    function startPlay() {
+        if (activeTab === 'intro' || activeTab === 'partD') return;
+        isPlaying = true;
+        document.getElementById('playBtn').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'; // Pause icon
+        
+        timer = setInterval(() => {
+            const max = getMaxSteps();
+            if (currentStep >= max) {
+                currentStep = 0; // Loop
+            } else {
+                currentStep++;
+            }
+            applyHighlights();
+        }, 1200); // 稍微放慢速度以便觀察變量
+    }
+
+    function stopPlay() {
+        isPlaying = false;
+        clearInterval(timer);
+        document.getElementById('playBtn').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'; // Play icon
+    }
+
+    function updateStatus() {
+        applyHighlights();
+    }
+
+    // Tab 切換
+    function switchTab(tabId) {
+        // UI Update
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+
+        // Logic Update
+        activeTab = tabId;
+        resetSim();
+
+        // Hide controls for non-animated tabs
+        const controls = document.getElementById('animControls');
+        if (tabId === 'partA' || tabId === 'partB') {
+            controls.style.visibility = 'visible';
+        } else {
+            controls.style.visibility = 'hidden';
+            if(tabId === 'partC') applyHighlights(); // Show static highlight
+        }
+    }
+
+    // Run Init
+    init();
+
+</script>
+
+</body>
+</html>
