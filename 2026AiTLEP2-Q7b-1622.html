@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算法與程式編寫 - 題 7(b) 解答動畫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .highlight {
+            background-color: #fef08a; /* Tailwind yellow-200 */
+            transition: background-color 0.3s;
+        }
+        .array-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d1d5db; /* Tailwind gray-300 */
+        }
+        .array-header {
+            width: 40px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #4b5563; /* Tailwind gray-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans p-4 md:p-8">
+
+<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+    <!-- Header / Tabs -->
+    <div class="flex border-b border-gray-200 bg-gray-50">
+        <button onclick="switchTab('bi')" id="tab-bi" class="flex-1 py-4 px-6 text-center font-medium text-blue-600 border-b-2 border-blue-600 focus:outline-none">
+            (b)(i) 計算數值
+        </button>
+        <button onclick="switchTab('bii')" id="tab-bii" class="flex-1 py-4 px-6 text-center font-medium text-gray-500 hover:text-gray-700 focus:outline-none">
+            (b)(ii) 偽代碼
+        </button>
+        <button onclick="switchTab('biii')" id="tab-biii" class="flex-1 py-4 px-6 text-center font-medium text-gray-500 hover:text-gray-700 focus:outline-none">
+            (b)(iii) 傳感器
+        </button>
+    </div>
+
+    <!-- Content Area -->
+    <div class="p-6 h-[400px] flex flex-col justify-between">
+        
+        <!-- Section (b)(i) -->
+        <div id="content-bi" class="h-full flex flex-col">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">(b)(i) 如果座位 2、4 及 7 號的乘客沒有扣上安全帶，產生的數值是多少？</h2>
+            
+            <div class="flex-grow flex flex-col items-center justify-center space-y-6">
+                <!-- Arrays Display -->
+                <div class="flex flex-col space-y-2">
+                    <div class="flex items-center">
+                        <span class="w-8 text-right mr-2 font-bold">i</span>
+                        <div class="flex" id="bi-indices">
+                            <div class="array-header">1</div><div class="array-header">2</div><div class="array-header">3</div><div class="array-header">4</div><div class="array-header">5</div><div class="array-header">6</div><div class="array-header">7</div><div class="array-header">8</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-8 text-right mr-2 font-bold">P[i]</span>
+                        <div class="flex" id="bi-p-array">
+                            <div class="array-cell">1</div><div class="array-cell" id="bi-p-2">2</div><div class="array-cell">4</div><div class="array-cell" id="bi-p-4">8</div><div class="array-cell">16</div><div class="array-cell">32</div><div class="array-cell" id="bi-p-7">64</div><div class="array-cell">128</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-8 text-right mr-2 font-bold">Q[i]</span>
+                        <div class="flex" id="bi-q-array">
+                            <div class="array-cell">0</div><div class="array-cell" id="bi-q-2">0</div><div class="array-cell">0</div><div class="array-cell" id="bi-q-4">0</div><div class="array-cell">0</div><div class="array-cell">0</div><div class="array-cell" id="bi-q-7">0</div><div class="array-cell">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Text -->
+                <div id="bi-explanation" class="text-lg text-center h-16 flex items-center justify-center font-medium text-blue-800 bg-blue-50 w-full rounded-lg p-4">
+                    點擊「下一步」開始動畫。
+                </div>
+                
+                <!-- Calculation Display -->
+                <div id="bi-calculation" class="text-2xl font-bold text-green-600 h-8">
+                    <!-- Dynamic calculation -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Section (b)(ii) -->
+        <div id="content-bii" class="hidden h-full flex flex-col">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">(b)(ii) 寫出子程序 update_q(id) 的偽代碼。</h2>
+            
+            <div class="flex-grow flex flex-col items-center justify-center space-y-4">
+                <div class="bg-gray-800 text-green-400 p-6 rounded-lg w-full max-w-lg font-mono text-sm md:text-base leading-relaxed shadow-inner relative">
+                    <div id="bii-line-1" class="opacity-0 transition-opacity duration-300">update_q(id)</div>
+                    <div id="bii-line-2" class="opacity-0 transition-opacity duration-300 pl-4">設 i 由 1 至 8</div>
+                    <div id="bii-line-3" class="opacity-0 transition-opacity duration-300 pl-8">如果 P[i] = id 則</div>
+                    <div id="bii-line-4" class="opacity-0 transition-opacity duration-300 pl-12">Q[i] &larr; 1</div>
+                </div>
+                <div id="bii-explanation" class="text-lg text-center h-16 flex items-center justify-center font-medium text-blue-800 bg-blue-50 w-full rounded-lg p-4">
+                    點擊「下一步」逐步顯示偽代碼。
+                </div>
+            </div>
+        </div>
+
+        <!-- Section (b)(iii) -->
+        <div id="content-biii" class="hidden h-full flex flex-col">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">(b)(iii) 描述可用作判斷座位是否被佔用的傳感器。</h2>
+            
+            <div class="flex-grow flex flex-col items-center justify-center space-y-6">
+                <div id="biii-answer" class="text-2xl font-bold text-gray-800 opacity-0 transition-opacity duration-500 transform translate-y-4">
+                    壓力傳感器 (Pressure Sensor) / 重量傳感器 (Weight Sensor)
+                </div>
+                <div id="biii-explanation" class="text-lg text-center h-24 flex items-center justify-center font-medium text-blue-800 bg-blue-50 w-full rounded-lg p-4 opacity-0 transition-opacity duration-500">
+                    當乘客坐在座位上時，會對座位產生壓力或重量。壓力傳感器可以檢測到這種變化，從而判斷座位是否被佔用。
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-between items-center">
+        <button id="btn-prev" onclick="prevStep()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            上一步
+        </button>
+        
+        <button id="btn-autoplay" onclick="toggleAutoPlay()" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 font-medium flex items-center transition-colors">
+            <svg id="icon-play" class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+            <svg id="icon-pause" class="w-5 h-5 mr-1 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+            <span id="autoplay-text">自動播放</span>
+        </button>
+
+        <button id="btn-next" onclick="nextStep()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            下一步
+        </button>
+    </div>
+</div>
+
+<script>
+    // State management
+    let currentTab = 'bi';
+    let steps = {
+        'bi': 0,
+        'bii': 0,
+        'biii': 0
+    };
+    const maxSteps = {
+        'bi': 4,
+        'bii': 4, // 步驟數從 5 減少到 4
+        'biii': 2
+    };
+
+    let autoPlayInterval = null;
+    let isAutoPlaying = false;
+
+    // Tab switching
+    function switchTab(tabId) {
+        // Stop autoplay when switching tabs
+        if (isAutoPlaying) toggleAutoPlay();
+
+        // Update UI for tabs
+        ['bi', 'bii', 'biii'].forEach(id => {
+            const tabBtn = document.getElementById(`tab-${id}`);
+            const content = document.getElementById(`content-${id}`);
+            
+            if (id === tabId) {
+                tabBtn.classList.remove('text-gray-500', 'hover:text-gray-700');
+                tabBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                content.classList.remove('hidden');
+            } else {
+                tabBtn.classList.add('text-gray-500', 'hover:text-gray-700');
+                tabBtn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                content.classList.add('hidden');
+            }
+        });
+
+        currentTab = tabId;
+        updateControls();
+        renderStep();
+    }
+
+    // Navigation
+    function nextStep() {
+        if (steps[currentTab] < maxSteps[currentTab]) {
+            steps[currentTab]++;
+            renderStep();
+            updateControls();
+        } else if (isAutoPlaying) {
+            // Auto switch to next tab if finished
+            if (currentTab === 'bi') switchTab('bii');
+            else if (currentTab === 'bii') switchTab('biii');
+            else toggleAutoPlay(); // Stop at the very end
+        }
+    }
+
+    function prevStep() {
+        if (steps[currentTab] > 0) {
+            steps[currentTab]--;
+            renderStep();
+            updateControls();
+        }
+    }
+
+    function updateControls() {
+        document.getElementById('btn-prev').disabled = steps[currentTab] === 0;
+    }
+
+    // Autoplay
+    function toggleAutoPlay() {
+        isAutoPlaying = !isAutoPlaying;
+        const playIcon = document.getElementById('icon-play');
+        const pauseIcon = document.getElementById('icon-pause');
+        const text = document.getElementById('autoplay-text');
+
+        if (isAutoPlaying) {
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+            text.textContent = '暫停';
+            
+            // If at the end of a tab, reset or move to next
+            if (steps[currentTab] === maxSteps[currentTab]) {
+                if (currentTab === 'biii') {
+                    // Reset all if at the very end
+                    steps = { 'bi': 0, 'bii': 0, 'biii': 0 };
+                    switchTab('bi');
+                } else {
+                    nextStep(); // This logic handles tab switching
+                }
+            } else {
+                nextStep();
+            }
+
+            autoPlayInterval = setInterval(() => {
+                nextStep();
+            }, 2000); // 2 seconds per step
+        } else {
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            text.textContent = '自動播放';
+            clearInterval(autoPlayInterval);
+        }
+    }
+
+    // Rendering logic for each step
+    function renderStep() {
+        const step = steps[currentTab];
+        
+        if (currentTab === 'bi') {
+            const exp = document.getElementById('bi-explanation');
+            const calc = document.getElementById('bi-calculation');
+            const q2 = document.getElementById('bi-q-2');
+            const q4 = document.getElementById('bi-q-4');
+            const q7 = document.getElementById('bi-q-7');
+            const p2 = document.getElementById('bi-p-2');
+            const p4 = document.getElementById('bi-p-4');
+            const p7 = document.getElementById('bi-p-7');
+
+            // Reset highlights
+            [q2, q4, q7, p2, p4, p7].forEach(el => el.classList.remove('highlight', 'bg-red-200', 'bg-green-200'));
+            q2.textContent = '0'; q4.textContent = '0'; q7.textContent = '0';
+
+            if (step === 0) {
+                exp.textContent = '點擊「下一步」開始動畫。';
+                calc.innerHTML = '';
+            } else if (step === 1) {
+                exp.innerHTML = '座位 <strong>2</strong> 號沒有扣上安全帶，Q[2] 變為 1，對應 P[2] = 2。';
+                q2.textContent = '1';
+                q2.classList.add('bg-red-200');
+                p2.classList.add('highlight');
+                calc.innerHTML = '2';
+            } else if (step === 2) {
+                exp.innerHTML = '座位 <strong>4</strong> 號沒有扣上安全帶，Q[4] 變為 1，對應 P[4] = 8。';
+                q2.textContent = '1'; q4.textContent = '1';
+                q4.classList.add('bg-red-200');
+                p4.classList.add('highlight');
+                calc.innerHTML = '2 + 8';
+            } else if (step === 3) {
+                exp.innerHTML = '座位 <strong>7</strong> 號沒有扣上安全帶，Q[7] 變為 1，對應 P[7] = 64。';
+                q2.textContent = '1'; q4.textContent = '1'; q7.textContent = '1';
+                q7.classList.add('bg-red-200');
+                p7.classList.add('highlight');
+                calc.innerHTML = '2 + 8 + 64';
+            } else if (step === 4) {
+                exp.innerHTML = '將對應的 P[i] 數值相加，得出總和。';
+                q2.textContent = '1'; q4.textContent = '1'; q7.textContent = '1';
+                [p2, p4, p7].forEach(el => el.classList.add('bg-green-200'));
+                calc.innerHTML = '2 + 8 + 64 = <span class="text-4xl text-red-600 ml-2 fade-in">74</span>';
+            }
+        } 
+        else if (currentTab === 'bii') {
+            const exp = document.getElementById('bii-explanation');
+            for (let i = 1; i <= 4; i++) {
+                const line = document.getElementById(`bii-line-${i}`);
+                if (i <= step) {
+                    line.classList.remove('opacity-0');
+                    line.classList.add('opacity-100');
+                } else {
+                    line.classList.add('opacity-0');
+                    line.classList.remove('opacity-100');
+                }
+            }
+
+            if (step === 0) exp.textContent = '點擊「下一步」逐步顯示偽代碼。';
+            else if (step === 1) exp.textContent = '定義子程序名稱及參數 id。';
+            else if (step === 2) exp.textContent = '設 i 由 1 至 8 進行迴圈。';
+            else if (step === 3) exp.textContent = '檢查陣列 P 在索引 i 的值是否與傳入的 id 相同。';
+            else if (step === 4) exp.textContent = '如果相同，將陣列 Q 在對應索引 i 的值設為 1 (表示未扣安全帶)。這就是完整的 update_q 中文偽代碼。';
+        }
+        else if (currentTab === 'biii') {
+            const ans = document.getElementById('biii-answer');
+            const exp = document.getElementById('biii-explanation');
+
+            if (step === 0) {
+                ans.classList.remove('opacity-100', 'translate-y-0');
+                ans.classList.add('opacity-0', 'translate-y-4');
+                exp.classList.remove('opacity-100');
+                exp.classList.add('opacity-0');
+            } else if (step === 1) {
+                ans.classList.remove('opacity-0', 'translate-y-4');
+                ans.classList.add('opacity-100', 'translate-y-0');
+                exp.classList.remove('opacity-100');
+                exp.classList.add('opacity-0');
+            } else if (step === 2) {
+                ans.classList.remove('opacity-0', 'translate-y-4');
+                ans.classList.add('opacity-100', 'translate-y-0');
+                exp.classList.remove('opacity-0');
+                exp.classList.add('opacity-100');
+            }
+        }
+    }
+
+    // Initialize
+    updateControls();
+    renderStep();
+</script>
+
+</body>
+</html>
