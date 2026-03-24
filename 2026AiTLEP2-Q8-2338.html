@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICT 題目解答動畫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .array-box {
+            transition: all 0.3s ease;
+        }
+        .highlight {
+            background-color: #fef08a; /* yellow-200 */
+        }
+        .active-box {
+            background-color: #bfdbfe; /* blue-200 */
+        }
+        .sorted {
+            background-color: #bbf7d0; /* green-200 */
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .code-line {
+            transition: background-color 0.2s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-4 md:p-8 font-sans text-gray-800">
+
+<div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+    <!-- Tabs -->
+    <div class="flex border-b bg-gray-100">
+        <button id="tab-a" class="flex-1 py-3 px-6 text-center font-bold text-blue-600 bg-white border-b-2 border-blue-600 transition" onclick="switchTab('a')">Part (a) 插入排序</button>
+        <button id="tab-b" class="flex-1 py-3 px-6 text-center font-bold text-gray-500 hover:text-blue-600 hover:bg-white transition" onclick="switchTab('b')">Part (b) 候選人得票</button>
+    </div>
+
+    <!-- Part A Content -->
+    <div id="content-a" class="tab-content active p-6">
+        <h2 class="text-2xl font-bold mb-4">Part (a) 插入排序 (Insertion Sort)</h2>
+        
+        <div class="flex flex-col md:flex-row gap-6 mb-6">
+            <!-- Code Block -->
+            <div class="flex-1 bg-gray-100 p-4 rounded-lg font-mono text-sm leading-relaxed">
+                <div class="text-gray-500">def IS(A):</div>
+                <div class="text-gray-500">&nbsp;&nbsp;n = len(A)</div>
+                <div class="text-gray-500">&nbsp;&nbsp;for i in range(1, n):</div>
+                <div id="code-key" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;key = A[i]</div>
+                <div id="code-j" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;j = i - 1</div>
+                <div id="code-while" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;while j >= 0 and A[j] > key:</div>
+                <div id="code-shift" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A[j + 1] = A[j]</div>
+                <div id="code-j-dec" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j = j - 1</div>
+                <div id="code-insert" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;A[j + 1] = key</div>
+            </div>
+
+            <!-- Variables Panel -->
+            <div class="w-full md:w-48 bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col justify-center">
+                <h3 class="font-bold text-blue-800 border-b border-blue-200 pb-2 mb-2 text-center">變量狀態</h3>
+                <div class="grid grid-cols-2 gap-2 text-lg">
+                    <div class="text-right font-semibold text-gray-600">i :</div>
+                    <div id="var-i" class="font-mono font-bold text-blue-600">-</div>
+                    
+                    <div class="text-right font-semibold text-gray-600">key :</div>
+                    <div id="var-key" class="font-mono font-bold text-purple-600">-</div>
+                    
+                    <div class="text-right font-semibold text-gray-600">j :</div>
+                    <div id="var-j" class="font-mono font-bold text-green-600">-</div>
+                </div>
+                <div class="mt-4 pt-2 border-t border-blue-200 text-center">
+                    <div class="text-sm font-semibold text-gray-600">總交換次數</div>
+                    <div id="var-swaps" class="text-2xl font-mono font-bold text-red-600">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-center items-center space-x-3 mb-8 h-16" id="array-container-a">
+            <!-- Array elements will be generated here -->
+        </div>
+
+        <div class="mb-6 text-center h-12">
+            <p id="status-a" class="text-lg font-semibold text-blue-700"></p>
+            <p id="explanation-a" class="text-sm text-gray-600 mt-1"></p>
+        </div>
+
+        <div class="flex justify-center space-x-4">
+            <button onclick="prevStepA()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold transition">上一步</button>
+            <button id="play-btn-a" onclick="togglePlayA()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-bold transition w-28">自動播放</button>
+            <button onclick="nextStepA()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold transition">下一步</button>
+            <button onclick="resetA()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-bold transition">重置</button>
+        </div>
+        
+        <div class="mt-8 border-t pt-4">
+            <h3 class="font-bold mb-2 text-lg">解答：</h3>
+            <p>(i)(1) 第一次迭代後 (i=1)：<strong>[1, 9, 4, 2, 3]</strong></p>
+            <p>(i)(2) 總交換次數：<strong>6</strong> <span class="text-sm text-gray-500">(即執行 A[j+1] = A[j] 的總次數)</span></p>
+            <p>(ii) Python 版本填空：</p>
+            <pre class="bg-gray-100 p-3 rounded mt-2 text-sm font-mono border border-gray-200">key = A[i]
+j = i - 1
+while j >= 0 and A[j] > key:
+    A[j + 1] = A[j]
+    j = j - 1
+A[j + 1] = key</pre>
+        </div>
+    </div>
+
+    <!-- Part B Content -->
+    <div id="content-b" class="tab-content p-6">
+        <h2 class="text-2xl font-bold mb-4">Part (b) 候選人得票比較 (完整執行過程)</h2>
+        
+        <div class="flex flex-col md:flex-row gap-6 mb-6">
+            <!-- Code Block (中文偽代碼) -->
+            <div class="flex-1 bg-gray-100 p-4 rounded-lg font-mono text-sm leading-relaxed">
+                <div id="code-b-init1" class="code-line px-1 rounded">maxCount = -1</div>
+                <div id="code-b-init2" class="code-line px-1 rounded">winner = 0</div>
+                <div id="code-b-for-i" class="code-line px-1 rounded">設 i = 1 至 5</div>
+                <div id="code-b-count-0" class="code-line px-1 rounded">&nbsp;&nbsp;count = 0</div>
+                <div id="code-b-for-j" class="code-line px-1 rounded">&nbsp;&nbsp;設 j = 1 至 5</div>
+                <div id="code-b-if-vote" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;如果 Vote[i] > Vote[j] 則</div>
+                <div id="code-b-count-inc" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;count = count + 1</div>
+                <div id="code-b-if-max" class="code-line px-1 rounded">&nbsp;&nbsp;如果 <span class="text-red-600 font-bold">count > maxCount</span> 則</div>
+                <div id="code-b-upd-max" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;maxCount = <span class="text-red-600 font-bold">count</span></div>
+                <div id="code-b-upd-win" class="code-line px-1 rounded">&nbsp;&nbsp;&nbsp;&nbsp;winner = <span class="text-red-600 font-bold">i</span></div>
+                <div id="code-b-print" class="code-line px-1 rounded">輸出 winner</div>
+            </div>
+
+            <!-- Variables Panel -->
+            <div class="w-full md:w-64 bg-green-50 p-4 rounded-lg border border-green-100 flex flex-col justify-center">
+                <h3 class="font-bold text-green-800 border-b border-green-200 pb-2 mb-2 text-center">變量狀態</h3>
+                <div class="grid grid-cols-2 gap-y-3 gap-x-2 text-lg">
+                    <div class="text-right font-semibold text-gray-600">i :</div>
+                    <div id="var-b-i" class="font-mono font-bold text-blue-600">-</div>
+                    
+                    <div class="text-right font-semibold text-gray-600">j :</div>
+                    <div id="var-b-j" class="font-mono font-bold text-green-600">-</div>
+                    
+                    <div class="text-right font-semibold text-gray-600">count :</div>
+                    <div id="var-b-count" class="font-mono font-bold text-red-600">-</div>
+
+                    <div class="col-span-2 border-t border-green-200 my-1"></div>
+
+                    <div class="text-right font-semibold text-gray-600">maxCount :</div>
+                    <div id="var-b-max" class="font-mono font-bold text-purple-600">-</div>
+
+                    <div class="text-right font-semibold text-gray-600">winner :</div>
+                    <div id="var-b-win" class="font-mono font-bold text-orange-600">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-6">
+            <table class="border-collapse border border-gray-400 text-center text-lg shadow-sm">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border border-gray-400 px-6 py-3">索引</th>
+                        <th class="border border-gray-400 px-6 py-3">1</th>
+                        <th class="border border-gray-400 px-6 py-3">2</th>
+                        <th class="border border-gray-400 px-6 py-3">3</th>
+                        <th class="border border-gray-400 px-6 py-3">4</th>
+                        <th class="border border-gray-400 px-6 py-3">5</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="border border-gray-400 px-6 py-3 font-bold bg-gray-100">Vote</td>
+                        <td id="vote-1" class="border border-gray-400 px-6 py-3 transition-colors duration-300">120</td>
+                        <td id="vote-2" class="border border-gray-400 px-6 py-3 transition-colors duration-300">150</td>
+                        <td id="vote-3" class="border border-gray-400 px-6 py-3 transition-colors duration-300">90</td>
+                        <td id="vote-4" class="border border-gray-400 px-6 py-3 transition-colors duration-300">180</td>
+                        <td id="vote-5" class="border border-gray-400 px-6 py-3 transition-colors duration-300">130</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mb-6 text-center h-16 flex flex-col justify-center">
+            <p id="status-b" class="text-lg font-semibold text-blue-700"></p>
+            <p id="explanation-b" class="text-sm text-gray-600 mt-1"></p>
+        </div>
+
+        <div class="flex justify-center space-x-4">
+            <button onclick="prevStepB()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold transition">上一步</button>
+            <button id="play-btn-b" onclick="togglePlayB()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-bold transition w-28">自動播放</button>
+            <button onclick="nextStepB()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold transition">下一步</button>
+            <button onclick="resetB()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-bold transition">重置</button>
+        </div>
+
+        <div class="mt-8 border-t pt-4">
+            <h3 class="font-bold mb-2 text-lg">解答：</h3>
+            <p class="mb-2">(i) 第二次執行第 6 行後 (即 i=2 時)，count 的值是：<strong class="text-red-600 text-lg">3</strong> <span class="text-sm text-gray-500">(因為 150 大於 120, 90, 130)</span></p>
+            <p class="mb-4">(ii) 嵌套循環用途：<strong>將每位候選人的得票數與所有其他候選人逐一進行比較，並計算該候選人勝出的次數。</strong></p>
+            <p>(iii) 偽代碼填空：</p>
+            <ul class="list-disc pl-6 bg-gray-50 p-3 rounded border">
+                <li>(biii1): <code class="bg-gray-200 px-1 rounded text-red-600 font-bold">count > maxCount</code></li>
+                <li>(biii2): <code class="bg-gray-200 px-1 rounded text-red-600 font-bold">count</code></li>
+                <li>(biii3): <code class="bg-gray-200 px-1 rounded text-red-600 font-bold">i</code></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab Switching
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('button[id^="tab-"]').forEach(el => {
+            el.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+            el.classList.add('text-gray-500');
+        });
+        
+        document.getElementById(`content-${tab}`).classList.add('active');
+        const activeTab = document.getElementById(`tab-${tab}`);
+        activeTab.classList.remove('text-gray-500');
+        activeTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+    }
+
+    // --- Part A Logic (Insertion Sort) ---
+    const initialArrA = [9, 1, 4, 2, 3];
+    let stepsA = [];
+    let currentStepA = 0;
+    let playIntervalA = null;
+
+    function generateStepsA() {
+        stepsA = [];
+        let arr = [...initialArrA];
+        let swapCount = 0;
+        
+        stepsA.push({ arr: [...arr], i: '-', j: '-', key: '-', swaps: swapCount, msg: "初始陣列，準備開始排序", code: "" });
+
+        for (let i = 1; i < arr.length; i++) {
+            let key = arr[i];
+            stepsA.push({ arr: [...arr], i: i, j: '-', key: key, swaps: swapCount, msg: `外層迴圈: i = ${i}`, desc: `提取當前元素作為 key = ${key}`, code: "code-key" });
+            
+            let j = i - 1;
+            stepsA.push({ arr: [...arr], i: i, j: j, key: key, swaps: swapCount, msg: `設定 j = ${j}`, desc: `準備與前面的已排序元素進行比較`, code: "code-j" });
+
+            while (j >= 0 && arr[j] > key) {
+                stepsA.push({ arr: [...arr], i: i, j: j, key: key, swaps: swapCount, msg: `比較: A[${j}] > key`, desc: `因為 ${arr[j]} > ${key} 成立，準備將元素右移`, code: "code-while" });
+                
+                arr[j + 1] = arr[j];
+                swapCount++;
+                
+                stepsA.push({ arr: [...arr], i: i, j: j, key: key, swaps: swapCount, msg: `元素右移`, desc: `將 ${arr[j]} 移至索引 ${j+1}。總交換次數 +1`, code: "code-shift" });
+                
+                j = j - 1;
+                stepsA.push({ arr: [...arr], i: i, j: j, key: key, swaps: swapCount, msg: `更新 j`, desc: `j 減 1，現在 j = ${j}，繼續向前比較`, code: "code-j-dec" });
+            }
+            
+            if (j >= 0) {
+                stepsA.push({ arr: [...arr], i: i, j: j, key: key, swaps: swapCount, msg: `比較: A[${j}] <= key`, desc: `因為 ${arr[j]} <= ${key}，停止尋找插入位置`, code: "code-while" });
+            } else {
+                stepsA.push({ arr: [...arr], i: i, j: j, key: key, swaps: swapCount, msg: `到達陣列開頭`, desc: `j < 0，已無更前面的元素，停止尋找`, code: "code-while" });
+            }
+            
+            arr[j + 1] = key;
+            stepsA.push({ arr: [...arr], i: i, j: j, key: key, swaps: swapCount, msg: `插入 key`, desc: `將 key (${key}) 寫入至空出的位置 (索引 ${j+1})`, code: "code-insert" });
+        }
+        stepsA.push({ arr: [...arr], i: '-', j: '-', key: '-', swaps: swapCount, msg: "排序完成！", desc: `最終總交換次數為 ${swapCount} 次`, code: "" });
+    }
+
+    function renderArrayA(stepData) {
+        const container = document.getElementById('array-container-a');
+        container.innerHTML = '';
+        
+        stepData.arr.forEach((val, idx) => {
+            const div = document.createElement('div');
+            div.className = `array-box w-14 h-14 flex items-center justify-center border-2 border-gray-700 rounded-lg text-2xl font-bold bg-white shadow-sm`;
+            if (idx === stepData.i) div.classList.add('active-box');
+            if (idx === stepData.j) div.classList.add('highlight');
+            if (stepData.i === '-' && stepData.msg === "排序完成！") div.classList.add('sorted');
+            div.innerText = val;
+            container.appendChild(div);
+        });
+
+        document.getElementById('var-i').innerText = stepData.i;
+        document.getElementById('var-key').innerText = stepData.key;
+        document.getElementById('var-j').innerText = stepData.j;
+        document.getElementById('var-swaps').innerText = stepData.swaps;
+        document.getElementById('status-a').innerText = stepData.msg;
+        document.getElementById('explanation-a').innerText = stepData.desc || "";
+        
+        document.querySelectorAll('#content-a .code-line').forEach(el => el.classList.remove('bg-yellow-200', 'font-bold'));
+        if (stepData.code) document.getElementById(stepData.code).classList.add('bg-yellow-200', 'font-bold');
+    }
+
+    function updateA() { renderArrayA(stepsA[currentStepA]); }
+    function nextStepA() { if (currentStepA < stepsA.length - 1) { currentStepA++; updateA(); } else pauseA(); }
+    function prevStepA() { if (currentStepA > 0) { currentStepA--; updateA(); } }
+    function resetA() { pauseA(); currentStepA = 0; updateA(); }
+    function togglePlayA() {
+        const btn = document.getElementById('play-btn-a');
+        if (playIntervalA) {
+            pauseA();
+        } else {
+            if (currentStepA >= stepsA.length - 1) currentStepA = 0;
+            btn.innerText = "暫停";
+            btn.classList.replace('bg-blue-500', 'bg-yellow-500');
+            btn.classList.replace('hover:bg-blue-600', 'hover:bg-yellow-600');
+            updateA();
+            playIntervalA = setInterval(nextStepA, 1200);
+        }
+    }
+    function pauseA() {
+        clearInterval(playIntervalA);
+        playIntervalA = null;
+        const btn = document.getElementById('play-btn-a');
+        btn.innerText = "自動播放";
+        btn.classList.replace('bg-yellow-500', 'bg-blue-500');
+        btn.classList.replace('hover:bg-yellow-600', 'hover:bg-blue-600');
+    }
+
+    // --- Part B Logic (Full Execution) ---
+    const votes = [0, 120, 150, 90, 180, 130]; // 1-indexed
+    let stepsB = [];
+    let currentStepB = 0;
+    let playIntervalB = null;
+
+    function generateStepsB() {
+        stepsB = [];
+        let maxCount = -1;
+        let winner = 0;
+        
+        stepsB.push({ i: '-', j: '-', count: '-', maxCount: maxCount, winner: winner, msg: "初始化變量", desc: "設定 maxCount = -1, winner = 0", hl_i: 0, hl_j: 0, code: "code-b-init1" });
+        stepsB.push({ i: '-', j: '-', count: '-', maxCount: maxCount, winner: winner, msg: "初始化變量", desc: "設定 maxCount = -1, winner = 0", hl_i: 0, hl_j: 0, code: "code-b-init2" });
+
+        for (let i = 1; i <= 5; i++) {
+            let count = 0;
+            stepsB.push({ i: i, j: '-', count: '-', maxCount: maxCount, winner: winner, msg: `外層迴圈開始 (i = ${i})`, desc: `準備計算候選人 ${i} 的勝出次數`, hl_i: i, hl_j: 0, code: "code-b-for-i" });
+            stepsB.push({ i: i, j: '-', count: count, maxCount: maxCount, winner: winner, msg: `重置計數器`, desc: `設定 count = 0`, hl_i: i, hl_j: 0, code: "code-b-count-0" });
+            
+            for (let j = 1; j <= 5; j++) {
+                stepsB.push({ i: i, j: j, count: count, maxCount: maxCount, winner: winner, msg: `內層迴圈 (j = ${j})`, desc: `準備比較 Vote[${i}] 與 Vote[${j}]`, hl_i: i, hl_j: j, code: "code-b-for-j" });
+                
+                let isGreater = votes[i] > votes[j];
+                stepsB.push({ i: i, j: j, count: count, maxCount: maxCount, winner: winner, msg: `比較票數`, desc: `Vote[${i}] (${votes[i]}) > Vote[${j}] (${votes[j]}) 嗎？ ${isGreater ? '是' : '否'}`, hl_i: i, hl_j: j, code: "code-b-if-vote" });
+                
+                if (isGreater) {
+                    count++;
+                    stepsB.push({ i: i, j: j, count: count, maxCount: maxCount, winner: winner, msg: `勝出次數增加`, desc: `條件成立，count 增加至 ${count}`, hl_i: i, hl_j: j, code: "code-b-count-inc" });
+                }
+            }
+            
+            stepsB.push({ i: i, j: '-', count: count, maxCount: maxCount, winner: winner, msg: `檢查是否為最高勝出次數`, desc: `當前 count (${count}) > maxCount (${maxCount}) 嗎？`, hl_i: i, hl_j: 0, code: "code-b-if-max" });
+            
+            if (count > maxCount) {
+                maxCount = count;
+                stepsB.push({ i: i, j: '-', count: count, maxCount: maxCount, winner: winner, msg: `更新最高次數`, desc: `將 maxCount 更新為 ${count}`, hl_i: i, hl_j: 0, code: "code-b-upd-max" });
+                
+                winner = i;
+                stepsB.push({ i: i, j: '-', count: count, maxCount: maxCount, winner: winner, msg: `更新暫定勝出者`, desc: `將 winner 更新為候選人 ${i}`, hl_i: i, hl_j: 0, code: "code-b-upd-win" });
+            }
+        }
+        stepsB.push({ i: '-', j: '-', count: '-', maxCount: maxCount, winner: winner, msg: "執行完畢，輸出結果", desc: `最終勝出者為候選人 ${winner} (勝出 ${maxCount} 次)`, hl_i: winner, hl_j: 0, code: "code-b-print" });
+    }
+
+    function renderStepB(stepData) {
+        document.getElementById('var-b-i').innerText = stepData.i;
+        document.getElementById('var-b-j').innerText = stepData.j;
+        document.getElementById('var-b-count').innerText = stepData.count;
+        document.getElementById('var-b-max').innerText = stepData.maxCount;
+        document.getElementById('var-b-win').innerText = stepData.winner;
+        
+        document.getElementById('status-b').innerText = stepData.msg;
+        document.getElementById('explanation-b').innerText = stepData.desc || "";
+
+        // Reset table highlights
+        for (let k = 1; k <= 5; k++) {
+            const cell = document.getElementById(`vote-${k}`);
+            cell.className = "border border-gray-400 px-6 py-3 transition-colors duration-300";
+            if (stepData.msg === "執行完畢，輸出結果" && k === stepData.winner) {
+                cell.classList.add('bg-orange-200', 'font-bold', 'text-orange-800'); // Highlight final winner
+            }
+        }
+        
+        if (stepData.hl_i > 0 && stepData.msg !== "執行完畢，輸出結果") {
+            document.getElementById(`vote-${stepData.hl_i}`).classList.add('bg-blue-200', 'font-bold');
+        }
+        if (stepData.hl_j > 0 && stepData.hl_i !== stepData.hl_j) {
+            document.getElementById(`vote-${stepData.hl_j}`).classList.add('bg-green-200');
+        }
+
+        // Highlight Code
+        document.querySelectorAll('#content-b .code-line').forEach(el => el.classList.remove('bg-yellow-200', 'font-bold'));
+        if (stepData.code) {
+            document.getElementById(stepData.code).classList.add('bg-yellow-200', 'font-bold');
+        }
+    }
+
+    function updateB() { renderStepB(stepsB[currentStepB]); }
+    function nextStepB() { if (currentStepB < stepsB.length - 1) { currentStepB++; updateB(); } else pauseB(); }
+    function prevStepB() { if (currentStepB > 0) { currentStepB--; updateB(); } }
+    function resetB() { pauseB(); currentStepB = 0; updateB(); }
+    function togglePlayB() {
+        const btn = document.getElementById('play-btn-b');
+        if (playIntervalB) {
+            pauseB();
+        } else {
+            if (currentStepB >= stepsB.length - 1) currentStepB = 0;
+            btn.innerText = "暫停";
+            btn.classList.replace('bg-blue-500', 'bg-yellow-500');
+            btn.classList.replace('hover:bg-blue-600', 'hover:bg-yellow-600');
+            updateB();
+            playIntervalB = setInterval(nextStepB, 800); // 速度調快一點，因為步驟很多
+        }
+    }
+    function pauseB() {
+        clearInterval(playIntervalB);
+        playIntervalB = null;
+        const btn = document.getElementById('play-btn-b');
+        btn.innerText = "自動播放";
+        btn.classList.replace('bg-yellow-500', 'bg-blue-500');
+        btn.classList.replace('hover:bg-yellow-600', 'hover:bg-blue-600');
+    }
+
+    // Initialize
+    generateStepsA();
+    updateA();
+    
+    generateStepsB();
+    updateB();
+
+</script>
+</body>
+</html>

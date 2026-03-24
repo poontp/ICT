@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儲物櫃管理系統演算法解析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .grid-cell { transition: all 0.3s ease; }
+        .cell-active { background-color: #fde047; box-shadow: 0 0 0 2px #eab308; z-index: 10; transform: scale(1.05); }
+        .cell-highlight { background-color: #bfdbfe; }
+        .cell-empty { background-color: #f9fafb; color: #d1d5db; }
+        .cell-target { background-color: #bbf7d0; border: 2px dashed #22c55e; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen p-4 md:p-8">
+
+<div class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
+    <!-- Header -->
+    <header class="bg-slate-800 text-white p-6">
+        <h1 class="text-3xl font-bold">儲物櫃管理系統演算法解析</h1>
+        <p class="text-slate-300 mt-2">2026-AiTLE Mock Circle-ICT 互動解答</p>
+    </header>
+
+    <!-- Tabs -->
+    <div class="flex border-b bg-slate-100 flex-wrap">
+        <button onclick="switchTab('tab-a')" id="btn-tab-a" class="flex-1 py-4 px-2 text-lg font-semibold transition-colors bg-white text-blue-600 border-b-2 border-blue-600 whitespace-nowrap">
+            (a) findempty 傳回值
+        </button>
+        <button onclick="switchTab('tab-b')" id="btn-tab-b" class="flex-1 py-4 px-2 text-lg font-semibold transition-colors text-slate-600 hover:bg-slate-200 whitespace-nowrap">
+            (b) findempty 偽代碼
+        </button>
+        <button onclick="switchTab('tab-c')" id="btn-tab-c" class="flex-1 py-4 px-2 text-lg font-semibold transition-colors text-slate-600 hover:bg-slate-200 whitespace-nowrap">
+            (c) move 偽代碼與動畫
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="p-6 min-h-[600px]">
+        
+        <!-- Tab A -->
+        <div id="tab-a" class="tab-content active space-y-8">
+            <h2 class="text-2xl font-bold text-blue-800 border-b-2 border-blue-200 pb-2">(a) 寫出子程式 findempty 的傳回值</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- A(i) -->
+                <div class="border rounded-lg p-4 shadow-sm bg-white">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">(i) findempty(4,5)</h3>
+                    <div id="anim-a1-grid" class="flex justify-center overflow-x-auto mb-4"></div>
+                    <div class="h-32 flex flex-col items-center justify-center text-center text-blue-800 font-medium px-4 bg-blue-50 rounded mb-4" id="anim-a1-desc"></div>
+                    <div class="flex justify-center space-x-3" id="anim-a1-controls"></div>
+                </div>
+
+                <!-- A(ii) -->
+                <div class="border rounded-lg p-4 shadow-sm bg-white">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">(ii) findempty(0,1)</h3>
+                    <div id="anim-a2-grid" class="flex justify-center overflow-x-auto mb-4"></div>
+                    <div class="h-32 flex flex-col items-center justify-center text-center text-blue-800 font-medium px-4 bg-blue-50 rounded mb-4" id="anim-a2-desc"></div>
+                    <div class="flex justify-center space-x-3" id="anim-a2-controls"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab B -->
+        <div id="tab-b" class="tab-content space-y-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-blue-200 pb-2 gap-4">
+                <h2 class="text-2xl font-bold text-blue-800">(b) 完成 findempty(x,y) 的偽代碼</h2>
+                <div class="flex items-center space-x-3 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <label class="font-semibold text-blue-800">自訂參數:</label>
+                    <div class="flex items-center">
+                        <span class="mr-1 text-gray-700">x=</span>
+                        <input type="number" id="input-b-x" min="0" max="4" value="4" class="w-12 border border-gray-300 rounded px-1 py-1 text-center">
+                    </div>
+                    <div class="flex items-center">
+                        <span class="mr-1 text-gray-700">y=</span>
+                        <input type="number" id="input-b-y" min="0" max="7" value="5" class="w-12 border border-gray-300 rounded px-1 py-1 text-center">
+                    </div>
+                    <button onclick="updateAnimB()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow transition text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i>套用
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-6 rounded-lg font-mono text-sm shadow-inner border border-gray-200 leading-relaxed">
+                    <div>findempty(x,y)</div>
+                    <div>全程變量 e</div>
+                    <div>cnt &larr; 0</div>
+                    <div>j &larr; y</div>
+                    <div id="code-b1" class="transition-colors duration-300 rounded px-1 py-0.5">當 j >= 0 及 <span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(b1) L[x][j] &lt;&gt; 0</span></div>
+                    <div class="pl-6 py-0.5">j &larr; j - 1</div>
+                    <div id="code-b2" class="transition-colors duration-300 rounded px-1 py-0.5">當 <span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(b2) j >= 0 及 L[x][j] = 0</span></div>
+                    <div class="pl-6 py-0.5">j &larr; j - 1</div>
+                    <div id="code-b3" class="transition-colors duration-300 rounded px-1 pl-6 py-0.5"><span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(b3) cnt &larr; cnt + 1</span></div>
+                    <div id="code-b45" class="transition-colors duration-300 rounded px-1 py-0.5 mt-1">e &larr; [x, <span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(b4) j + 1</span>, <span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(b5) cnt</span>]</div>
+                </div>
+
+                <div class="border rounded-lg p-4 shadow-sm bg-white">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800" id="title-b-anim">動態解析：findempty(4, 5)</h3>
+                    <div id="anim-b-grid" class="flex justify-center overflow-x-auto mb-4"></div>
+                    <div class="h-32 flex flex-col items-center justify-center text-center text-blue-800 font-medium px-4 bg-blue-50 rounded mb-4" id="anim-b-desc"></div>
+                    <div class="flex justify-center space-x-3" id="anim-b-controls"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab C -->
+        <div id="tab-c" class="tab-content space-y-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-blue-200 pb-2 gap-4">
+                <h2 class="text-2xl font-bold text-blue-800">(c) 完成 move(x,y) 的偽代碼與執行過程</h2>
+                <div class="flex items-center space-x-3 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <label class="font-semibold text-blue-800">自訂參數:</label>
+                    <div class="flex items-center">
+                        <span class="mr-1 text-gray-700">x=</span>
+                        <input type="number" id="input-c-x" min="0" max="4" value="2" class="w-12 border border-gray-300 rounded px-1 py-1 text-center">
+                    </div>
+                    <div class="flex items-center">
+                        <span class="mr-1 text-gray-700">y=</span>
+                        <input type="number" id="input-c-y" min="0" max="7" value="5" class="w-12 border border-gray-300 rounded px-1 py-1 text-center">
+                    </div>
+                    <button onclick="updateAnimC()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow transition text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i>套用
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-6 rounded-lg font-mono text-sm shadow-inner border border-gray-200 leading-relaxed">
+                    <div>move(x, y)</div>
+                    <div>全程變量 e</div>
+                    <div>e &larr; findempty(x, y)</div>
+                    <div id="code-c1" class="transition-colors duration-300 rounded px-1 py-0.5">如果 <span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(c1) e[2] > 0</span></div>
+                    <div class="pl-6 py-0.5">j &larr; 0</div>
+                    <div id="code-c2" class="transition-colors duration-300 rounded px-1 pl-6 py-0.5">當 <span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(c2) y + j <= 7 及 L[x][y+j] &lt;&gt; 0</span></div>
+                    <div id="code-c3" class="transition-colors duration-300 rounded px-1 pl-12 py-0.5"><span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(c3) L[x][e[1]+j] &larr; L[x][y+j]</span></div>
+                    <div id="code-c4" class="transition-colors duration-300 rounded px-1 pl-12 py-0.5"><span class="font-bold text-red-600 border-b border-red-400 pb-0.5">(c4) L[x][y+j] &larr; 0</span></div>
+                    <div class="pl-12 py-0.5">j &larr; j+1</div>
+                </div>
+
+                <div class="border rounded-lg p-4 shadow-sm bg-white">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800" id="title-c-anim">動畫演示：move(2, 5)</h3>
+                    <div id="anim-c-grid" class="flex justify-center overflow-x-auto mb-4"></div>
+                    <div class="h-32 flex flex-col items-center justify-center text-center text-blue-800 font-medium px-4 bg-blue-50 rounded mb-4" id="anim-c-desc"></div>
+                    <div class="flex justify-center space-x-3" id="anim-c-controls"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+// --- Data ---
+const initialGrid = [
+    [320, 333, 0, 0, 0, 267, 145, 371],
+    [0, 0, 245, 157, 0, 0, 237, 385],
+    [0, 344, 273, 0, 0, 167, 129, 127],
+    [250, 158, 0, 0, 277, 308, 0, 0],
+    [0, 0, 0, 162, 322, 165, 325, 223]
+];
+
+const cloneGrid = (grid) => grid.map(row => [...row]);
+
+// --- Tab Switching ---
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('[id^="btn-tab-"]').forEach(el => {
+        el.classList.remove('bg-white', 'text-blue-600', 'border-b-2', 'border-blue-600');
+        el.classList.add('text-slate-600', 'hover:bg-slate-200');
+    });
+    
+    document.getElementById(tabId).classList.add('active');
+    const btn = document.getElementById('btn-' + tabId);
+    btn.classList.remove('text-slate-600', 'hover:bg-slate-200');
+    btn.classList.add('bg-white', 'text-blue-600', 'border-b-2', 'border-blue-600');
+}
+
+// --- Grid Renderer ---
+function renderGridHTML(grid, activeCell, highlightCells, targetCell) {
+    let html = '<div class="flex flex-col text-sm">';
+    html += '<div class="flex"><div class="w-8 h-8 flex items-center justify-center font-bold text-gray-500 mr-1">i\\j</div>';
+    for(let j=0; j<8; j++) html += `<div class="w-10 h-8 flex items-center justify-center font-bold text-gray-500">${j}</div>`;
+    html += '</div>';
+
+    html += '<div class="border-2 border-gray-800 bg-gray-200 flex flex-col gap-px p-px">';
+    for(let i=0; i<5; i++) {
+        html += '<div class="flex gap-px">';
+        html += `<div class="w-8 h-10 flex items-center justify-center font-bold text-gray-500 bg-white mr-1">${i}</div>`;
+        for(let j=0; j<8; j++) {
+            const val = grid[i][j];
+            let classes = "grid-cell w-10 h-10 flex items-center justify-center bg-white ";
+            
+            const isActive = activeCell && activeCell[0] === i && activeCell[1] === j;
+            const isHighlight = highlightCells && highlightCells.some(c => c[0] === i && c[1] === j);
+            const isTarget = targetCell && targetCell[0] === i && targetCell[1] === j;
+
+            if (isActive) classes += "cell-active font-bold ";
+            else if (isTarget) classes += "cell-target ";
+            else if (isHighlight) classes += "cell-highlight ";
+            else if (val === 0) classes += "cell-empty ";
+
+            html += `<div class="${classes}">${val}</div>`;
+        }
+        html += '</div>';
+    }
+    html += '</div></div>';
+    return html;
+}
+
+// --- Animation Controller Class ---
+class Animator {
+    constructor(config) {
+        this.steps = config.steps;
+        this.renderFn = config.renderFn;
+        this.controlsId = config.controlsId;
+        this.descId = config.descId;
+        
+        this.currentStep = 0;
+        this.isPlaying = false;
+        this.timer = null;
+        
+        this.initControls();
+        this.update();
+    }
+
+    initControls() {
+        const container = document.getElementById(this.controlsId);
+        container.innerHTML = `
+            <button class="btn-reset px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition" title="重置"><i class="fas fa-undo"></i></button>
+            <button class="btn-prev px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition disabled:opacity-50"><i class="fas fa-step-backward"></i> 上一步</button>
+            <button class="btn-play px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition w-28"><i class="fas fa-play"></i> 自動播放</button>
+            <button class="btn-next px-3 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition disabled:opacity-50">下一步 <i class="fas fa-step-forward"></i></button>
+        `;
+
+        container.querySelector('.btn-reset').onclick = () => { this.pause(); this.currentStep = 0; this.update(); };
+        container.querySelector('.btn-prev').onclick = () => { this.pause(); if(this.currentStep > 0) { this.currentStep--; this.update(); } };
+        container.querySelector('.btn-next').onclick = () => { this.pause(); if(this.currentStep < this.steps.length - 1) { this.currentStep++; this.update(); } };
+        container.querySelector('.btn-play').onclick = () => { this.isPlaying ? this.pause() : this.play(); };
+    }
+
+    play() {
+        if (this.currentStep >= this.steps.length - 1) this.currentStep = 0;
+        this.isPlaying = true;
+        this.updateButtons();
+        this.timer = setInterval(() => {
+            if (this.currentStep < this.steps.length - 1) {
+                this.currentStep++;
+                this.update();
+            } else {
+                this.pause();
+            }
+        }, 2000);
+    }
+
+    pause() {
+        this.isPlaying = false;
+        clearInterval(this.timer);
+        this.updateButtons();
+    }
+
+    updateButtons() {
+        const container = document.getElementById(this.controlsId);
+        const playBtn = container.querySelector('.btn-play');
+        const prevBtn = container.querySelector('.btn-prev');
+        const nextBtn = container.querySelector('.btn-next');
+
+        if (this.isPlaying) {
+            playBtn.innerHTML = '<i class="fas fa-pause"></i> 暫停';
+            playBtn.classList.replace('bg-blue-600', 'bg-orange-500');
+            playBtn.classList.replace('hover:bg-blue-700', 'hover:bg-orange-600');
+        } else {
+            playBtn.innerHTML = '<i class="fas fa-play"></i> 自動播放';
+            playBtn.classList.replace('bg-orange-500', 'bg-blue-600');
+            playBtn.classList.replace('hover:bg-orange-600', 'hover:bg-blue-700');
+        }
+
+        prevBtn.disabled = this.currentStep === 0;
+        nextBtn.disabled = this.currentStep === this.steps.length - 1;
+    }
+
+    update() {
+        const stepData = this.steps[this.currentStep];
+        document.getElementById(this.descId).innerHTML = stepData.desc;
+        this.renderFn(stepData);
+        this.updateButtons();
+    }
+    
+    destroy() {
+        this.pause();
+    }
+}
+
+// --- Logic Generators ---
+
+function generateStepsB(x, y) {
+    const steps = [];
+    const grid = initialGrid;
+    let j = y;
+    let cnt = 0;
+    let highlights = [];
+
+    steps.push({
+        desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>初始狀態</div><div>準備執行 findempty(${x}, ${y})。<br>設定 cnt &larr; 0, j &larr; ${y}</div>`,
+        grid: grid, active: [x, j], codeId: null
+    });
+
+    // Loop 1
+    while (j >= 0 && grid[x][j] !== 0) {
+        steps.push({
+            desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(b1) L[x][j] &lt;&gt; 0</div><div>檢查 L[${x}][${j}] = ${grid[x][j]}。不為空，跳過並向左移 (j &larr; j - 1)。</div>`,
+            grid: grid, active: [x, j], codeId: "code-b1"
+        });
+        j--;
+    }
+
+    if (j < 0) {
+        steps.push({
+            desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(b1) L[x][j] &lt;&gt; 0</div><div>j = ${j}，已超出左邊界。第一個迴圈結束。</div>`,
+            grid: grid, codeId: "code-b1"
+        });
+    } else {
+        steps.push({
+            desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(b1) L[x][j] &lt;&gt; 0</div><div>檢查 L[${x}][${j}] = 0。遇到空櫃，第一個迴圈結束。</div>`,
+            grid: grid, active: [x, j], codeId: "code-b1"
+        });
+    }
+
+    // Loop 2
+    while (j >= 0 && grid[x][j] === 0) {
+        steps.push({
+            desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(b2) j >= 0 及 L[x][j] = 0</div><div>檢查 L[${x}][${j}] = 0。是空櫃，進入迴圈。</div>`,
+            grid: grid, active: [x, j], highlight: [...highlights], codeId: "code-b2"
+        });
+        highlights.push([x, j]);
+        cnt++;
+        steps.push({
+            desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(b3) cnt &larr; cnt + 1</div><div>找到空櫃，計數器 cnt 增加為 ${cnt}。<br>接著 j &larr; j - 1。</div>`,
+            grid: grid, active: [x, j], highlight: [...highlights], codeId: "code-b3"
+        });
+        j--;
+    }
+
+    steps.push({
+        desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(b4) j + 1, (b5) cnt</div><div>迴圈結束。連續空櫃數量為 ${cnt}，起始於欄 ${j + 1}。<br><strong class='text-green-600'>傳回值：[${x}, ${j + 1}, ${cnt}]</strong></div>`,
+        grid: grid, highlight: highlights, codeId: "code-b45"
+    });
+
+    return steps;
+}
+
+function generateStepsC(x, y) {
+    const steps = [];
+    let currentGrid = cloneGrid(initialGrid);
+    
+    // Simulate findempty
+    let j_find = y;
+    let cnt = 0;
+    while (j_find >= 0 && currentGrid[x][j_find] !== 0) j_find--;
+    while (j_find >= 0 && currentGrid[x][j_find] === 0) { cnt++; j_find--; }
+    const e = [x, j_find + 1, cnt];
+
+    let emptyHighlights = [];
+    for(let k=0; k<cnt; k++) emptyHighlights.push([x, e[1]+k]);
+
+    steps.push({
+        desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>move(${x}, ${y})</div><div>準備執行 move(${x}, ${y})。</div>`,
+        grid: currentGrid, active: [x, y]
+    });
+
+    steps.push({
+        desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>e &larr; findempty(x, y)</div><div>呼叫 findempty(${x}, ${y})，得到 e = [${e[0]}, ${e[1]}, ${e[2]}]。<br>表示有 ${e[2]} 個空位。</div>`,
+        grid: currentGrid, highlight: emptyHighlights
+    });
+
+    steps.push({
+        desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(c1) e[2] > 0</div><div>檢查 e[2] > 0。${e[2] > 0 ? '條件成立，開始移動。' : '條件不成立，無空位可移動，結束。'}</div>`,
+        grid: currentGrid, highlight: emptyHighlights, codeId: "code-c1"
+    });
+
+    if (e[2] > 0) {
+        let j = 0;
+        while (y + j <= 7 && currentGrid[x][y + j] !== 0) {
+            steps.push({
+                desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(c2) y + j <= 7 及 L[x][y+j] &lt;&gt; 0</div><div>檢查 j=${j}：L[${x}][${y+j}] = ${currentGrid[x][y+j]}。需要移動。</div>`,
+                grid: currentGrid, active: [x, y+j], highlight: emptyHighlights, codeId: "code-c2"
+            });
+
+            let nextGrid = cloneGrid(currentGrid);
+            nextGrid[x][e[1] + j] = nextGrid[x][y + j];
+            nextGrid[x][y + j] = 0;
+
+            steps.push({
+                desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>(c3) 及 (c4)</div><div>將 L[${x}][${y+j}] 移至 L[${x}][${e[1]+j}]，並將原位清空。</div>`,
+                grid: nextGrid, active: [x, e[1]+j], target: [x, y+j], codeId: "code-c3"
+            });
+
+            currentGrid = nextGrid;
+            j++;
+        }
+        
+        steps.push({
+            desc: `<div class='font-bold text-red-600 text-center text-lg mb-1'>結束</div><div>所有連續物品已完成移動。</div>`,
+            grid: currentGrid
+        });
+    }
+
+    return steps;
+}
+
+// --- Global Animators ---
+let animA1, animA2, animB, animC;
+
+function updateAnimB() {
+    let x = parseInt(document.getElementById('input-b-x').value);
+    let y = parseInt(document.getElementById('input-b-y').value);
+    if(isNaN(x) || x < 0 || x > 4) { x = 4; document.getElementById('input-b-x').value = 4; }
+    if(isNaN(y) || y < 0 || y > 7) { y = 5; document.getElementById('input-b-y').value = 5; }
+    
+    document.getElementById('title-b-anim').innerText = `動態解析：findempty(${x}, ${y})`;
+    
+    if(animB) animB.destroy();
+    animB = new Animator({
+        steps: generateStepsB(x, y),
+        controlsId: 'anim-b-controls',
+        descId: 'anim-b-desc',
+        renderFn: (step) => {
+            document.getElementById('anim-b-grid').innerHTML = renderGridHTML(step.grid, step.active, step.highlight);
+            ['code-b1', 'code-b2', 'code-b3', 'code-b45'].forEach(id => document.getElementById(id).classList.remove('bg-yellow-200'));
+            if(step.codeId) document.getElementById(step.codeId).classList.add('bg-yellow-200');
+        }
+    });
+}
+
+function updateAnimC() {
+    let x = parseInt(document.getElementById('input-c-x').value);
+    let y = parseInt(document.getElementById('input-c-y').value);
+    if(isNaN(x) || x < 0 || x > 4) { x = 2; document.getElementById('input-c-x').value = 2; }
+    if(isNaN(y) || y < 0 || y > 7) { y = 5; document.getElementById('input-c-y').value = 5; }
+    
+    document.getElementById('title-c-anim').innerText = `動畫演示：move(${x}, ${y})`;
+    
+    if(animC) animC.destroy();
+    animC = new Animator({
+        steps: generateStepsC(x, y),
+        controlsId: 'anim-c-controls',
+        descId: 'anim-c-desc',
+        renderFn: (step) => {
+            document.getElementById('anim-c-grid').innerHTML = renderGridHTML(step.grid, step.active, step.highlight, step.target);
+            ['code-c1', 'code-c2', 'code-c3', 'code-c4'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('bg-yellow-200');
+            });
+            if(step.codeId) {
+                const el = document.getElementById(step.codeId);
+                if(el) el.classList.add('bg-yellow-200');
+            }
+        }
+    });
+}
+
+// Initialize on load
+window.onload = () => {
+    // Anim A1
+    animA1 = new Animator({
+        steps: [
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>初始狀態：尋找 findempty(4,5)</div><div>從第 4 列，第 5 欄開始向左尋找空櫃。</div>", grid: initialGrid, active: [4,5] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>檢查 L[4][4] (值為 322)</div><div>櫃子被佔用，繼續向左。</div>", grid: initialGrid, active: [4,4] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>檢查 L[4][3] (值為 162)</div><div>櫃子被佔用，繼續向左。</div>", grid: initialGrid, active: [4,3] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>檢查 L[4][2] (值為 0)</div><div>找到第 1 個空櫃！</div>", grid: initialGrid, active: [4,2], highlight: [[4,2]] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>檢查 L[4][1] (值為 0)</div><div>找到第 2 個空櫃！</div>", grid: initialGrid, active: [4,1], highlight: [[4,2], [4,1]] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>檢查 L[4][0] (值為 0)</div><div>找到第 3 個空櫃！</div>", grid: initialGrid, active: [4,0], highlight: [[4,2], [4,1], [4,0]] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>已到達最左邊</div><div>連續空櫃起始於欄 0，共 3 個。<br><strong class='text-green-600 text-lg'>傳回值：[4, 0, 3]</strong></div>", grid: initialGrid, highlight: [[4,2], [4,1], [4,0]] }
+        ],
+        controlsId: 'anim-a1-controls',
+        descId: 'anim-a1-desc',
+        renderFn: (step) => document.getElementById('anim-a1-grid').innerHTML = renderGridHTML(step.grid, step.active, step.highlight)
+    });
+
+    // Anim A2
+    animA2 = new Animator({
+        steps: [
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>初始狀態：尋找 findempty(0,1)</div><div>從第 0 列，第 1 欄開始向左尋找空櫃。</div>", grid: initialGrid, active: [0,1] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>檢查 L[0][0] (值為 320)</div><div>櫃子被佔用，繼續向左。</div>", grid: initialGrid, active: [0,0] },
+            { desc: "<div class='font-bold text-blue-900 text-center text-lg mb-1'>已超出左邊界 (j < 0)</div><div>找不到任何空櫃。<br><strong class='text-green-600 text-lg'>傳回值：[0, 0, 0]</strong></div>", grid: initialGrid }
+        ],
+        controlsId: 'anim-a2-controls',
+        descId: 'anim-a2-desc',
+        renderFn: (step) => document.getElementById('anim-a2-grid').innerHTML = renderGridHTML(step.grid, step.active, step.highlight)
+    });
+
+    // Init dynamic animations B and C
+    updateAnimB();
+    updateAnimC();
+};
+</script>
+</body>
+</html>
