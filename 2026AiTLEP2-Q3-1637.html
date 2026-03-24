@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL 題目解答互動動畫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .slide-enter {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .code-block {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .keyword { color: #569cd6; }
+        .string { color: #ce9178; }
+        .function { color: #dcdcaa; }
+        
+        /* 隱藏滾動條但保持可滾動 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col h-[85vh]">
+        <!-- Header -->
+        <div class="bg-blue-600 text-white p-4 flex justify-between items-center shrink-0">
+            <h1 class="text-xl font-bold"><i class="fas fa-database mr-2"></i> 汽車共乘公司數據庫 SQL 解答</h1>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-gray-50 border-b flex overflow-x-auto no-scrollbar shrink-0" id="tabs-container">
+            <!-- Tabs will be injected here by JS -->
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-1 p-6 overflow-y-auto relative bg-white" id="content-area">
+            <!-- Content will be injected here by JS -->
+        </div>
+    </div>
+
+    <script>
+        const slides = [
+            {
+                tabName: "概覽",
+                title: "數據庫結構概覽",
+                question: "本題涉及三個資料表：DRV (司機)、PAS (乘客) 及 TRIP (行程)。",
+                content: `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="border rounded p-3 bg-blue-50">
+                            <h3 class="font-bold text-blue-800 mb-2">DRV (司機)</h3>
+                            <ul class="list-disc pl-5">
+                                <li>DID: 司機識別碼</li>
+                                <li>DNAME: 司機姓名</li>
+                                <li>JDATE: 加入日期</li>
+                                <li>RATING: 評分</li>
+                            </ul>
+                        </div>
+                        <div class="border rounded p-3 bg-green-50">
+                            <h3 class="font-bold text-green-800 mb-2">PAS (乘客)</h3>
+                            <ul class="list-disc pl-5">
+                                <li>PID: 乘客識別碼</li>
+                                <li>PNAME: 乘客姓名</li>
+                                <li>LEVEL: 會員等級 (G/S)</li>
+                            </ul>
+                        </div>
+                        <div class="border rounded p-3 bg-purple-50">
+                            <h3 class="font-bold text-purple-800 mb-2">TRIP (行程)</h3>
+                            <ul class="list-disc pl-5">
+                                <li>TID: 行程識別碼</li>
+                                <li>DID: 司機識別碼</li>
+                                <li>PID: 乘客識別碼</li>
+                                <li>LPICK / LDROP: 上/下車地點</li>
+                                <li>KM: 公里數</li>
+                                <li>FARE: 費用</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="mt-6 text-gray-600 text-center"><i class="fas fa-hand-pointer mr-2"></i>請點擊上方標籤查看各題解答。</p>
+                `
+            },
+            {
+                tabName: "題目 (a)",
+                title: "題目 (a)",
+                question: "列出於 2025 年加入平台的司機的姓名，然後按英文字母順序排列。",
+                content: `
+                    <div class="code-block p-4 rounded-lg shadow-inner mb-4 text-sm md:text-base">
+<span class="keyword">SELECT</span> DNAME <span class="keyword">FROM</span> DRV<br>
+<span class="keyword">WHERE</span> <span class="function">YEAR</span>(JDATE) = <span class="string">2025</span><br>
+<span class="keyword">ORDER BY</span> DNAME <span class="keyword">ASC</span>;
+                    </div>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
+                        <strong>解析：</strong>
+                        <ul class="list-disc pl-5 mt-1">
+                            <li>使用 <code>YEAR(JDATE) = 2025</code> (或 <code>JDATE LIKE '2025%'</code>) 篩選年份。</li>
+                            <li>使用 <code>ORDER BY DNAME ASC</code> 確保按英文字母順序排列。</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                tabName: "題目 (b)",
+                title: "題目 (b)",
+                question: "列出於九龍上車或下車的行程次數。",
+                content: `
+                    <div class="code-block p-4 rounded-lg shadow-inner mb-4 text-sm md:text-base">
+<span class="keyword">SELECT</span> <span class="function">COUNT</span>(*) <span class="keyword">FROM</span> TRIP<br>
+<span class="keyword">WHERE</span> LPICK <span class="keyword">LIKE</span> <span class="string">'%九龍%'</span> <span class="keyword">OR</span> LDROP <span class="keyword">LIKE</span> <span class="string">'%九龍%'</span>;
+                    </div>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
+                        <strong>解析：</strong>
+                        <ul class="list-disc pl-5 mt-1">
+                            <li>使用 <code>COUNT(*)</code> 計算符合條件的記錄總數。</li>
+                            <li>使用 <code>LIKE '%九龍%'</code> 進行模糊比對，只要地點包含「九龍」即符合條件。</li>
+                            <li>使用 <code>OR</code> 連接上車 (LPICK) 或下車 (LDROP) 的條件。</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                tabName: "題目 (c)",
+                title: "題目 (c)",
+                question: "公司現推出里數計劃，車費超過 $100 的行程可計算里數。列出總里數超過 1000 公里乘客的姓名及其總里數。",
+                content: `
+                    <div class="code-block p-4 rounded-lg shadow-inner mb-4 text-sm md:text-base overflow-x-auto">
+<span class="keyword">SELECT</span> P.PNAME, <span class="function">SUM</span>(T.KM) <br>
+<span class="keyword">FROM</span> PAS P, TRIP T<br>
+<span class="keyword">WHERE</span> P.PID = T.PID <span class="keyword">AND</span> T.FARE > <span class="string">100</span><br>
+<span class="keyword">GROUP BY</span> P.PID, P.PNAME<br>
+<span class="keyword">HAVING</span> <span class="function">SUM</span>(T.KM) > <span class="string">1000</span>;
+                    </div>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
+                        <strong>解析：</strong>
+                        <ul class="list-disc pl-5 mt-1">
+                            <li>需要連接 <code>PAS</code> 和 <code>TRIP</code> 表 (<code>P.PID = T.PID</code>)。</li>
+                            <li>先用 <code>WHERE FARE > 100</code> 篩選出符合計算里數資格的行程。</li>
+                            <li>使用 <code>GROUP BY</code> 按乘客分組，並用 <code>SUM(KM)</code> 計算總里數。</li>
+                            <li>最後用 <code>HAVING SUM(KM) > 1000</code> 篩選出總里數達標的乘客。</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                tabName: "題目 (d)",
+                title: "題目 (d) 填充題",
+                question: "以下 SQL 語句用於列出曾服務過乘客但從未接載金卡會員的司機的識別碼。寫出此語句中未填寫部分。",
+                content: `
+                    <div class="code-block p-4 rounded-lg shadow-inner mb-4 text-sm md:text-base overflow-x-auto">
+<span class="keyword">SELECT</span> DID <span class="keyword">FROM</span> DRV <span class="keyword">LEFT JOIN</span> (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-green-400 font-bold">SELECT DISTINCT DID FROM TRIP T, PAS P WHERE T.PID = P.PID AND P.LEVEL = 'G'</span> <span class="text-gray-400">/* (d1) */</span><br>
+) <span class="keyword">AS</span> G <span class="keyword">ON</span> <span class="text-green-400 font-bold">DRV.DID = G.DID</span> <span class="text-gray-400">/* (d2) */</span><br>
+<span class="keyword">WHERE</span> <span class="text-green-400 font-bold">G.DID IS NULL AND DRV.DID IN (SELECT DID FROM TRIP)</span> <span class="text-gray-400">/* (d3) */</span>;
+                    </div>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
+                        <strong>答案：</strong>
+                        <ul class="list-disc pl-5 mt-1">
+                            <li><strong>(d1):</strong> <code>SELECT DISTINCT DID FROM TRIP T, PAS P WHERE T.PID = P.PID AND P.LEVEL = 'G'</code> (找出曾接載金卡會員的司機)</li>
+                            <li><strong>(d2):</strong> <code>DRV.DID = G.DID</code> (連接條件)</li>
+                            <li><strong>(d3):</strong> <code>G.DID IS NULL AND DRV.DID IN (SELECT DID FROM TRIP)</code> (排除接載過金卡的司機，並確保該司機有接載過其他乘客)</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                tabName: "題目 (e)",
+                title: "題目 (e)",
+                question: "簡略描述給定 SQL 語句的用途 (包含 EXISTS 及子查詢)。",
+                content: `
+                    <div class="code-block p-4 rounded-lg shadow-inner mb-4 text-sm md:text-base overflow-x-auto">
+<span class="keyword">SELECT DISTINCT</span> DID <span class="keyword">FROM</span> TRIP T1 <span class="keyword">WHERE EXISTS</span> <br>
+&nbsp;&nbsp;(<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> TRIP T2 <span class="keyword">WHERE</span> <br>
+&nbsp;&nbsp;&nbsp;T1.DID = T2.DID <span class="keyword">AND</span> T1.PID = T2.PID <span class="keyword">AND</span> <br>
+&nbsp;&nbsp;&nbsp;T2.TID <> T1.TID)
+                    </div>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm">
+                        <strong>解答描述：</strong>
+                        <p class="mt-2 text-lg font-bold text-gray-800">
+                            列出曾接載同一位乘客多於一次的司機識別碼。
+                        </p>
+                        <hr class="my-2 border-yellow-300">
+                        <strong>解析：</strong>
+                        <p>它遍歷 <code>TRIP</code> 表中的每一筆行程 (<code>T1</code>)，並使用 <code>EXISTS</code> 檢查是否存在另一筆不同的行程 (<code>T2</code>)，其司機 (<code>DID</code>) 和乘客 (<code>PID</code>) 與 <code>T1</code> 完全相同，但行程編號 (<code>TID</code>) 不同。如果存在，就代表該司機曾多次接載同一位乘客。</p>
+                    </div>
+                `
+            },
+            {
+                tabName: "題目 (f)",
+                title: "題目 (f)",
+                question: "當司機 D017 停止服務後，執行 <code>DELETE FROM DRV WHERE DID = 'D017'</code>。舉出可能出現的問題，並建議相應的解決方案。",
+                content: `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                        <h3 class="font-bold text-red-800 mb-1"><i class="fas fa-exclamation-triangle"></i> 可能出現的問題：</h3>
+                        <p class="text-sm text-red-900"><strong>違反參照完整性 (Referential Integrity Violation)</strong>。由於 <code>TRIP</code> 數據庫表中可能仍有包含 <code>DID = 'D017'</code> 的行程記錄（作為外鍵），直接從 <code>DRV</code> 表中刪除該司機記錄會導致數據庫報錯，因為這會產生孤立記錄 (Orphan records)。</p>
+                    </div>
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4">
+                        <h3 class="font-bold text-green-800 mb-1"><i class="fas fa-lightbulb"></i> 建議解決方案：</h3>
+                        <ul class="list-disc pl-5 text-sm text-green-900">
+                            <li><strong>軟刪除 (Soft Delete)</strong> - 不實際刪除記錄，而是在 <code>DRV</code> 表中新增一個欄位 (例如 <code>STATUS</code> 或 <code>IS_ACTIVE</code>)，將其值設為 'Inactive' 或 'N'，以保留歷史行程數據。</li>
+                        </ul>
+                    </div>
+                `
+            }
+        ];
+
+        let currentSlide = 0;
+        const contentArea = document.getElementById('content-area');
+        const tabsContainer = document.getElementById('tabs-container');
+
+        function renderTabs() {
+            tabsContainer.innerHTML = '';
+            slides.forEach((slide, index) => {
+                const isActive = index === currentSlide;
+                const tabBtn = document.createElement('button');
+                
+                // 設定標籤樣式
+                tabBtn.className = `px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors duration-200 border-b-2 focus:outline-none ${
+                    isActive 
+                    ? 'border-blue-500 text-blue-600 bg-blue-50/50' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`;
+                
+                tabBtn.innerText = slide.tabName;
+                tabBtn.onclick = () => {
+                    if (currentSlide !== index) {
+                        currentSlide = index;
+                        renderTabs(); // 重新渲染標籤以更新活動狀態
+                        renderSlide(index);
+                    }
+                };
+                
+                tabsContainer.appendChild(tabBtn);
+            });
+        }
+
+        function renderSlide(index) {
+            const slide = slides[index];
+            
+            // 清空內容並加入新內容（帶有動畫）
+            contentArea.innerHTML = '';
+            const slideDiv = document.createElement('div');
+            slideDiv.className = 'slide-enter h-full flex flex-col';
+            
+            slideDiv.innerHTML = `
+                <h2 class="text-2xl font-bold text-gray-800 mb-3">${slide.title}</h2>
+                <div class="bg-gray-50 p-4 rounded-lg mb-5 text-gray-700 font-medium border-l-4 border-blue-500 shadow-sm">
+                    ${slide.question}
+                </div>
+                <div class="flex-1">
+                    ${slide.content}
+                </div>
+            `;
+            
+            contentArea.appendChild(slideDiv);
+        }
+
+        // 初始化
+        renderTabs();
+        renderSlide(0);
+    </script>
+</body>
+</html>
