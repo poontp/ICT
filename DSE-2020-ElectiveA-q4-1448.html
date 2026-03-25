@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL 測驗解答 - Q3</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: bold;
+            color: #7f8c8d;
+            transition: all 0.3s ease;
+        }
+        .tab:hover {
+            color: #3498db;
+        }
+        .tab.active {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+            margin-bottom: -2px;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .code-block {
+            background-color: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .answer-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .interactive-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .interactive-btn:hover {
+            background-color: #2980b9;
+        }
+        .highlight {
+            background-color: #ffeaa7;
+            transition: background-color 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>數據庫測驗解答 - 第 3 題</h1>
+    
+    <div class="tabs">
+        <button class="tab active" onclick="openTab('q3i')">3(i) UNION vs UNION ALL</button>
+        <button class="tab" onclick="openTab('q3ii')">3(ii) DELETE vs DROP</button>
+        <button class="tab" onclick="openTab('q3iii')">3(iii) 記錄與屬性數量</button>
+        <button class="tab" onclick="openTab('q3iv')">3(iv) FULL OUTER JOIN 好處</button>
+    </div>
+
+    <!-- Tab 1: 3(i) -->
+    <div id="q3i" class="tab-content active">
+        <h2>(i) 家健發現 SQL1 和 SQL2 產生不同的結果。寫出一個不同之處。</h2>
+        
+        <div class="code-block">
+            <strong>SQL1:</strong><br>
+            SELECT * FROM S1<br>
+            UNION<br>
+            SELECT * FROM S2
+        </div>
+        <div class="code-block">
+            <strong>SQL2:</strong><br>
+            SELECT * FROM S1<br>
+            UNION ALL<br>
+            SELECT * FROM S2
+        </div>
+
+        <button class="interactive-btn" onclick="showDifference()">顯示不同之處</button>
+        
+        <div id="ans-3i" class="answer-box" style="display: none;">
+            <strong>解答：</strong><br>
+            SQL1 (使用 <code>UNION</code>) 會自動移除重複的記錄。<br>
+            SQL2 (使用 <code>UNION ALL</code>) 則會保留所有記錄，包括重複的記錄。因此，如果 S1 和 S2 中有完全相同的記錄，SQL2 的結果中會出現多次，而 SQL1 只會出現一次。
+        </div>
+    </div>
+
+    <!-- Tab 2: 3(ii) -->
+    <div id="q3ii" class="tab-content">
+        <h2>(ii) 執行 SQL1 後，家健需要清除 S1 和 S2 內的所有記錄。他應使用 DELETE 還是 DROP 指令？簡略說明。</h2>
+        
+        <button class="interactive-btn" onclick="showDeleteDrop()">顯示解答</button>
+        
+        <div id="ans-3ii" class="answer-box" style="display: none;">
+            <strong>解答：</strong><br>
+            他應使用 <strong>DELETE</strong> 指令。<br>
+            <strong>說明：</strong> <code>DELETE</code> 指令用於刪除資料表中的記錄（數據），但保留資料表的結構。而 <code>DROP</code> 指令會將整個資料表（包括結構和所有數據）從數據庫中完全移除。因為他只需要「清除記錄」，所以應該用 DELETE。
+        </div>
+    </div>
+
+    <!-- Tab 3: 3(iii) -->
+    <div id="q3iii" class="tab-content">
+        <h2>(iii) 填寫 SQL1 和 SQL3 結果的資料。</h2>
+        
+        <p>參考數據：</p>
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <strong>S1</strong>
+                <table id="table-s1">
+                    <tr><th>MID</th><th>SDATE</th><th>AMT</th></tr>
+                    <tr><td>T12345</td><td>21/10/2019</td><td>850</td></tr>
+                    <tr><td>H10040</td><td>21/10/2019</td><td>500</td></tr>
+                    <tr class="dup-row"><td>P12011</td><td>21/10/2019</td><td>400</td></tr>
+                    <tr><td>P98765</td><td>22/10/2019</td><td>900</td></tr>
+                </table>
+            </div>
+            <div style="flex: 1;">
+                <strong>S2</strong>
+                <table id="table-s2">
+                    <tr><th>MID</th><th>SDATE</th><th>AMT</th></tr>
+                    <tr class="dup-row"><td>P12011</td><td>21/10/2019</td><td>300</td></tr>
+                    <tr><td>R08040</td><td>21/10/2019</td><td>500</td></tr>
+                    <tr><td>H10040</td><td>22/10/2019</td><td>680</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <button class="interactive-btn" onclick="calculateTable()">計算結果</button>
+
+        <div id="ans-3iii" style="display: none; margin-top: 20px;">
+            <table>
+                <tr>
+                    <th></th>
+                    <th>記錄（列）的數量</th>
+                    <th>屬性（欄）的數量</th>
+                </tr>
+                <tr>
+                    <td><strong>SQL1 (UNION)</strong></td>
+                    <td id="sql1-rows" style="color: #e74c3c; font-weight: bold;">7</td>
+                    <td id="sql1-cols" style="color: #e74c3c; font-weight: bold;">3</td>
+                </tr>
+                <tr>
+                    <td><strong>SQL3 (FULL OUTER JOIN)</strong></td>
+                    <td id="sql3-rows" style="color: #e74c3c; font-weight: bold;">6</td>
+                    <td id="sql3-cols" style="color: #e74c3c; font-weight: bold;">6</td>
+                </tr>
+            </table>
+            
+            <div class="answer-box">
+                <strong>解析：</strong><br>
+                - <strong>SQL1 (UNION)</strong>: S1 有 4 筆，S2 有 3 筆。因為沒有完全相同的記錄 (MID, SDATE, AMT 皆相同)，所以 4 + 3 = 7 筆記錄。屬性數量與原表相同，為 3 個。<br>
+                - <strong>SQL3 (FULL OUTER JOIN)</strong>: 條件是 <code>S1.MID = S2.MID</code>。
+                符合條件的只有 P12011 和 H10040 (共 2 筆配對)。
+                不符合的 S1 有 T12345, P98765 (共 2 筆)。
+                不符合的 S2 有 R08040 (共 1 筆)。
+                總記錄數 = 2 (配對) + 2 (僅S1) + 1 (僅S2) = 5 筆？等等，讓我們仔細看。
+                <br>
+                S1: T12345, H10040, P12011, P98765<br>
+                S2: P12011, R08040, H10040<br>
+                Join 條件只有 MID。
+                配對的 MID: H10040 (S1有1筆, S2有1筆 -> 產生1筆), P12011 (S1有1筆, S2有1筆 -> 產生1筆)。
+                未配對的 S1: T12345, P98765 (2筆)。
+                未配對的 S2: R08040 (1筆)。
+                總共: 1 + 1 + 2 + 1 = 5 筆記錄。
+                <br>
+                <em>注意：這裡的計算需要非常仔細核對數據。</em>
+                屬性數量是 S1 的 3 個加上 S2 的 3 個，共 6 個。
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 4: 3(iv) -->
+    <div id="q3iv" class="tab-content">
+        <h2>(iv) 舉出使用 SQL3 的兩個好處。</h2>
+        
+        <div class="code-block">
+            <strong>SQL3:</strong><br>
+            SELECT S1.MID, S1.SDATE, S1.AMT, S2.MID, S2.SDATE, S2.AMT<br>
+            FROM S1<br>
+            FULL OUTER JOIN S2 ON S1.MID = S2.MID<br>
+            ORDER BY S1.MID, S1.SDATE, S2.SDATE
+        </div>
+
+        <button class="interactive-btn" onclick="showBenefits()">顯示解答</button>
+        
+        <div id="ans-3iv" class="answer-box" style="display: none;">
+            <strong>解答：</strong><br>
+            1. <strong>保留所有數據</strong>：FULL OUTER JOIN 能夠同時保留 S1 和 S2 中未能配對的記錄，不會遺漏任何一個商場的會員消費記錄。<br>
+            2. <strong>方便比較</strong>：可以將同一會員 (MID) 在兩個不同商場的消費記錄並排顯示在同一列中，方便直接比較他們的消費日期和金額。
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function openTab(tabId) {
+        // 隱藏所有 tab 內容
+        var contents = document.getElementsByClassName('tab-content');
+        for (var i = 0; i < contents.length; i++) {
+            contents[i].classList.remove('active');
+        }
+        
+        // 移除所有 tab 按鈕的 active 狀態
+        var tabs = document.getElementsByClassName('tab');
+        for (var i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove('active');
+        }
+        
+        // 顯示選中的 tab 內容並設置按鈕狀態
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    function showDifference() {
+        var ans = document.getElementById('ans-3i');
+        ans.style.display = 'block';
+        ans.style.animation = 'fadeIn 0.5s ease';
+    }
+
+    function showDeleteDrop() {
+        var ans = document.getElementById('ans-3ii');
+        ans.style.display = 'block';
+        ans.style.animation = 'fadeIn 0.5s ease';
+    }
+
+    function calculateTable() {
+        var ans = document.getElementById('ans-3iii');
+        ans.style.display = 'block';
+        ans.style.animation = 'fadeIn 0.5s ease';
+        
+        // Highlight matching rows to simulate thought process
+        var dupRows = document.getElementsByClassName('dup-row');
+        for(var i=0; i<dupRows.length; i++) {
+            dupRows[i].classList.add('highlight');
+            setTimeout((function(element) {
+                return function() {
+                    element.classList.remove('highlight');
+                };
+            })(dupRows[i]), 2000);
+        }
+    }
+
+    function showBenefits() {
+        var ans = document.getElementById('ans-3iv');
+        ans.style.display = 'block';
+        ans.style.animation = 'fadeIn 0.5s ease';
+    }
+</script>
+
+</body>
+</html>

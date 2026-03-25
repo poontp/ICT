@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL 測驗解答 - Q2</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .tabs {
+            display: flex;
+            background-color: #34495e;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            flex: 1;
+            min-width: 60px;
+            padding: 15px 10px;
+            background: none;
+            border: none;
+            color: #bdc3c7;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .tab-btn:hover {
+            background-color: #2c3e50;
+            color: #fff;
+        }
+        .tab-btn.active {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .content-area {
+            padding: 30px;
+            min-height: 300px;
+            position: relative;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .question {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #2980b9;
+        }
+        .sql-code {
+            background-color: #f8f9fa;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            white-space: pre-wrap;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+        }
+        .explanation {
+            line-height: 1.6;
+            color: #555;
+        }
+        .schema-info {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .schema-info h3 {
+            margin-top: 0;
+            color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>數據庫測驗解答 - 第二題 (Q2)</h1>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'tab-a')">(a)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-b')">(b)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-c')">(c)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-d')">(d)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-e')">(e)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-f')">(f)</button>
+    </div>
+
+    <div class="content-area">
+        <div class="schema-info">
+            <h3>資料表結構參考</h3>
+            <strong>MEMBER:</strong> MID (會員識別碼), MNAME (英文姓名), MTYPE (會員類別: G/O), CREDIT (積分點), JDATE (入會日期)<br>
+            <strong>VIDEO:</strong> VID (視頻識別碼), VTITLE (視頻英文片名), RFEE (視頻租賃費)<br>
+            <strong>RENTAL:</strong> MID (會員識別碼), VID (視頻識別碼), RDATE (租賃日期)
+        </div>
+
+        <div id="tab-a" class="tab-content active">
+            <div class="question">(a) RENTAL 的主關鍵碼是什麼？</div>
+            <div class="explanation">
+                <strong>解答：</strong>
+                <p><code>MID + VID + RDATE</code> （即由會員識別碼、視頻識別碼和租賃日期組成的複合鍵）</p>
+                <strong>解釋：</strong>
+                <p>因為同一個會員可能會在不同的日期租借同一個視頻，所以單獨的 MID 或 VID 不足以唯一識別一筆租賃記錄。必須結合會員、視頻和具體的租借日期才能確保記錄的唯一性。</p>
+            </div>
+        </div>
+
+        <div id="tab-b" class="tab-content">
+            <div class="question">(b) 列出積分少於 100 的普通會員的英文姓名和會員識別碼。</div>
+            <div class="sql-code">SELECT MNAME, MID
+FROM MEMBER
+WHERE MTYPE = 'O' AND CREDIT < 100;</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>從 <code>MEMBER</code> 表中選取 <code>MNAME</code> 和 <code>MID</code>。</li>
+                    <li>條件 1：普通會員，即 <code>MTYPE = 'O'</code>。</li>
+                    <li>條件 2：積分少於 100，即 <code>CREDIT < 100</code>。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-c" class="tab-content">
+            <div class="question">(c) 找出視頻「Nice Face」的總租賃費。</div>
+            <div class="sql-code">SELECT SUM(V.RFEE)
+FROM VIDEO V, RENTAL R
+WHERE V.VID = R.VID AND V.VTITLE = 'Nice Face';</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>需要連接 <code>VIDEO</code> 表（獲取租金和片名）和 <code>RENTAL</code> 表（獲取租借次數/記錄）。</li>
+                    <li>使用 <code>SUM(V.RFEE)</code> 將所有相關的租賃費用加總。</li>
+                    <li>條件為視頻名稱 <code>V.VTITLE = 'Nice Face'</code>。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-d" class="tab-content">
+            <div class="question">(d) 列出從未被租賃的視頻的英文片名。</div>
+            <div class="sql-code">SELECT VTITLE
+FROM VIDEO
+WHERE VID NOT IN (SELECT VID FROM RENTAL);</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>子查詢 <code>SELECT VID FROM RENTAL</code> 找出所有曾經被租借過的視頻 ID。</li>
+                    <li>主查詢使用 <code>NOT IN</code> 找出不在上述列表中的視頻，即從未被租借過的視頻，並顯示其 <code>VTITLE</code>。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-e" class="tab-content">
+            <div class="question">(e) 公司為慶祝週年紀念，送贈額外 50 個積分點予 2017 年前入會的會員。</div>
+            <div class="sql-code">UPDATE MEMBER
+SET CREDIT = CREDIT + 50
+WHERE YEAR(JDATE) < 2017;
+
+-- 或者使用日期格式 --
+-- WHERE JDATE < '1/1/2017'; --</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>這是一個數據更新操作，使用 <code>UPDATE</code> 語句。</li>
+                    <li><code>SET CREDIT = CREDIT + 50</code> 表示在原有積分上增加 50。</li>
+                    <li>條件為入會年份早於 2017 年。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-f" class="tab-content">
+            <div class="question">(f) 以下 SQL 語句的目的是什麼？</div>
+            <div class="sql-code">SELECT MID FROM MEMBER
+WHERE MTYPE = "G" AND
+      JDATE < ALL
+      (SELECT JDATE FROM MEMBER
+       WHERE MTYPE = "O")</div>
+            <div class="explanation">
+                <strong>解答：</strong>
+                <p>列出所有入會日期早於<strong>所有</strong>普通會員（最早期入會的普通會員）的黃金會員的會員識別碼 (MID)。</p>
+                <strong>解釋：</strong>
+                <ul>
+                    <li>子查詢找出所有普通會員 (<code>MTYPE = "O"</code>) 的入會日期。</li>
+                    <li><code>< ALL</code> 表示必須小於子查詢結果中的每一個值，也就是說，必須比最早入會的普通會員還要早入會。</li>
+                    <li>主查詢則篩選出符合此條件的黃金會員 (<code>MTYPE = "G"</code>)。</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        
+        // 隱藏所有 tab 內容
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+        
+        // 移除所有按鈕的 active 狀態
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+        
+        // 顯示當前的 tab，並添加 active 類別到按鈕
+        document.getElementById(tabName).style.display = "block";
+        // 觸發動畫
+        setTimeout(() => {
+            document.getElementById(tabName).classList.add("active");
+        }, 10);
+        evt.currentTarget.classList.add("active");
+    }
+</script>
+
+</body>
+</html>

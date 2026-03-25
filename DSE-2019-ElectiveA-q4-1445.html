@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL 測驗解答 - Q1</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .tabs {
+            display: flex;
+            background-color: #34495e;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            color: #bdc3c7;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .tab-btn:hover {
+            background-color: #2c3e50;
+            color: #fff;
+        }
+        .tab-btn.active {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .content-area {
+            padding: 30px;
+            min-height: 300px;
+            position: relative;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .question {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #2980b9;
+        }
+        .sql-code {
+            background-color: #f8f9fa;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            white-space: pre-wrap;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+        }
+        .explanation {
+            line-height: 1.6;
+            color: #555;
+        }
+        .schema-info {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .schema-info h3 {
+            margin-top: 0;
+            color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>數據庫測驗解答 - 第一題 (Q1)</h1>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'tab-a')">(a)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-b')">(b)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-c')">(c)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-d')">(d)</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-e')">(e)</button>
+    </div>
+
+    <div class="content-area">
+        <div class="schema-info">
+            <h3>資料表結構參考</h3>
+            <strong>BROUTE:</strong> BID (巴士路線), BNO (巴士數目)<br>
+            <strong>EMPLOYEE:</strong> EID (員工識別碼), ENAME (姓名), SALARY (薪酬), DSER (首天上班日期)<br>
+            <strong>DRIVER:</strong> EID (員工識別碼), BID (可駕駛路線)
+        </div>
+
+        <div id="tab-a" class="tab-content active">
+            <div class="question">(a) 列出可駕駛巴士路線「1A」的員工的姓名和識別碼，並按他們的薪酬降序排列。</div>
+            <div class="sql-code">SELECT E.ENAME, E.EID
+FROM EMPLOYEE E, DRIVER D
+WHERE E.EID = D.EID AND D.BID = '1A'
+ORDER BY E.SALARY DESC;</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>需要從 <code>EMPLOYEE</code> 表獲取姓名 (ENAME) 和識別碼 (EID)。</li>
+                    <li>需要連接 <code>DRIVER</code> 表來過濾可駕駛路線 (BID) 為 '1A' 的記錄。</li>
+                    <li>使用 <code>ORDER BY E.SALARY DESC</code> 實現薪酬降序排列。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-b" class="tab-content">
+            <div class="question">(b) 列出於 2009 年加入公司的員工的最高薪酬。</div>
+            <div class="sql-code">SELECT MAX(SALARY)
+FROM EMPLOYEE
+WHERE YEAR(DSER) = 2009;
+
+-- 或者使用日期範圍 --
+-- WHERE DSER >= '1/1/2009' AND DSER <= '31/12/2009' --</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>使用聚合函數 <code>MAX(SALARY)</code> 找出最高薪酬。</li>
+                    <li>使用 <code>YEAR(DSER) = 2009</code> 或日期範圍條件來篩選出 2009 年入職的員工。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-c" class="tab-content">
+            <div class="question">(c) 列出不能駕駛任何巴士路線的員工的姓名和識別碼。</div>
+            <div class="sql-code">SELECT ENAME, EID
+FROM EMPLOYEE
+WHERE EID NOT IN (SELECT EID FROM DRIVER);</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>這是一個尋找「不存在於」關聯表中的記錄的問題。</li>
+                    <li>子查詢 <code>SELECT EID FROM DRIVER</code> 找出所有能駕駛巴士的司機的 EID。</li>
+                    <li>主查詢使用 <code>NOT IN</code> 找出不在上述列表中的員工（即非司機）。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-d" class="tab-content">
+            <div class="question">(d) 某些巴士路線的司機數目少於巴士數目。列出這些巴士路線。</div>
+            <div class="sql-code">CREATE VIEW DRIVERNO AS
+SELECT BROUTE.BID, COUNT(*) AS TOTAL FROM BROUTE, DRIVER
+WHERE BROUTE.BID = DRIVER.BID
+GROUP BY BROUTE.BID;
+
+SELECT BROUTE.BID FROM BROUTE, DRIVERNO
+WHERE BROUTE.BID = DRIVERNO.BID AND TOTAL < BNO;</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li><strong>第一步：</strong> 建立一個名為 <code>DRIVERNO</code> 的檢視表 (View)。它連接了 <code>BROUTE</code> 和 <code>DRIVER</code> 表，並按路線 (BID) 分組，計算出每條路線的總司機人數，並將其命名為 <code>TOTAL</code>。</li>
+                    <li><strong>第二步：</strong> 從 <code>BROUTE</code> 表和剛建立的 <code>DRIVERNO</code> 檢視表中查詢。透過 <code>BROUTE.BID = DRIVERNO.BID</code> 將它們連接起來，並加上條件 <code>TOTAL < BNO</code>，從而篩選出司機總數 (TOTAL) 少於該路線巴士數目 (BNO) 的巴士路線。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-e" class="tab-content">
+            <div class="question">(e) 參考下列檢視：<br>
+                (i) V1 的目的是什麼？<br>
+                (ii) 寫出一個 SQL 指令以求 (AVG1 - AVG2)。
+            </div>
+            <div class="explanation">
+                <strong>(i) V1 的目的：</strong><br>
+                <p>計算在 2005 年 1 月 1 日<strong>之前</strong>入職的司機的平均薪酬。</p>
+                <br>
+                <strong>(ii) SQL 指令：</strong>
+            </div>
+            <div class="sql-code">SELECT V1.AVG1 - V2.AVG2
+FROM V1, V2;</div>
+            <div class="explanation">
+                <strong>解釋：</strong>
+                <ul>
+                    <li>V1 視圖計算了 2005 年前入職司機的平均薪酬 (AVG1)。</li>
+                    <li>V2 視圖計算了 2005 年或之後入職司機的平均薪酬 (AVG2)。</li>
+                    <li>直接從這兩個視圖中選取並相減即可得出結果。由於視圖只返回單一值，可以進行簡單的交叉連接。</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        
+        // 隱藏所有 tab 內容
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+        
+        // 移除所有按鈕的 active 狀態
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+        
+        // 顯示當前的 tab，並添加 active 類別到按鈕
+        document.getElementById(tabName).style.display = "block";
+        // 觸發動畫
+        setTimeout(() => {
+            document.getElementById(tabName).classList.add("active");
+        }, 10);
+        evt.currentTarget.classList.add("active");
+    }
+</script>
+
+</body>
+</html>
