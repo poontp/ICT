@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL NOT IN vs NOT EXISTS 互動解說</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .highlight {
+            background-color: #fef08a; /* yellow-200 */
+            transition: background-color 0.3s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans p-6">
+    <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold mb-6 text-blue-700">SQL NOT IN vs NOT EXISTS 運作解析</h1>
+        
+        <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p class="mb-2"><strong>目標：</strong> 找出「不屬於」現有部門列表的員工 (即 Charlie 和 David)。</p>
+            <p class="text-sm text-gray-600">請切換上方分頁與下方的情境，並利用「上一步」與「下一步」按鈕逐步觀察比對過程。</p>
+        </div>
+
+        <!-- Tabs for Query Selection -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                <button id="tab-notin" onclick="setQuery('notin')" class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg transition-colors duration-200 border-blue-500 text-blue-600">
+                    使用 NOT IN
+                </button>
+                <button id="tab-notexists" onclick="setQuery('notexists')" class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg transition-colors duration-200 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    使用 NOT EXISTS
+                </button>
+                <button id="tab-summary" onclick="setQuery('summary')" class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg transition-colors duration-200 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    總結比較
+                </button>
+            </nav>
+        </div>
+
+        <!-- Interactive Section (Hidden when Summary is active) -->
+        <div id="interactive-section">
+            <!-- Controls -->
+            <div class="flex flex-wrap gap-6 mb-8 items-end bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="flex flex-col gap-2">
+                    <label class="font-semibold text-gray-700">1. 選擇資料情境：</label>
+                    <div class="flex gap-2">
+                        <button id="btn-scene-normal" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" onclick="setScene('normal')">正常資料 (無 NULL)</button>
+                        <button id="btn-scene-null" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition" onclick="setScene('null')">危險資料 (含 NULL)</button>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col gap-2 ml-auto">
+                    <label class="font-semibold text-right text-gray-700">2. 步驟控制：</label>
+                    <div class="flex gap-2">
+                        <button id="btn-prev" class="px-4 py-2 bg-gray-500 text-white font-bold rounded shadow hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition" onclick="prevStep()">◀ 上一步</button>
+                        <button id="btn-next" class="px-4 py-2 bg-red-500 text-white font-bold rounded shadow hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition" onclick="nextStep()">下一步 ▶</button>
+                        <button class="px-4 py-2 bg-gray-300 text-gray-800 font-bold rounded shadow hover:bg-gray-400 transition" onclick="resetSteps()">重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Display -->
+            <div class="mb-8 p-4 bg-gray-900 text-green-400 font-mono text-sm rounded-lg overflow-x-auto shadow-inner">
+                <code id="sql-code">
+SELECT * FROM Employees WHERE dept_id NOT IN (SELECT id FROM Departments);
+                </code>
+            </div>
+
+            <!-- Tables -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Employees Table -->
+                <div>
+                    <h3 class="font-bold mb-2 text-lg">員工表 (Employees)</h3>
+                    <table class="w-full border-collapse border border-gray-300 text-center shadow-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="border border-gray-300 p-2">emp_id</th>
+                                <th class="border border-gray-300 p-2">name</th>
+                                <th class="border border-gray-300 p-2">dept_id</th>
+                            </tr>
+                        </thead>
+                        <tbody id="emp-tbody">
+                            <tr id="emp-1"><td class="border border-gray-300 p-2">1</td><td class="border border-gray-300 p-2">Alice</td><td class="border border-gray-300 p-2">10</td></tr>
+                            <tr id="emp-2"><td class="border border-gray-300 p-2">2</td><td class="border border-gray-300 p-2">Bob</td><td class="border border-gray-300 p-2">20</td></tr>
+                            <tr id="emp-3"><td class="border border-gray-300 p-2">3</td><td class="border border-gray-300 p-2">Charlie</td><td class="border border-gray-300 p-2">30</td></tr>
+                            <tr id="emp-4"><td class="border border-gray-300 p-2">4</td><td class="border border-gray-300 p-2">David</td><td class="border border-gray-300 p-2">40</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Departments Table -->
+                <div>
+                    <h3 class="font-bold mb-2 text-lg">部門表 (Departments) 子查詢結果</h3>
+                    <table class="w-full border-collapse border border-gray-300 text-center shadow-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="border border-gray-300 p-2">id</th>
+                                <th class="border border-gray-300 p-2">dept_name</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dept-tbody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Animation & Results -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="font-bold mb-2 text-lg">邏輯判斷過程</h3>
+                    <div id="eval-box" class="p-4 bg-gray-100 border border-gray-300 rounded-lg min-h-[200px] flex flex-col justify-center items-center text-center shadow-inner">
+                        <p class="text-gray-500">點擊「下一步」開始觀察...</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold mb-2 text-lg">最終輸出結果</h3>
+                    <table class="w-full border-collapse border border-gray-300 text-center shadow-sm">
+                        <thead class="bg-green-100">
+                            <tr>
+                                <th class="border border-gray-300 p-2">emp_id</th>
+                                <th class="border border-gray-300 p-2">name</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-tbody">
+                            <!-- Results go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section (Hidden by default) -->
+        <div id="summary-section" class="hidden">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">NOT IN 與 NOT EXISTS 總結比較</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse border border-gray-300 text-left shadow-sm bg-white">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border border-gray-300 p-4 w-1/4">比較項目</th>
+                            <th class="border border-gray-300 p-4 w-3/8 text-blue-700">NOT IN</th>
+                            <th class="border border-gray-300 p-4 w-3/8 text-green-700">NOT EXISTS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-gray-300 p-4 font-bold bg-gray-50">NULL 值處理</td>
+                            <td class="border border-gray-300 p-4 text-red-600 bg-red-50">
+                                <strong>極度危險！</strong><br>
+                                若子查詢結果中包含任何 NULL 值，整個查詢會回傳空集合 (0 筆資料)。因為 `x NOT IN (y, NULL)` 的邏輯結果為 UNKNOWN。
+                            </td>
+                            <td class="border border-gray-300 p-4 text-green-600 bg-green-50">
+                                <strong>非常安全！</strong><br>
+                                EXISTS 只關心「有沒有找到符合條件的紀錄」。NULL 不會影響配對邏輯，依然能正確過濾出資料。
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 p-4 font-bold bg-gray-50">執行效能 (通常情況)</td>
+                            <td class="border border-gray-300 p-4">
+                                較差。通常會執行全表掃描 (Full Table Scan)，將外部查詢的每一列與子查詢的整個結果集進行比對。
+                            </td>
+                            <td class="border border-gray-300 p-4">
+                                較佳。只要找到第一筆符合條件的資料就會立刻停止搜尋 (Early Out)，且能更有效地利用索引 (Index)。
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 p-4 font-bold bg-gray-50">語法結構</td>
+                            <td class="border border-gray-300 p-4">
+                                比較單一欄位與一個列表。<br>
+                                <code class="bg-gray-100 px-1 rounded text-sm">WHERE col NOT IN (SELECT ...)</code>
+                            </td>
+                            <td class="border border-gray-300 p-4">
+                                使用關聯子查詢 (Correlated Subquery)。<br>
+                                <code class="bg-gray-100 px-1 rounded text-sm">WHERE NOT EXISTS (SELECT 1 FROM ... WHERE ...)</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 p-4 font-bold bg-gray-50">最佳實踐建議</td>
+                            <td class="border border-gray-300 p-4">
+                                僅在確定子查詢結果<strong>絕對不會有 NULL</strong>，且資料量極小的情況下使用 (例如寫死的列表 `NOT IN (1, 2, 3)`)。
+                            </td>
+                            <td class="border border-gray-300 p-4 font-bold text-blue-600">
+                                業界強烈建議的標準寫法。處理關聯資料表排除時，應優先使用 NOT EXISTS。
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const employees = [
+            { id: 1, name: 'Alice', dept_id: 10 },
+            { id: 2, name: 'Bob', dept_id: 20 },
+            { id: 3, name: 'Charlie', dept_id: 30 },
+            { id: 4, name: 'David', dept_id: 40 }
+        ];
+
+        const deptsNormal = [
+            { id: 10, name: 'HR' },
+            { id: 20, name: 'IT' }
+        ];
+
+        const deptsNull = [
+            { id: 10, name: 'HR' },
+            { id: 20, name: 'IT' },
+            { id: 'NULL', name: 'NEW' }
+        ];
+
+        let currentScene = 'normal';
+        let currentQuery = 'notin'; // 'notin', 'notexists', 'summary'
+        let currentStep = 0;
+
+        function renderDepts() {
+            const tbody = document.getElementById('dept-tbody');
+            const data = currentScene === 'normal' ? deptsNormal : deptsNull;
+            tbody.innerHTML = data.map(d => `
+                <tr id="dept-${d.id}">
+                    <td class="border border-gray-300 p-2 ${d.id === 'NULL' ? 'text-red-500 font-bold' : ''}">${d.id}</td>
+                    <td class="border border-gray-300 p-2">${d.name}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateUI() {
+            // Update Tabs state
+            const tabNotIn = document.getElementById('tab-notin');
+            const tabNotExists = document.getElementById('tab-notexists');
+            const tabSummary = document.getElementById('tab-summary');
+            
+            const activeClass = 'whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg transition-colors duration-200 border-blue-500 text-blue-600';
+            const inactiveClass = 'whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg transition-colors duration-200 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+
+            tabNotIn.className = currentQuery === 'notin' ? activeClass : inactiveClass;
+            tabNotExists.className = currentQuery === 'notexists' ? activeClass : inactiveClass;
+            tabSummary.className = currentQuery === 'summary' ? activeClass : inactiveClass;
+
+            const interactiveSection = document.getElementById('interactive-section');
+            const summarySection = document.getElementById('summary-section');
+
+            if (currentQuery === 'summary') {
+                // Show summary, hide interactive
+                interactiveSection.classList.add('hidden');
+                summarySection.classList.remove('hidden');
+            } else {
+                // Show interactive, hide summary
+                interactiveSection.classList.remove('hidden');
+                summarySection.classList.add('hidden');
+
+                // Update Scene buttons state
+                document.getElementById('btn-scene-normal').className = currentScene === 'normal' ? 'px-4 py-2 bg-blue-600 text-white rounded shadow' : 'px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300';
+                document.getElementById('btn-scene-null').className = currentScene === 'null' ? 'px-4 py-2 bg-blue-600 text-white rounded shadow' : 'px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300';
+                
+                // Update SQL Code
+                const codeEl = document.getElementById('sql-code');
+                if (currentQuery === 'notin') {
+                    codeEl.innerHTML = `SELECT * FROM Employees WHERE dept_id NOT IN (SELECT id FROM Departments);`;
+                } else {
+                    codeEl.innerHTML = `SELECT * FROM Employees e WHERE NOT EXISTS (SELECT 1 FROM Departments d WHERE d.id = e.dept_id);`;
+                }
+
+                renderDepts();
+                resetSteps();
+            }
+        }
+
+        function setScene(scene) {
+            currentScene = scene;
+            updateUI();
+        }
+
+        function setQuery(query) {
+            currentQuery = query;
+            updateUI();
+        }
+
+        function resetSteps() {
+            currentStep = 0;
+            renderCurrentStep();
+        }
+
+        function nextStep() {
+            if (currentStep <= employees.length) {
+                currentStep++;
+                renderCurrentStep();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderCurrentStep();
+            }
+        }
+
+        function renderCurrentStep() {
+            if (currentQuery === 'summary') return;
+
+            const evalBox = document.getElementById('eval-box');
+            const resTbody = document.getElementById('result-tbody');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+
+            // Button states
+            btnPrev.disabled = currentStep === 0;
+            btnNext.disabled = currentStep > employees.length;
+
+            // Clear all highlights
+            employees.forEach(emp => {
+                document.getElementById(`emp-${emp.id}`).classList.remove('highlight');
+            });
+
+            const depts = currentScene === 'normal' ? deptsNormal : deptsNull;
+            const deptIds = depts.map(d => d.id);
+            const deptIdsStr = '(' + deptIds.join(', ') + ')';
+
+            // Rebuild results up to currentStep
+            resTbody.innerHTML = '';
+            for (let i = 0; i < currentStep; i++) {
+                if (i >= employees.length) break;
+                const emp = employees[i];
+                let isMatch = false;
+
+                if (currentQuery === 'notin') {
+                    if (deptIds.includes('NULL')) {
+                        isMatch = false;
+                    } else {
+                        isMatch = !deptIds.includes(emp.dept_id);
+                    }
+                } else {
+                    const found = depts.some(d => d.id === emp.dept_id);
+                    isMatch = !found;
+                }
+
+                if (isMatch) {
+                    resTbody.innerHTML += `
+                        <tr class="bg-green-50">
+                            <td class="border border-gray-300 p-2">${emp.id}</td>
+                            <td class="border border-gray-300 p-2">${emp.name}</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            // Render Evaluation Box
+            if (currentStep === 0) {
+                evalBox.innerHTML = '<p class="text-gray-500 text-lg">點擊「下一步」開始觀察...</p>';
+            } else if (currentStep > employees.length) {
+                evalBox.innerHTML = `<div class="text-2xl font-bold text-blue-600">比對完成！</div>
+                                     <p class="text-gray-600 mt-2">請嘗試切換其他情境或語法。</p>`;
+            } else {
+                const emp = employees[currentStep - 1];
+                document.getElementById(`emp-${emp.id}`).classList.add('highlight');
+                
+                let evalHtml = `<div class="text-xl mb-4 font-bold text-gray-800">正在檢查 ${emp.name} (dept_id: ${emp.dept_id})</div>`;
+
+                if (currentQuery === 'notin') {
+                    evalHtml += `<div class="font-mono bg-white p-3 border border-gray-300 rounded-lg inline-block shadow-sm mb-4 text-sm md:text-base">${emp.dept_id} NOT IN ${deptIdsStr}</div>`;
+                    
+                    if (deptIds.includes('NULL')) {
+                        evalHtml += `<div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <div class="text-red-600 font-bold text-lg mb-1">警告：子查詢包含 NULL！</div>
+                                        <div class="text-gray-700 text-sm">在 SQL 中，任何數值與 NULL 比較都會回傳 UNKNOWN。<br>因此 NOT IN 遇到 NULL 時，整個結果為 UNKNOWN (視同 False)。</div>
+                                     </div>`;
+                        evalHtml += `<div class="mt-4 font-bold text-xl text-red-500">結果：FALSE (過濾掉)</div>`;
+                    } else {
+                        const isMatch = !deptIds.includes(emp.dept_id);
+                        evalHtml += `<div class="mt-2 text-gray-600">部門列表中${isMatch ? '「不包含」' : '「包含」'} ${emp.dept_id}</div>`;
+                        evalHtml += `<div class="mt-4 font-bold text-xl ${isMatch ? 'text-green-600' : 'text-red-500'}">結果：${isMatch ? 'TRUE (保留)' : 'FALSE (過濾掉)'}</div>`;
+                    }
+                } else {
+                    // NOT EXISTS
+                    evalHtml += `<div class="text-gray-700 mb-4 bg-white p-3 border border-gray-300 rounded-lg shadow-sm">尋找 Departments 中是否有 <span class="font-mono font-bold">id = ${emp.dept_id}</span> 的紀錄</div>`;
+                    
+                    const found = depts.some(d => d.id === emp.dept_id);
+                    const isMatch = !found;
+
+                    if (found) {
+                        evalHtml += `<div class="font-mono bg-red-50 p-2 border border-red-200 rounded text-red-600 font-bold mb-4">找到匹配紀錄！EXISTS = TRUE</div>`;
+                    } else {
+                        evalHtml += `<div class="font-mono bg-green-50 p-2 border border-green-200 rounded text-green-700 font-bold mb-4">找不到匹配紀錄！EXISTS = FALSE</div>`;
+                    }
+
+                    evalHtml += `<div class="font-bold text-xl ${isMatch ? 'text-green-600' : 'text-red-500'}">NOT EXISTS 結果：${isMatch ? 'TRUE (保留)' : 'FALSE (過濾掉)'}</div>`;
+                    
+                    if(deptIds.includes('NULL')) {
+                        evalHtml += `<div class="mt-3 text-sm text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">註：NULL 不會影響 EXISTS 的配對尋找，因此非常安全。</div>`;
+                    }
+                }
+                evalBox.innerHTML = evalHtml;
+            }
+        }
+
+        // Initialize
+        updateUI();
+    </script>
+</body>
+</html>

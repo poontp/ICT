@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL EXISTS 與 IN 互動動畫比較</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .highlight-active { background-color: #fef08a; transition: background-color 0.3s; } /* Yellow */
+        .highlight-success { background-color: #bbf7d0; transition: background-color 0.3s; } /* Green */
+        .highlight-fail { background-color: #fecaca; transition: background-color 0.3s; } /* Red */
+        .highlight-list { background-color: #e9d5ff; transition: background-color 0.3s; } /* Purple */
+        .table-row { transition: all 0.3s ease; }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; }
+        .tab-inactive { color: #6b7280; border-bottom: 2px solid transparent; }
+        .tab-inactive:hover { color: #2563eb; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-blue-700">SQL 查詢原理：EXISTS vs IN</h1>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-200 mb-6 overflow-x-auto">
+            <button id="tabExists" class="px-6 py-3 font-bold text-lg tab-active transition-colors whitespace-nowrap" onclick="switchTab('exists')">1. EXISTS 動畫解說</button>
+            <button id="tabIn" class="px-6 py-3 font-bold text-lg tab-inactive transition-colors whitespace-nowrap" onclick="switchTab('in')">2. IN 動畫解說</button>
+            <button id="tabCompare" class="px-6 py-3 font-bold text-lg tab-inactive transition-colors whitespace-nowrap" onclick="switchTab('compare')">3. 綜合比較與效能</button>
+        </div>
+
+        <!-- ==================== EXISTS SECTION ==================== -->
+        <div id="sectionExists" class="block">
+            <p class="mb-4 text-gray-600">
+                <strong>EXISTS 的核心邏輯：</strong>外部查詢每讀取一筆資料，就去執行一次子查詢。<strong>只要在子查詢找到第一筆符合的資料，就會立刻停止搜尋（Early Exit）並回傳 TRUE。</strong>
+            </p>
+
+            <div class="bg-gray-800 text-green-400 p-4 rounded-lg mb-6 font-mono text-sm md:text-base overflow-x-auto shadow-inner">
+                <span class="text-purple-400">SELECT</span> CustomerName <span class="text-purple-400">FROM</span> Customers <br>
+                <span class="text-purple-400">WHERE EXISTS</span> (<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">SELECT</span> 1 <span class="text-purple-400">FROM</span> Orders <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">WHERE</span> Orders.CustomerID = Customers.CustomerID<br>
+                );
+            </div>
+
+            <div class="bg-white p-4 rounded-lg shadow mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-wrap gap-2">
+                    <button id="ex-startBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold transition disabled:opacity-50">自動播放</button>
+                    <button id="ex-prevBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded font-semibold transition disabled:opacity-50" disabled>上一步</button>
+                    <button id="ex-stepBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded font-semibold transition disabled:opacity-50">下一步</button>
+                    <button id="ex-resetBtn" class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded font-semibold transition">重置</button>
+                </div>
+                <div class="flex-1 w-full bg-blue-50 border border-blue-200 p-3 rounded text-blue-800 font-medium min-h-[3rem] flex items-center" id="ex-statusText">
+                    點擊「自動播放」或「下一步」開始動畫。
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Customers Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="bg-blue-600 text-white p-3 font-bold">Customers (外部查詢)</div>
+                    <table class="w-full text-left border-collapse" id="ex-customersTable">
+                        <thead><tr class="bg-gray-100 border-b"><th class="p-2 border-r">ID</th><th class="p-2">Name</th></tr></thead>
+                        <tbody>
+                            <tr class="table-row border-b"><td class="p-2 border-r">1</td><td class="p-2">Alice</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r">2</td><td class="p-2">Bob</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r">3</td><td class="p-2">Charlie</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Orders Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="bg-green-600 text-white p-3 font-bold">Orders (子查詢)</div>
+                    <table class="w-full text-left border-collapse" id="ex-ordersTable">
+                        <thead><tr class="bg-gray-100 border-b"><th class="p-2 border-r">OrderID</th><th class="p-2">CustomerID</th></tr></thead>
+                        <tbody>
+                            <tr class="table-row border-b"><td class="p-2 border-r">101</td><td class="p-2">2</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r">102</td><td class="p-2">1</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r">103</td><td class="p-2">2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Result Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="bg-purple-600 text-white p-3 font-bold">查詢結果</div>
+                    <table class="w-full text-left border-collapse">
+                        <thead><tr class="bg-gray-100 border-b"><th class="p-2">CustomerName</th></tr></thead>
+                        <tbody id="ex-resultBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== IN SECTION ==================== -->
+        <div id="sectionIn" class="hidden">
+            <p class="mb-4 text-gray-600">
+                <strong>IN 的核心邏輯：</strong>先完整執行一次子查詢，將結果收集成一個<strong>「暫存清單 (IN List)」</strong>，然後外部查詢再去比對這個清單。
+            </p>
+
+            <div class="bg-gray-800 text-green-400 p-4 rounded-lg mb-6 font-mono text-sm md:text-base overflow-x-auto shadow-inner">
+                <span class="text-purple-400">SELECT</span> CustomerName <span class="text-purple-400">FROM</span> Customers <br>
+                <span class="text-purple-400">WHERE</span> CustomerID <span class="text-purple-400">IN</span> (<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">SELECT</span> CustomerID <span class="text-purple-400">FROM</span> Orders <br>
+                );
+            </div>
+
+            <div class="bg-white p-4 rounded-lg shadow mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-wrap gap-2">
+                    <button id="in-startBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-semibold transition disabled:opacity-50">自動播放</button>
+                    <button id="in-prevBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded font-semibold transition disabled:opacity-50" disabled>上一步</button>
+                    <button id="in-stepBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded font-semibold transition disabled:opacity-50">下一步</button>
+                    <button id="in-resetBtn" class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded font-semibold transition">重置</button>
+                </div>
+                <div class="flex-1 w-full bg-indigo-50 border border-indigo-200 p-3 rounded text-indigo-800 font-medium min-h-[3rem] flex items-center" id="in-statusText">
+                    點擊「自動播放」或「下一步」開始動畫。
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Orders Table (Subquery) -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="bg-green-600 text-white p-3 font-bold text-sm">1. Orders (先跑子查詢)</div>
+                    <table class="w-full text-left border-collapse text-sm" id="in-ordersTable">
+                        <thead><tr class="bg-gray-100 border-b"><th class="p-2 border-r">OrderID</th><th class="p-2">CustomerID</th></tr></thead>
+                        <tbody>
+                            <tr class="table-row border-b"><td class="p-2 border-r">101</td><td class="p-2 font-bold">2</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r">102</td><td class="p-2 font-bold">1</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r">103</td><td class="p-2 font-bold">2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- IN List -->
+                <div class="bg-white rounded-lg shadow overflow-hidden border-2 border-dashed border-indigo-300">
+                    <div class="bg-indigo-100 text-indigo-800 p-3 font-bold text-sm text-center border-b border-indigo-200">2. IN 暫存清單</div>
+                    <div class="p-4 flex flex-wrap gap-2 justify-center items-center min-h-[100px]" id="in-listContainer">
+                        <span class="text-gray-400 text-sm">尚未建立</span>
+                    </div>
+                </div>
+
+                <!-- Customers Table (Outer) -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="bg-blue-600 text-white p-3 font-bold text-sm">3. Customers (外部查詢)</div>
+                    <table class="w-full text-left border-collapse text-sm" id="in-customersTable">
+                        <thead><tr class="bg-gray-100 border-b"><th class="p-2 border-r">ID</th><th class="p-2">Name</th></tr></thead>
+                        <tbody>
+                            <tr class="table-row border-b"><td class="p-2 border-r font-bold">1</td><td class="p-2">Alice</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r font-bold">2</td><td class="p-2">Bob</td></tr>
+                            <tr class="table-row border-b"><td class="p-2 border-r font-bold">3</td><td class="p-2">Charlie</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Result Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="bg-purple-600 text-white p-3 font-bold text-sm">4. 查詢結果</div>
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead><tr class="bg-gray-100 border-b"><th class="p-2">CustomerName</th></tr></thead>
+                        <tbody id="in-resultBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== COMPARE SECTION ==================== -->
+        <div id="sectionCompare" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow border-t-4 border-blue-500">
+                    <h2 class="text-2xl font-bold text-blue-700 mb-4">EXISTS 適用情境</h2>
+                    <ul class="list-disc pl-5 space-y-3 text-gray-700">
+                        <li><strong>子查詢資料量非常大</strong>時（例如 Orders 表有百萬筆）。</li>
+                        <li>因為 EXISTS 只要找到「第一筆」符合的就會提早結束 (Early Exit)，不用掃描整個子查詢表。</li>
+                        <li><strong>外部查詢資料量小，子查詢資料量大</strong>時，效能極佳。</li>
+                        <li>可以利用子查詢表上的索引（Index）快速定位。</li>
+                    </ul>
+                    <div class="mt-4 p-3 bg-blue-50 rounded text-blue-800 text-sm">
+                        <strong>白話文：</strong>「老闆(外部查詢)問員工(子查詢)：『這客戶有買過東西嗎？』員工翻紀錄，一看到有買過就馬上回報『有！』，不用管他到底買了幾次。」
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow border-t-4 border-indigo-500">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-4">IN 適用情境</h2>
+                    <ul class="list-disc pl-5 space-y-3 text-gray-700">
+                        <li><strong>子查詢資料量很小</strong>時（例如查出特定的幾個 VIP 客戶 ID）。</li>
+                        <li>因為 IN 會先把子查詢「全部執行完」並放在記憶體中變成一個清單。</li>
+                        <li><strong>外部查詢資料量大，子查詢資料量小</strong>時，效能較好。</li>
+                        <li>如果清單是固定的（例如 <code>IN (1, 2, 3)</code>），資料庫最佳化器處理起來非常快。</li>
+                    </ul>
+                    <div class="mt-4 p-3 bg-indigo-50 rounded text-indigo-800 text-sm">
+                        <strong>白話文：</strong>「老闆請員工先把『所有買過東西的客戶名單』整理成一張表(IN List)，然後老闆自己拿著客戶名冊，一個一個對照那張表。」
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 共用資料
+        const customers = [ { id: 1, name: "Alice" }, { id: 2, name: "Bob" }, { id: 3, name: "Charlie" } ];
+        const orders = [ { orderId: 101, custId: 2 }, { orderId: 102, custId: 1 }, { orderId: 103, custId: 2 } ];
+
+        // 頁籤切換邏輯
+        function switchTab(tab) {
+            document.getElementById('sectionExists').style.display = tab === 'exists' ? 'block' : 'none';
+            document.getElementById('sectionIn').style.display = tab === 'in' ? 'block' : 'none';
+            document.getElementById('sectionCompare').style.display = tab === 'compare' ? 'block' : 'none';
+            
+            const tabs = ['tabExists', 'tabIn', 'tabCompare'];
+            tabs.forEach(t => {
+                document.getElementById(t).className = "px-6 py-3 font-bold text-lg tab-inactive transition-colors whitespace-nowrap";
+            });
+            
+            if(tab === 'exists') document.getElementById('tabExists').className = "px-6 py-3 font-bold text-lg tab-active transition-colors whitespace-nowrap";
+            if(tab === 'in') document.getElementById('tabIn').className = "px-6 py-3 font-bold text-lg tab-active transition-colors whitespace-nowrap";
+            if(tab === 'compare') document.getElementById('tabCompare').className = "px-6 py-3 font-bold text-lg tab-active transition-colors whitespace-nowrap";
+        }
+
+        // ==========================================
+        // EXISTS 邏輯區塊
+        // ==========================================
+        const ex = {
+            state: { custIndex: 0, orderIndex: 0, phase: 'select_customer', isPlaying: false, timer: null },
+            history: [],
+            ui: {
+                status: document.getElementById('ex-statusText'),
+                result: document.getElementById('ex-resultBody'),
+                custRows: document.querySelectorAll('#ex-customersTable tbody tr'),
+                orderRows: document.querySelectorAll('#ex-ordersTable tbody tr'),
+                prevBtn: document.getElementById('ex-prevBtn'),
+                stepBtn: document.getElementById('ex-stepBtn'),
+                startBtn: document.getElementById('ex-startBtn')
+            }
+        };
+
+        function ex_updateUI() {
+            ex.ui.custRows.forEach(row => row.className = 'table-row border-b');
+            ex.ui.orderRows.forEach(row => row.className = 'table-row border-b');
+            ex.ui.prevBtn.disabled = ex.history.length === 0 || ex.state.isPlaying;
+            
+            if (ex.state.custIndex < customers.length) {
+                ex.ui.stepBtn.disabled = ex.state.isPlaying;
+                ex.ui.startBtn.disabled = false;
+                const cRow = ex.ui.custRows[ex.state.custIndex];
+                
+                if (ex.state.phase === 'select_customer') {
+                    cRow.classList.add('highlight-active');
+                    ex.ui.status.innerHTML = `外部查詢：選擇顧客 <strong>${customers[ex.state.custIndex].name} (ID: ${customers[ex.state.custIndex].id})</strong>，準備執行 EXISTS 子查詢。`;
+                } else if (ex.state.phase === 'check_order') {
+                    cRow.classList.add('highlight-active');
+                    ex.ui.orderRows[ex.state.orderIndex].classList.add('highlight-active');
+                    ex.ui.status.innerHTML = `子查詢：檢查訂單 ${orders[ex.state.orderIndex].orderId} 的 CustomerID (${orders[ex.state.orderIndex].custId}) 是否等於 ${customers[ex.state.custIndex].id}。`;
+                } else if (ex.state.phase === 'match_found') {
+                    cRow.classList.add('highlight-success');
+                    ex.ui.orderRows[ex.state.orderIndex].classList.add('highlight-success');
+                    ex.ui.status.innerHTML = `✅ <strong>條件符合！</strong> EXISTS 找到資料，立刻回傳 TRUE 並<strong>提早結束子查詢</strong>。加入結果。`;
+                } else if (ex.state.phase === 'no_match') {
+                    cRow.classList.add('highlight-fail');
+                    ex.ui.status.innerHTML = `❌ <strong>沒有符合的資料。</strong> 掃描完所有訂單，EXISTS 回傳 FALSE。`;
+                }
+            } else {
+                ex.ui.status.innerHTML = `🎉 EXISTS 查詢完成！`;
+                ex.ui.startBtn.disabled = true;
+                ex.ui.stepBtn.disabled = true;
+            }
+        }
+
+        function ex_nextStep() {
+            if (ex.state.custIndex >= customers.length) { ex_stopAutoPlay(); return; }
+            ex.history.push({ custIndex: ex.state.custIndex, orderIndex: ex.state.orderIndex, phase: ex.state.phase, resultHTML: ex.ui.result.innerHTML });
+            const currentCust = customers[ex.state.custIndex];
+
+            if (ex.state.phase === 'select_customer') {
+                ex.state.orderIndex = 0;
+                ex.state.phase = 'check_order';
+            } else if (ex.state.phase === 'check_order') {
+                if (orders[ex.state.orderIndex].custId === currentCust.id) {
+                    ex.state.phase = 'match_found';
+                } else {
+                    ex.state.orderIndex++;
+                    if (ex.state.orderIndex >= orders.length) ex.state.phase = 'no_match';
+                }
+            } else if (ex.state.phase === 'match_found') {
+                ex.ui.result.innerHTML += `<tr class="border-b bg-purple-50"><td class="p-2">${currentCust.name}</td></tr>`;
+                ex.state.custIndex++;
+                ex.state.phase = 'select_customer';
+            } else if (ex.state.phase === 'no_match') {
+                ex.state.custIndex++;
+                ex.state.phase = 'select_customer';
+            }
+            ex_updateUI();
+        }
+
+        function ex_prevStep() {
+            if (ex.history.length === 0) return;
+            ex_stopAutoPlay();
+            const prev = ex.history.pop();
+            ex.state.custIndex = prev.custIndex;
+            ex.state.orderIndex = prev.orderIndex;
+            ex.state.phase = prev.phase;
+            ex.ui.result.innerHTML = prev.resultHTML;
+            ex_updateUI();
+        }
+
+        function ex_startAutoPlay() {
+            if (ex.state.custIndex >= customers.length) return;
+            ex.state.isPlaying = true;
+            ex.ui.startBtn.innerText = '暫停';
+            ex_updateUI();
+            ex.state.timer = setInterval(() => { ex_nextStep(); if (ex.state.custIndex >= customers.length) ex_stopAutoPlay(); }, 1500);
+        }
+
+        function ex_stopAutoPlay() {
+            ex.state.isPlaying = false;
+            ex.ui.startBtn.innerText = '自動播放';
+            clearInterval(ex.state.timer);
+            ex_updateUI();
+        }
+
+        function ex_reset() {
+            ex_stopAutoPlay();
+            ex.history = [];
+            ex.state = { custIndex: 0, orderIndex: 0, phase: 'select_customer', isPlaying: false, timer: null };
+            ex.ui.result.innerHTML = '';
+            ex_updateUI();
+            ex.ui.status.innerHTML = '點擊「自動播放」或「下一步」開始動畫。';
+        }
+
+        ex.ui.startBtn.addEventListener('click', () => ex.state.isPlaying ? ex_stopAutoPlay() : ex_startAutoPlay());
+        ex.ui.stepBtn.addEventListener('click', ex_nextStep);
+        ex.ui.prevBtn.addEventListener('click', ex_prevStep);
+        document.getElementById('ex-resetBtn').addEventListener('click', ex_reset);
+        ex_updateUI();
+
+
+        // ==========================================
+        // IN 邏輯區塊
+        // ==========================================
+        const inObj = {
+            state: { orderIndex: 0, custIndex: 0, phase: 'scan_orders', inList: [], isPlaying: false, timer: null },
+            history: [],
+            ui: {
+                status: document.getElementById('in-statusText'),
+                result: document.getElementById('in-resultBody'),
+                listContainer: document.getElementById('in-listContainer'),
+                custRows: document.querySelectorAll('#in-customersTable tbody tr'),
+                orderRows: document.querySelectorAll('#in-ordersTable tbody tr'),
+                prevBtn: document.getElementById('in-prevBtn'),
+                stepBtn: document.getElementById('in-stepBtn'),
+                startBtn: document.getElementById('in-startBtn')
+            }
+        };
+
+        function in_renderList(list, highlightId = null, isSuccess = false) {
+            if (list.length === 0) return `<span class="text-gray-400 text-sm">尚未建立</span>`;
+            return list.map(id => {
+                let classes = "px-3 py-1 rounded-full font-bold text-sm border ";
+                if (id === highlightId) {
+                    classes += isSuccess ? "bg-green-200 border-green-500 text-green-800 scale-110 transition-transform" : "bg-yellow-200 border-yellow-500 text-yellow-800 scale-110 transition-transform";
+                } else {
+                    classes += "bg-indigo-100 border-indigo-300 text-indigo-800";
+                }
+                return `<span class="${classes}">${id}</span>`;
+            }).join('');
+        }
+
+        function in_updateUI() {
+            inObj.ui.custRows.forEach(row => row.className = 'table-row border-b');
+            inObj.ui.orderRows.forEach(row => row.className = 'table-row border-b');
+            inObj.ui.prevBtn.disabled = inObj.history.length === 0 || inObj.state.isPlaying;
+            
+            if (inObj.state.phase === 'scan_orders') {
+                inObj.ui.stepBtn.disabled = inObj.state.isPlaying;
+                inObj.ui.startBtn.disabled = false;
+                inObj.ui.orderRows[inObj.state.orderIndex].classList.add('highlight-active');
+                inObj.ui.listContainer.innerHTML = in_renderList(inObj.state.inList);
+                inObj.ui.status.innerHTML = `1. 執行子查詢：掃描訂單 ${orders[inObj.state.orderIndex].orderId}，將 CustomerID (${orders[inObj.state.orderIndex].custId}) 準備加入清單。`;
+            } 
+            else if (inObj.state.phase === 'add_to_list') {
+                inObj.ui.orderRows[inObj.state.orderIndex].classList.add('highlight-list');
+                inObj.ui.listContainer.innerHTML = in_renderList(inObj.state.inList, orders[inObj.state.orderIndex].custId);
+                inObj.ui.status.innerHTML = `2. 建立清單：將 CustomerID (${orders[inObj.state.orderIndex].custId}) 放入 IN 暫存清單中 (自動排除重複)。`;
+            }
+            else if (inObj.state.phase === 'list_complete') {
+                inObj.ui.listContainer.innerHTML = in_renderList(inObj.state.inList);
+                inObj.ui.status.innerHTML = `✅ 子查詢執行完畢！產生了 IN 清單 <code>(${inObj.state.inList.join(', ')})</code>。接下來準備執行外部查詢。`;
+            }
+            else if (inObj.state.phase === 'check_customer') {
+                inObj.ui.custRows[inObj.state.custIndex].classList.add('highlight-active');
+                inObj.ui.listContainer.innerHTML = in_renderList(inObj.state.inList);
+                inObj.ui.status.innerHTML = `3. 外部查詢：檢查顧客 ${customers[inObj.state.custIndex].name} 的 ID (${customers[inObj.state.custIndex].id}) 是否存在於 IN 清單中。`;
+            }
+            else if (inObj.state.phase === 'in_match') {
+                inObj.ui.custRows[inObj.state.custIndex].classList.add('highlight-success');
+                inObj.ui.listContainer.innerHTML = in_renderList(inObj.state.inList, customers[inObj.state.custIndex].id, true);
+                inObj.ui.status.innerHTML = `✅ <strong>比對成功！</strong> ID ${customers[inObj.state.custIndex].id} 在清單中。將 ${customers[inObj.state.custIndex].name} 加入結果。`;
+            }
+            else if (inObj.state.phase === 'in_no_match') {
+                inObj.ui.custRows[inObj.state.custIndex].classList.add('highlight-fail');
+                inObj.ui.listContainer.innerHTML = in_renderList(inObj.state.inList);
+                inObj.ui.status.innerHTML = `❌ <strong>比對失敗。</strong> ID ${customers[inObj.state.custIndex].id} 不在清單中。`;
+            }
+            else if (inObj.state.phase === 'done') {
+                inObj.ui.listContainer.innerHTML = in_renderList(inObj.state.inList);
+                inObj.ui.status.innerHTML = `🎉 IN 查詢完成！`;
+                inObj.ui.startBtn.disabled = true;
+                inObj.ui.stepBtn.disabled = true;
+            }
+        }
+
+        function in_nextStep() {
+            if (inObj.state.phase === 'done') { in_stopAutoPlay(); return; }
+            
+            inObj.history.push({
+                orderIndex: inObj.state.orderIndex,
+                custIndex: inObj.state.custIndex,
+                phase: inObj.state.phase,
+                inList: [...inObj.state.inList],
+                resultHTML: inObj.ui.result.innerHTML
+            });
+
+            if (inObj.state.phase === 'scan_orders') {
+                inObj.state.phase = 'add_to_list';
+                const cid = orders[inObj.state.orderIndex].custId;
+                if (!inObj.state.inList.includes(cid)) {
+                    inObj.state.inList.push(cid);
+                }
+            } 
+            else if (inObj.state.phase === 'add_to_list') {
+                inObj.state.orderIndex++;
+                if (inObj.state.orderIndex >= orders.length) {
+                    inObj.state.phase = 'list_complete';
+                } else {
+                    inObj.state.phase = 'scan_orders';
+                }
+            }
+            else if (inObj.state.phase === 'list_complete') {
+                inObj.state.phase = 'check_customer';
+            }
+            else if (inObj.state.phase === 'check_customer') {
+                const currentCust = customers[inObj.state.custIndex];
+                if (inObj.state.inList.includes(currentCust.id)) {
+                    inObj.state.phase = 'in_match';
+                } else {
+                    inObj.state.phase = 'in_no_match';
+                }
+            }
+            else if (inObj.state.phase === 'in_match') {
+                inObj.ui.result.innerHTML += `<tr class="border-b bg-purple-50"><td class="p-2">${customers[inObj.state.custIndex].name}</td></tr>`;
+                inObj.state.custIndex++;
+                if (inObj.state.custIndex >= customers.length) inObj.state.phase = 'done';
+                else inObj.state.phase = 'check_customer';
+            }
+            else if (inObj.state.phase === 'in_no_match') {
+                inObj.state.custIndex++;
+                if (inObj.state.custIndex >= customers.length) inObj.state.phase = 'done';
+                else inObj.state.phase = 'check_customer';
+            }
+
+            in_updateUI();
+        }
+
+        function in_prevStep() {
+            if (inObj.history.length === 0) return;
+            in_stopAutoPlay();
+            const prev = inObj.history.pop();
+            inObj.state.orderIndex = prev.orderIndex;
+            inObj.state.custIndex = prev.custIndex;
+            inObj.state.phase = prev.phase;
+            inObj.state.inList = [...prev.inList];
+            inObj.ui.result.innerHTML = prev.resultHTML;
+            in_updateUI();
+        }
+
+        function in_startAutoPlay() {
+            if (inObj.state.phase === 'done') return;
+            inObj.state.isPlaying = true;
+            inObj.ui.startBtn.innerText = '暫停';
+            in_updateUI();
+            inObj.state.timer = setInterval(() => { in_nextStep(); if (inObj.state.phase === 'done') in_stopAutoPlay(); }, 1500);
+        }
+
+        function in_stopAutoPlay() {
+            inObj.state.isPlaying = false;
+            inObj.ui.startBtn.innerText = '自動播放';
+            clearInterval(inObj.state.timer);
+            in_updateUI();
+        }
+
+        function in_reset() {
+            in_stopAutoPlay();
+            inObj.history = [];
+            inObj.state = { orderIndex: 0, custIndex: 0, phase: 'scan_orders', inList: [], isPlaying: false, timer: null };
+            inObj.ui.result.innerHTML = '';
+            inObj.ui.listContainer.innerHTML = '<span class="text-gray-400 text-sm">尚未建立</span>';
+            in_updateUI();
+            inObj.ui.status.innerHTML = '點擊「自動播放」或「下一步」開始動畫。';
+        }
+
+        inObj.ui.startBtn.addEventListener('click', () => inObj.state.isPlaying ? in_stopAutoPlay() : in_startAutoPlay());
+        inObj.ui.stepBtn.addEventListener('click', in_nextStep);
+        inObj.ui.prevBtn.addEventListener('click', in_prevStep);
+        document.getElementById('in-resetBtn').addEventListener('click', in_reset);
+        in_updateUI();
+
+    </script>
+</body>
+</html>
