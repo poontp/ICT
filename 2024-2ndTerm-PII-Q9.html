@@ -372,12 +372,12 @@
             <div id="rp-pseudocode" class="pseudocode-block">
                 <div class="pseudocode-line indent-0" data-line="1">設 r 由 <u>0 至 (n-1)</u> 執行</div>
                 <div class="pseudocode-line indent-1" data-line="2">  設 c 由 <u>0 至 (n-4)</u> 執行</div>
-                <div class="pseudocode-line indent-2" data-line="3">    如果 <u>P[r, c] == P[r, c+1] == P[r, c+2] == P[r, c+3]</u> 則</div>
+                <div class="pseudocode-line indent-2" data-line="3">    如果 <u>P[r, c] = P[r, c+1] AND P[r, c+1] = P[r, c+2] AND P[r, c+2] = P[r, c+3]</u> 則</div>
                 <div class="pseudocode-line indent-3" data-line="4">      設 i 由 <u>0 至 3</u> 執行</div>
                 <div class="pseudocode-line indent-4" data-line="5">        P[r, c+i] <- <u>'Y'</u></div>
                 <div class="pseudocode-line indent-0" data-line="6">設 c 由 <u>0 至 (n-1)</u> 執行</div>
                 <div class="pseudocode-line indent-1" data-line="7">  設 r 由 <u>0 至 (n-4)</u> 執行</div>
-                <div class="pseudocode-line indent-2" data-line="8">    如果 <u>P[r, c] == P[r+1, c] == P[r+2, c] == P[r+3, c]</u> 則</div>
+                <div class="pseudocode-line indent-2" data-line="8">    如果 <u>P[r, c] = P[r+1, c] AND P[r+1, c] = P[r+2, c] AND P[r+2, c]= P[r+3, c]</u> 則</div>
                 <div class="pseudocode-line indent-3" data-line="9">      設 i 由 <u>0 至 3</u> 執行</div>
                 <div class="pseudocode-line indent-4" data-line="10">        P[r+i, c] <- <u>'Y'</u></div>
             </div>
