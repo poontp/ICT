@@ -1,0 +1,806 @@
+
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN 運作原理與兩大作用互動教學</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#0a0f1d',
+                            card: '#111827',
+                            border: '#1f2937',
+                            neonBlue: '#3b82f6',
+                            neonCyan: '#06b6d4',
+                            neonGreen: '#10b981',
+                            neonRed: '#ef4444',
+                            neonPurple: '#8b5cf6'
+                        }
+                    },
+                    boxShadow: {
+                        'neon-blue': '0 0 15px rgba(59, 130, 246, 0.5)',
+                        'neon-green': '0 0 15px rgba(16, 185, 129, 0.5)',
+                        'neon-red': '0 0 15px rgba(239, 68, 68, 0.5)',
+                        'neon-purple': '0 0 15px rgba(139, 92, 246, 0.5)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #060913;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0f1d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+        .glow-effect {
+            transition: all 0.3s ease;
+        }
+        .glow-effect:hover {
+            filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.6));
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列 -->
+    <header class="border-b border-gray-800 bg-gray-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-lg text-white shadow-neon-blue">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+                        VPN 互動式教學實驗室
+                    </h1>
+                    <p class="text-xs text-gray-400">Virtual Private Network Visualizer</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-sm font-medium">
+                <a href="#simulator" class="text-cyan-400 hover:text-cyan-300 transition">原理模擬器</a>
+                <a href="#feature-1" class="text-gray-300 hover:text-cyan-400 transition">作用一：資料加密</a>
+                <a href="#feature-2" class="text-gray-300 hover:text-cyan-400 transition">作用二：IP 偽裝</a>
+                <a href="#quiz" class="text-gray-300 hover:text-cyan-400 transition">知識測驗</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+        <!-- 核心互動模擬器 (Simulator Section) -->
+        <section id="simulator" class="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden backdrop-blur-lg">
+            <div class="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <!-- 控制列 (Controls) -->
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 mb-8 border-b border-gray-800 pb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-cyan-400"></i> VPN 實時傳輸模擬系統
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">切換 VPN 狀態並觀察數據封包如何在網路中傳遞與加密</p>
+                </div>
+
+                <!-- 開關與選項 -->
+                <div class="flex flex-wrap items-center gap-4 bg-gray-950/80 p-3 rounded-xl border border-gray-800">
+                    <!-- VPN Toggle Switch -->
+                    <div class="flex items-center gap-3 pr-4 border-r border-gray-800">
+                        <span class="text-sm font-semibold text-gray-300">VPN 狀態:</span>
+                        <button id="vpnToggleBtn" onclick="toggleVPN()" class="relative inline-flex h-8 w-16 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-gray-700">
+                            <span id="vpnToggleDot" class="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0 flex items-center justify-center text-xs text-gray-700 font-bold">
+                                OFF
+                            </span>
+                        </button>
+                        <span id="vpnStatusText" class="text-sm font-bold text-red-400">未防護</span>
+                    </div>
+
+                    <!-- 伺服器選擇器 -->
+                    <div class="flex items-center gap-2">
+                        <label for="vpnServerSelect" class="text-xs text-gray-400">VPN 伺服器:</label>
+                        <select id="vpnServerSelect" onchange="updateSettings()" class="bg-gray-900 text-sm text-cyan-300 border border-gray-700 rounded-lg px-2 py-1 focus:outline-none focus:border-cyan-500">
+                            <option value="US">🇺🇸 美國 (華盛頓)</option>
+                            <option value="JP">🇯🇵 日本 (東京)</option>
+                            <option value="UK">🇬🇧 英國 (倫敦)</option>
+                        </select>
+                    </div>
+
+                    <!-- 目標網站選擇器 -->
+                    <div class="flex items-center gap-2">
+                        <label for="targetSiteSelect" class="text-xs text-gray-400">存取目標:</label>
+                        <select id="targetSiteSelect" onchange="updateSettings()" class="bg-gray-900 text-sm text-emerald-400 border border-gray-700 rounded-lg px-2 py-1 focus:outline-none focus:border-cyan-500">
+                            <option value="US_ONLY">🎬 美國限定 Netflix 劇集</option>
+                            <option value="BANK">🏦 網路銀行安全帳號</option>
+                            <option value="WEB">🌐 一般公開網站</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas 視覺畫布區 -->
+            <div class="relative w-full h-[380px] bg-slate-950 rounded-xl border border-gray-800 overflow-hidden shadow-inner flex flex-col justify-between p-4">
+                <canvas id="networkCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
+                
+                <!-- 頂部即時狀態提示 Overlay -->
+                <div class="relative z-10 flex justify-between items-center text-xs px-2 py-1 bg-gray-900/80 rounded-lg border border-gray-800/80 backdrop-blur-sm pointer-events-none">
+                    <div id="statusNotice" class="flex items-center gap-2 text-amber-400">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>當前連線為明文傳輸！ISP 與公用 Wi-Fi 駭客可輕易讀取您的個人資訊。</span>
+                    </div>
+                    <div class="text-gray-400">💡 提示：點擊傳輸中的數據封包可進行攔截分析</div>
+                </div>
+
+                <!-- 畫布節點標籤 Overlay (動態定位) -->
+                <div class="relative z-10 grid grid-cols-4 gap-2 text-center pointer-events-none h-full items-center">
+                    <!-- 1. 使用者設備 -->
+                    <div class="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-900/90 border border-cyan-500/30 backdrop-blur-md">
+                        <i class="fa-solid fa-laptop text-3xl text-cyan-400 mb-1"></i>
+                        <span class="font-bold text-sm text-white">您的設備</span>
+                        <span class="text-[10px] text-cyan-300 font-mono">真實 IP: 203.0.113.88</span>
+                        <span class="text-[10px] text-gray-400">地點: 🇭🇰 香港</span>
+                    </div>
+
+                    <!-- 2. 中繼網絡 / 駭客監聽 -->
+                    <div class="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-900/90 border border-red-500/30 backdrop-blur-md">
+                        <i id="hackerIcon" class="fa-solid fa-user-ninja text-3xl text-red-400 mb-1 animate-pulse"></i>
+                        <span class="font-bold text-sm text-white">ISP / 公用 Wi-Fi 監聽者</span>
+                        <span id="hackerStatus" class="text-[10px] text-red-400 font-mono">狀態: 進行竊聽中 ⚠️</span>
+                    </div>
+
+                    <!-- 3. VPN 伺服器 -->
+                    <div id="vpnServerNode" class="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-900/90 border border-gray-700 backdrop-blur-md opacity-40 transition-all duration-500">
+                        <i class="fa-solid fa-server text-3xl text-emerald-400 mb-1"></i>
+                        <span class="font-bold text-sm text-white">VPN 中繼伺服器</span>
+                        <span id="vpnNodeIp" class="text-[10px] text-emerald-300 font-mono">虛擬 IP: --.--.--.--</span>
+                        <span id="vpnNodeLoc" class="text-[10px] text-gray-400">地點: 未啟用</span>
+                    </div>
+
+                    <!-- 4. 目標網站伺服器 -->
+                    <div class="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-900/90 border border-purple-500/30 backdrop-blur-md">
+                        <i class="fa-solid fa-globe text-3xl text-purple-400 mb-1"></i>
+                        <span id="targetNodeTitle" class="font-bold text-sm text-white">目標網站</span>
+                        <span id="targetNodeReq" class="text-[10px] text-purple-300 font-mono">限制: 無限制</span>
+                        <span id="targetServerStatus" class="text-[10px] font-bold text-emerald-400">允許存取</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 封包數據檢查器 (Packet Inspector Modal/Panel) -->
+            <div id="packetInspector" class="mt-6 bg-gray-950 border border-gray-800 rounded-xl p-4 flex flex-col md:flex-row gap-6 items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div id="packetStatusIcon" class="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
+                        <i class="fa-solid fa-lock-open text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold text-gray-400">數據封包即時檢測器：</span>
+                            <span id="packetTypeBadge" class="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-mono">明文 HTTP</span>
+                        </div>
+                        <p id="packetDetailContent" class="text-sm text-gray-200 font-mono mt-1 bg-gray-900 px-3 py-1.5 rounded border border-gray-800 text-emerald-400">
+                            GET /login?user=alex&pass=123456 HTTP/1.1 (IP: 203.0.113.88)
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right border-t md:border-t-0 md:border-l border-gray-800 pt-3 md:pt-0 md:pl-6 w-full md:w-auto">
+                    <div class="text-xs text-gray-400">目標網站所看到的請求來源：</div>
+                    <div id="targetSeenIp" class="text-base font-mono font-bold text-red-400">
+                        203.0.113.88 (🇭🇰 香港)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 兩大核心作用卡片專區 -->
+        <section class="grid md:grid-cols-2 gap-8">
+            
+            <!-- 卡片 1：資料加密與隱私保護 -->
+            <div id="feature-1" class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative flex flex-col justify-between hover:border-cyan-500/40 transition duration-300 shadow-xl">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl border border-cyan-500/20">
+                                <i class="fa-solid fa-lock text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">作用一：資料加密與隱私保護</h3>
+                                <p class="text-xs text-cyan-400 font-mono">Data Encryption & Privacy</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-gray-300 text-sm leading-relaxed mb-6">
+                        當您在咖啡廳、機場使用公共 Wi-Fi 時，未經加密的數據極易被第三方（駭客、網路管理者、ISP）攔截。VPN 會在您的設備與 VPN 伺服器之間建立一條<strong class="text-cyan-300">防彈般的「加密隧道 (Encryption Tunnel)」</strong>，將所有封包轉換為高強度亂碼（如 AES-256）。
+                    </p>
+
+                    <!-- 互動對比實驗室：公用 Wi-Fi 攔截模擬 -->
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-4">
+                        <div class="text-xs font-semibold text-gray-400 flex justify-between items-center">
+                            <span>🧪 公用 Wi-Fi 攔截實驗室</span>
+                            <span class="text-cyan-400 text-[10px]">點擊按鈕進行測試</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <button onclick="testWifiInterception(false)" class="p-3 bg-red-950/40 hover:bg-red-900/50 border border-red-800/60 rounded-lg text-left transition flex flex-col justify-between group">
+                                <span class="font-bold text-red-300 group-hover:text-red-200">❌ 未開 VPN 發送資料</span>
+                                <span class="text-[10px] text-gray-400 mt-2">模擬黑客竊聽咖啡廳 Wi-Fi</span>
+                            </button>
+                            <button onclick="testWifiInterception(true)" class="p-3 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/60 rounded-lg text-left transition flex flex-col justify-between group">
+                                <span class="font-bold text-emerald-300 group-hover:text-emerald-200">🛡️ 開啟 VPN 發送資料</span>
+                                <span class="text-[10px] text-gray-400 mt-2">經 AES-256 隧道傳送</span>
+                            </button>
+                        </div>
+
+                        <!-- 實驗結果展示框 -->
+                        <div id="wifiTestResult" class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-xs font-mono text-gray-400">
+                            點擊上方按鈕，觀察竊聽者側擷取到的數據內容...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-800/60 flex items-center justify-between text-xs text-gray-400">
+                    <span><i class="fa-solid fa-shield-cat text-cyan-400"></i> 防範：中間人攻擊 (MITM)、ISP 瀏覽紀錄追蹤</span>
+                </div>
+            </div>
+
+            <!-- 卡片 2：位置偽裝與破解區域限制 -->
+            <div id="feature-2" class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 relative flex flex-col justify-between hover:border-purple-500/40 transition duration-300 shadow-xl">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+                                <i class="fa-solid fa-earth-americas text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">作用二：位置偽裝與解除地理限制</h3>
+                                <p class="text-xs text-purple-400 font-mono">IP Spoofing & Geo-Unblocking</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-gray-300 text-sm leading-relaxed mb-6">
+                        網站會透過您的 IP 地址判斷您的物理國家與地區。連接 VPN 後，您的網路流量會改由目標國家的 VPN 伺服器代為送出。網站只會看到<strong class="text-purple-300"> VPN 伺服器的 IP 地址</strong>，從而讓您解鎖跨區串流影音（如美國 Netflix、日本动画）或突破網絡審查。
+                    </p>
+
+                    <!-- 互動地圖路線模擬區 -->
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 space-y-3">
+                        <div class="text-xs font-semibold text-gray-400 flex justify-between">
+                            <span>🗺️ 全球 IP 節點轉換模擬器</span>
+                            <span id="currentGeoRoute" class="text-purple-400 text-[10px]">🇭🇰 香港 → 🇺🇸 美國</span>
+                        </div>
+
+                        <!-- 簡單互動網絡節點切換 -->
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center justify-between p-2 bg-gray-900 rounded-lg border border-gray-800">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                    <span class="text-gray-300">您的真實位置</span>
+                                </div>
+                                <span class="font-mono text-cyan-400">203.0.113.88 (🇭🇰 香港)</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 bg-gray-900 rounded-lg border border-gray-800">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                                    <span class="text-gray-300">目標網站看到的 IP</span>
+                                </div>
+                                <span id="spoofedIpDisplay" class="font-mono text-purple-400 font-bold">198.51.100.42 (🇺🇸 美國)</span>
+                            </div>
+                        </div>
+
+                        <div class="p-2.5 bg-purple-950/30 border border-purple-800/40 rounded-lg text-[11px] text-purple-200 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-purple-400"></i>
+                            <span id="geoStatusText">成功偽裝為美國用戶，美國限定影音內容已解鎖！</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-800/60 flex items-center justify-between text-xs text-gray-400">
+                    <span><i class="fa-solid fa-passport text-purple-400"></i> 用途：解鎖區域影音、海外購物優惠、保護隱私位址</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 知識小測驗專區 (Interactive Quiz Section) -->
+        <section id="quiz" class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+            <div class="max-w-3xl mx-auto">
+                <div class="text-center mb-8">
+                    <span class="px-3 py-1 bg-cyan-500/10 text-cyan-400 text-xs rounded-full border border-cyan-500/20 font-semibold uppercase tracking-wider">Knowledge Test</span>
+                    <h2 class="text-2xl font-bold text-white mt-2">VPN 觀念理解測驗</h2>
+                    <p class="text-sm text-gray-400 mt-1">測試您對 VPN 加密與 IP 偽裝原理的掌握程度</p>
+                </div>
+
+                <!-- 測驗內容 Container -->
+                <div id="quizContainer" class="bg-gray-950 p-6 rounded-xl border border-gray-800 space-y-6">
+                    <!-- 動態渲染題目 -->
+                </div>
+
+                <!-- 測驗結果 Popup / Display -->
+                <div id="quizScoreCard" class="hidden mt-6 p-6 bg-gradient-to-r from-cyan-950/60 to-purple-950/60 border border-cyan-500/30 rounded-xl text-center space-y-3">
+                    <h3 class="text-xl font-bold text-white">🎉 測驗完成！</h3>
+                    <p id="scoreText" class="text-lg text-cyan-300 font-bold"></p>
+                    <button onclick="resetQuiz()" class="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-sm font-semibold rounded-lg shadow-neon-blue transition">
+                        重新測驗
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾Footer -->
+    <footer class="border-t border-gray-800 bg-gray-950 py-6 text-center text-xs text-gray-500">
+        <p>VPN 原理與兩大作用互動教學網頁 &copy; 2026. Interactive Educational Visualizer.</p>
+    </footer>
+
+    <script>
+        // -------------------------------------------------------------
+        // 全局狀態管理
+        // -------------------------------------------------------------
+        const state = {
+            vpnActive: false,
+            server: 'US', // US, JP, UK
+            target: 'US_ONLY', // US_ONLY, BANK, WEB
+            packets: [],
+            animationId: null
+        };
+
+        const serverData = {
+            US: { name: '美國 (華盛頓)', ip: '198.51.100.42', flag: '🇺🇸', code: 'US' },
+            JP: { name: '日本 (東京)', ip: '203.104.209.7', flag: '🇯🇵', code: 'JP' },
+            UK: { name: '英國 (倫敦)', ip: '81.2.69.142', flag: '🇬🇧', code: 'UK' }
+        };
+
+        const targetData = {
+            US_ONLY: { name: '美國限定 Netflix', reqLoc: 'US', title: '🎬 Netflix 美國站' },
+            BANK: { name: '網路銀行安全帳號', reqLoc: 'ANY', title: '🏦 安全銀行服務' },
+            WEB: { name: '一般公開網站', reqLoc: 'ANY', title: '🌐 一般網站' }
+        };
+
+        // -------------------------------------------------------------
+        // Canvas 與 動畫系統
+        // -------------------------------------------------------------
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 建立傳輸封包對象
+        class Packet {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.progress = 0; // 0 到 100 隨傳輸推進
+                this.speed = 0.4 + Math.random() * 0.3;
+                this.payload = state.vpnActive ? 
+                    "🔒 [Encrypted] 0x8F9A3C2E11B7" : 
+                    "📄 GET /user?login=alex&pwd=123";
+            }
+
+            update() {
+                this.progress += this.speed;
+                if (this.progress > 100) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                const w = canvas.width;
+                const h = canvas.height;
+                const y = h / 2;
+
+                // 四個主節點的 X 座標
+                const x0 = w * 0.125; // User
+                const x1 = w * 0.375; // Hacker / ISP
+                const x2 = w * 0.625; // VPN Server
+                const x3 = w * 0.875; // Target Server
+
+                let currentX = x0;
+                let currentY = y;
+                let isEncrypted = state.vpnActive;
+
+                if (!state.vpnActive) {
+                    // 直連模式： 0 -> 1 -> 3 (跳過 2)
+                    if (this.progress < 50) {
+                        const t = this.progress / 50;
+                        currentX = x0 + (x1 - x0) * t;
+                    } else {
+                        const t = (this.progress - 50) / 50;
+                        currentX = x1 + (x3 - x1) * t;
+                    }
+                    isEncrypted = false;
+                } else {
+                    // VPN 模式： 0 -> 1 -> 2 -> 3
+                    if (this.progress < 33) {
+                        const t = this.progress / 33;
+                        currentX = x0 + (x1 - x0) * t;
+                        isEncrypted = true; // 隧道內加密
+                    } else if (this.progress < 66) {
+                        const t = (this.progress - 33) / 33;
+                        currentX = x1 + (x2 - x1) * t;
+                        isEncrypted = true; // 隧道內加密
+                    } else {
+                        const t = (this.progress - 66) / 34;
+                        currentX = x2 + (x3 - x2) * t;
+                        isEncrypted = false; // 出 VPN 伺服器後解密
+                    }
+                }
+
+                // 繪製封包光點
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 7, 0, Math.PI * 2);
+                ctx.fillStyle = isEncrypted ? '#10b981' : '#ef4444';
+                ctx.shadowColor = isEncrypted ? '#10b981' : '#ef4444';
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.shadowBlur = 0; // 重置
+
+                // 外圈發光
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 12, 0, Math.PI * 2);
+                ctx.strokeStyle = isEncrypted ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        // 初始化封包
+        for (let i = 0; i < 4; i++) {
+            const p = new Packet();
+            p.progress = i * 25;
+            state.packets.push(p);
+        }
+
+        // 渲染畫布動畫 loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const y = h / 2;
+
+            const x0 = w * 0.125;
+            const x1 = w * 0.375;
+            const x2 = w * 0.625;
+            const x3 = w * 0.875;
+
+            // 繪製連接線路
+            if (state.vpnActive) {
+                // 加密隧道連線 (x0 -> x2)
+                ctx.beginPath();
+                ctx.moveTo(x0, y);
+                ctx.lineTo(x2, y);
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                ctx.globalAlpha = 0.3;
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+
+                // 虛線隧道效果
+                ctx.beginPath();
+                ctx.setLineDash([6, 6]);
+                ctx.moveTo(x0, y);
+                ctx.lineTo(x2, y);
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 一般連線 (x2 -> x3)
+                ctx.beginPath();
+                ctx.moveTo(x2, y);
+                ctx.lineTo(x3, y);
+                ctx.strokeStyle = '#374151';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                // 明文直連連線 (x0 -> x3)
+                ctx.beginPath();
+                ctx.moveTo(x0, y);
+                ctx.lineTo(x3, y);
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // 更新並繪製所有封包
+            state.packets.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            state.animationId = requestAnimationFrame(animate);
+        }
+
+        // -------------------------------------------------------------
+        // 介面邏輯與狀態更新
+        // -------------------------------------------------------------
+        function toggleVPN() {
+            state.vpnActive = !state.vpnActive;
+            
+            const btn = document.getElementById('vpnToggleBtn');
+            const dot = document.getElementById('vpnToggleDot');
+            const statusText = document.getElementById('vpnStatusText');
+            const vpnNode = document.getElementById('vpnServerNode');
+            const hackerStatus = document.getElementById('hackerStatus');
+            const hackerIcon = document.getElementById('hackerIcon');
+
+            if (state.vpnActive) {
+                btn.classList.remove('bg-gray-700');
+                btn.classList.add('bg-emerald-500');
+                dot.classList.add('translate-x-8');
+                dot.innerText = 'ON';
+                dot.classList.remove('text-gray-700');
+                dot.classList.add('text-emerald-700');
+
+                statusText.innerText = '已防護 (加密隧道啟用)';
+                statusText.className = 'text-sm font-bold text-emerald-400';
+
+                vpnNode.classList.remove('opacity-40');
+                vpnNode.classList.add('border-emerald-500/80', 'shadow-neon-green');
+
+                hackerStatus.innerText = '狀態: 無法解密亂碼 🛡️';
+                hackerStatus.className = 'text-[10px] text-gray-400 font-mono';
+                hackerIcon.classList.remove('animate-pulse', 'text-red-400');
+                hackerIcon.classList.add('text-gray-600');
+            } else {
+                btn.classList.remove('bg-emerald-500');
+                btn.classList.add('bg-gray-700');
+                dot.classList.remove('translate-x-8');
+                dot.innerText = 'OFF';
+                dot.classList.remove('text-emerald-700');
+                dot.classList.add('text-gray-700');
+
+                statusText.innerText = '未防護';
+                statusText.className = 'text-sm font-bold text-red-400';
+
+                vpnNode.classList.add('opacity-40');
+                vpnNode.classList.remove('border-emerald-500/80', 'shadow-neon-green');
+
+                hackerStatus.innerText = '狀態: 進行竊聽中 ⚠️';
+                hackerStatus.className = 'text-[10px] text-red-400 font-mono';
+                hackerIcon.classList.add('animate-pulse', 'text-red-400');
+                hackerIcon.classList.remove('text-gray-600');
+            }
+
+            updateSettings();
+        }
+
+        function updateSettings() {
+            state.server = document.getElementById('vpnServerSelect').value;
+            state.target = document.getElementById('targetSiteSelect').value;
+
+            const currServer = serverData[state.server];
+            const currTarget = targetData[state.target];
+
+            // 更新 VPN 節點 UI
+            document.getElementById('vpnNodeIp').innerText = state.vpnActive ? `IP: ${currServer.ip}` : '虛擬 IP: --.--.--.--';
+            document.getElementById('vpnNodeLoc').innerText = state.vpnActive ? `地點: ${currServer.flag} ${currServer.name}` : '地點: 未啟用';
+
+            // 更新目標網站 UI
+            document.getElementById('targetNodeTitle').innerText = currTarget.title;
+
+            // 判斷訪問權限
+            const targetStatusEl = document.getElementById('targetServerStatus');
+            const targetSeenIpEl = document.getElementById('targetSeenIp');
+            const statusNoticeEl = document.getElementById('statusNotice');
+
+            let visibleIp = state.vpnActive ? `${currServer.ip} (${currServer.flag} ${currServer.name})` : `203.0.113.88 (🇭🇰 香港)`;
+            targetSeenIpEl.innerText = visibleIp;
+
+            // 檢測區域限制
+            if (currTarget.reqLoc === 'US') {
+                const isAllowed = state.vpnActive && state.server === 'US';
+                if (isAllowed) {
+                    targetStatusEl.innerText = '✅ 允許解鎖觀看';
+                    targetStatusEl.className = 'text-[10px] font-bold text-emerald-400';
+                } else {
+                    targetStatusEl.innerText = '🚫 阻擋存取 (限定美國)';
+                    targetStatusEl.className = 'text-[10px] font-bold text-red-400';
+                }
+            } else {
+                targetStatusEl.innerText = '✅ 正常存取';
+                targetStatusEl.className = 'text-[10px] font-bold text-emerald-400';
+            }
+
+            // 更新 Notice 提示與 Packet Inspector
+            const inspectorIcon = document.getElementById('packetStatusIcon');
+            const inspectorBadge = document.getElementById('packetTypeBadge');
+            const inspectorContent = document.getElementById('packetDetailContent');
+
+            if (state.vpnActive) {
+                statusNoticeEl.className = 'flex items-center gap-2 text-emerald-400';
+                statusNoticeEl.innerHTML = `<i class="fa-solid fa-shield-halved"></i> <span>VPN 安全隧道保護中！您的數據已 AES-256 加密，IP 為 ${currServer.name}。</span>`;
+
+                inspectorIcon.className = 'p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20';
+                inspectorIcon.innerHTML = '<i class="fa-solid fa-lock text-2xl"></i>';
+                inspectorBadge.className = 'text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono';
+                inspectorBadge.innerText = '加密 VPN 封包 (AES-256)';
+                inspectorContent.innerText = '🔒 3a8b9f0c2d4e6f1a8b9c0d2e4f6a8b9c (內容已混淆，竊聽者無法解析)';
+                inspectorContent.className = 'text-sm text-gray-200 font-mono mt-1 bg-gray-900 px-3 py-1.5 rounded border border-gray-800 text-cyan-300';
+            } else {
+                statusNoticeEl.className = 'flex items-center gap-2 text-amber-400';
+                statusNoticeEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <span>當前連線為明文傳輸！ISP 與公用 Wi-Fi 駭客可輕易讀取您的個人資訊。</span>`;
+
+                inspectorIcon.className = 'p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20';
+                inspectorIcon.innerHTML = '<i class="fa-solid fa-lock-open text-2xl"></i>';
+                inspectorBadge.className = 'text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-mono';
+                inspectorBadge.innerText = '明文 HTTP 封包';
+                inspectorContent.innerText = 'GET /login?user=alex&pass=123456 HTTP/1.1 (真實 IP: 203.0.113.88)';
+                inspectorContent.className = 'text-sm text-gray-200 font-mono mt-1 bg-gray-900 px-3 py-1.5 rounded border border-gray-800 text-red-400';
+            }
+
+            // 更新作用二卡片細節
+            document.getElementById('currentGeoRoute').innerText = `🇭🇰 香港 → ${currServer.flag} ${currServer.name}`;
+            document.getElementById('spoofedIpDisplay').innerText = `${currServer.ip} (${currServer.flag} ${currServer.name})`;
+            
+            const geoStatusText = document.getElementById('geoStatusText');
+            if (state.vpnActive) {
+                geoStatusText.innerText = `成功將位置偽裝為 ${currServer.name}，真實香港 IP 已被隱藏！`;
+            } else {
+                geoStatusText.innerText = `未啟用 VPN，網站將直接獲得您的香港真實 IP 地址。`;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 卡片一：公用 Wi-Fi 攔截測試 logic
+        // -------------------------------------------------------------
+        function testWifiInterception(isVpnOn) {
+            const resultBox = document.getElementById('wifiTestResult');
+            if (isVpnOn) {
+                resultBox.className = 'p-3 bg-emerald-950/40 rounded-lg border border-emerald-800/60 text-xs font-mono text-emerald-300 space-y-1';
+                resultBox.innerHTML = `
+                    <div><strong>[駭客側擷取數據]:</strong> 7f 8a c9 e0 12 3b 45 6a 78 9f ...</div>
+                    <div class="text-[11px] text-emerald-400 font-sans">✅ 解析結果：高強度加密數據！駭客無法得知密碼或瀏覽內容。</div>
+                `;
+            } else {
+                resultBox.className = 'p-3 bg-red-950/40 rounded-lg border border-red-800/60 text-xs font-mono text-red-300 space-y-1';
+                resultBox.innerHTML = `
+                    <div><strong>[駭客側擷取數據]:</strong> Cookie: session_id=XYZ987; pass=password123</div>
+                    <div class="text-[11px] text-red-400 font-sans">⚠️ 解析結果：明文爆露！帳號密碼與隱私已遭公用 Wi-Fi 監聽者竊取。</div>
+                `;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 知識測驗 Logic
+        // -------------------------------------------------------------
+        const quizData = [
+            {
+                question: "1. 當您連接 VPN 時，公用 Wi-Fi 的駭客為什麼無法竊聽您的密碼？",
+                options: [
+                    "VPN 把駭客的電腦強制關機了",
+                    "數據在傳輸前已被高強度加密成不可讀取的亂碼",
+                    "VPN 提高您的網速讓駭客追不上",
+                    "VPN 會刪除您的所有帳號密碼"
+                ],
+                answer: 1
+            },
+            {
+                question: "2. 使用 VPN 成功突破 Netflix 等影音網站的「地區限制」，主要依賴 VPN 的哪一個作用？",
+                options: [
+                    "隱藏與變更真實 IP 地址（IP 偽裝）",
+                    "自動清理瀏覽器歷史紀錄",
+                    "將電腦儲存空間放大",
+                    "阻止電腦硬體發熱"
+                ],
+                answer: 0
+            },
+            {
+                question: "3. 連接 VPN 後，目標網站最終會看到哪一個 IP 地址？",
+                options: [
+                    "您家裡的寬頻真實 IP",
+                    "您手機 SIM 卡的 IP",
+                    "VPN 伺服器的虛擬 IP",
+                    "完全看不到任何 IP 地址"
+                ],
+                answer: 2
+            }
+        ];
+
+        let userAnswers = Array(quizData.length).fill(null);
+
+        function renderQuiz() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = quizData.map((q, qIndex) => `
+                <div class="space-y-3">
+                    <p class="text-sm font-semibold text-gray-200">${q.question}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        ${q.options.map((opt, oIndex) => `
+                            <button onclick="selectAnswer(${qIndex}, ${oIndex})" 
+                                id="quiz-btn-${qIndex}-${oIndex}"
+                                class="p-3 text-xs text-left rounded-lg border border-gray-800 bg-gray-900 hover:bg-gray-800 text-gray-300 transition">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('<hr class="border-gray-800 my-4">');
+        }
+
+        function selectAnswer(qIndex, oIndex) {
+            userAnswers[qIndex] = oIndex;
+
+            // Highlight chosen button
+            quizData[qIndex].options.forEach((_, idx) => {
+                const btn = document.getElementById(`quiz-btn-${qIndex}-${idx}`);
+                if (idx === oIndex) {
+                    btn.className = 'p-3 text-xs text-left rounded-lg border border-cyan-500 bg-cyan-950/50 text-cyan-200 font-semibold';
+                } else {
+                    btn.className = 'p-3 text-xs text-left rounded-lg border border-gray-800 bg-gray-900 text-gray-400 opacity-60';
+                }
+            });
+
+            // Check if all answered
+            if (!userAnswers.includes(null)) {
+                calculateScore();
+            }
+        }
+
+        function calculateScore() {
+            let score = 0;
+            userAnswers.forEach((ans, i) => {
+                if (ans === quizData[i].answer) score++;
+            });
+
+            const card = document.getElementById('quizScoreCard');
+            const scoreText = document.getElementById('scoreText');
+            card.classList.remove('hidden');
+            
+            if (score === quizData.length) {
+                scoreText.innerText = `答對 ${score} / ${quizData.length} 題！太棒了，您已完全掌握 VPN 原理！💯`;
+            } else {
+                scoreText.innerText = `答對 ${score} / ${quizData.length} 題！可以再次複習上方視覺模擬器喔！👍`;
+            }
+        }
+
+        function resetQuiz() {
+            userAnswers = Array(quizData.length).fill(null);
+            document.getElementById('quizScoreCard').classList.add('hidden');
+            renderQuiz();
+        }
+
+        // -------------------------------------------------------------
+        // 初始化啟動
+        // -------------------------------------------------------------
+        window.onload = function () {
+            animate();
+            updateSettings();
+            renderQuiz();
+        };
+    </script>
+</body>
+</html>
