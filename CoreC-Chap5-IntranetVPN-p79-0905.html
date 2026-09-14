@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>內聯網虛擬私有網絡 (Intranet VPN) 運作原理互動教學</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Noto+Sans+TC:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0b132b;
+            color: #e0e1dd;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+        .glow-green {
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
+        }
+        .glow-red {
+            box-shadow: 0 0 15px rgba(248, 113, 113, 0.4);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1c2541;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3a506b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5bc0be;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-12">
+
+    <!-- Navbar / Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-cyan-500/20 p-2.5 rounded-xl border border-cyan-500/40 text-cyan-400">
+                    <i class="fa-solid fa-network-wired text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                        內聯網虛擬私有網絡 (Intranet VPN) 
+                        <span class="text-xs bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full font-normal">Site-to-Site VPN</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">企業跨據點私有網絡安全互聯與數據封裝技術教學</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 text-xs">
+                <div class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>總部機房網段: <span class="code-font text-cyan-300">10.0.0.0/16</span></span>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                    <span>新加坡分公司: <span class="code-font text-cyan-300">10.1.0.0/16</span></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 flex-grow w-full mt-6 space-y-8">
+
+        <!-- Intro Banner -->
+        <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 opacity-10 text-cyan-400 text-9xl pointer-events-none">
+                <i class="fa-solid fa-building-shield"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-circle-info"></i> 什麼是 Intranet VPN（內聯網 VPN）？
+            </h2>
+            <p class="text-slate-300 text-sm leading-relaxed max-w-4xl">
+                與一般個人用於翻牆或隱藏 IP 的 VPN 不同，<strong class="text-white">Intranet VPN（內聯網 VPN / Site-to-Site VPN）</strong> 用於將企業分佈在不同地理位置的內部網絡（例如新加坡分公司與香港總部），利用公共網際網路 (Internet) 安全地連接起來。
+                兩端透過 <strong class="text-cyan-300">VPN 網關 (Gateway)</strong> 建立專用加密隧道，讓兩地員工無需透過公網曝露私有服務，即可像在「同一間辦公室區域網路 (LAN)」內一樣相互存取內部資源（如 ERP、機密資料庫）。
+            </p>
+        </section>
+
+        <!-- Dynamic Visual Simulator -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-diagram-project text-cyan-400"></i>
+                        跨據點拓撲與動態封包傳輸模擬器
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">選擇來源終端與目標伺服器，觀察封包如何經過本地網關封裝、穿越公網隧道並在目標網關解密。</p>
+                </div>
+
+                <!-- Simulation Controls -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700 text-xs">
+                        <span class="text-slate-400 pl-2">Intranet VPN 隧道狀態:</span>
+                        <button id="toggleVpnBtn" onclick="toggleVPN()" class="px-3 py-1 rounded font-semibold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30">
+                            <i class="fa-solid fa-lock mr-1"></i> 已建立隧道 (ON)
+                        </button>
+                    </div>
+                    <button onclick="startSimulation()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2 shadow-lg shadow-cyan-600/30 active:scale-95">
+                        <i class="fa-solid fa-paper-plane"></i> 發送內部數據封包
+                    </button>
+                </div>
+            </div>
+
+            <!-- Route Configuration Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">1. 選擇發送來源 (Source Point)</label>
+                    <select id="sourceSelect" onchange="resetSimulation()" class="w-full bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <option value="singapore">新加坡分公司 - 研發部 PC (10.1.0.88)</option>
+                        <option value="tokyo">東京分公司 - 業務部 Laptop (10.2.0.45)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">2. 選擇目標伺服器 (Destination)</label>
+                    <select id="destSelect" onchange="resetSimulation()" class="w-full bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <option value="erp">香港總部 - 核心 ERP 系統 (10.0.0.5)</option>
+                        <option value="db">香港總部 - 機密客戶資料庫 (10.0.0.88)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">3. 傳輸敏感資料內容</label>
+                    <input type="text" id="payloadData" value="【機密】2026 Q3 財務報表與客戶名單" class="w-full bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 code-font">
+                </div>
+            </div>
+
+            <!-- Visual Canvas Container -->
+            <div class="relative w-full h-[420px] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner">
+                <canvas id="networkCanvas" class="w-full h-full block"></canvas>
+                
+                <!-- Status Toast Overlay -->
+                <div id="statusToast" class="absolute bottom-4 left-4 right-4 bg-slate-900/90 backdrop-blur border border-cyan-500/30 p-3 rounded-lg text-xs flex justify-between items-center transition-all opacity-100">
+                    <div class="flex items-center gap-2">
+                        <i id="toastIcon" class="fa-solid fa-circle-info text-cyan-400 text-base"></i>
+                        <span id="toastText" class="text-slate-200 font-medium">系統就緒。請點擊「發送內部數據封包」觀察 VPN 網關對網關 (Site-to-Site) 的傳輸過程。</span>
+                    </div>
+                    <span id="stepBadge" class="bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded code-font">STEP 0/4</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Packet Inspection Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left: Real-time Encapsulation Inspection -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-box-archive text-amber-400"></i>
+                            IPsec 隧道封包拆解檢視器 (Tunnel Encapsulation)
+                        </h3>
+                        <span class="text-xs text-slate-400">Tunnel Mode / ESP</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">
+                        當 Intranet VPN 啟用時，本地 VPN 網關會將完整的「原始私有封包」進行加密，並在其外層包裹全新的「公網 IP 標頭 (Outer Header)」，實現私網 IP 在網際網路上的安全穿越。
+                    </p>
+
+                    <!-- Packet Structure Box -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 font-mono text-xs">
+                        <!-- Outer Header (New Header) -->
+                        <div id="outerHeaderBox" class="p-2.5 rounded border border-emerald-500/50 bg-emerald-950/30 transition-all">
+                            <div class="flex justify-between items-center text-emerald-400 font-bold mb-1">
+                                <span>[外層公網 IP 標頭 - Outer IP Header]</span>
+                                <span class="text-[10px] bg-emerald-900/60 px-1.5 py-0.5 rounded">公網可路由</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-slate-300 text-[11px]">
+                                <div>來源 (Gateway): <span id="outerSrcIp" class="text-emerald-300">203.0.113.10 (新加坡 VPN 網關)</span></div>
+                                <div>目的 (Gateway): <span id="outerDstIp" class="text-emerald-300">198.51.100.5 (總部 VPN 網關)</span></div>
+                            </div>
+                        </div>
+
+                        <!-- IPsec ESP Header -->
+                        <div id="espHeaderBox" class="p-2 rounded border border-purple-500/50 bg-purple-950/30 transition-all flex justify-between items-center text-purple-300">
+                            <span>[IPsec ESP 加密標頭 & 密鑰 SPI]</span>
+                            <i class="fa-solid fa-key text-xs"></i>
+                        </div>
+
+                        <!-- Inner Packet (Encrypted or Plain) -->
+                        <div id="innerPacketBox" class="p-3 rounded border border-cyan-500/50 bg-cyan-950/30 transition-all relative overflow-hidden">
+                            <div class="flex justify-between items-center text-cyan-400 font-bold mb-1">
+                                <span>[內層原始私有封包 - Inner IP Packet]</span>
+                                <span id="innerEncStatus" class="text-[10px] bg-cyan-900/60 px-1.5 py-0.5 rounded text-cyan-300">AES-256 已加密</span>
+                            </div>
+                            <div class="space-y-1 text-slate-300 text-[11px]">
+                                <div>私網來源: <span id="innerSrcIp" class="text-cyan-300">10.1.0.88</span> &nbsp;|&nbsp; 私網目的: <span id="innerDstIp" class="text-cyan-300">10.0.0.5</span></div>
+                                <div class="pt-1 border-t border-cyan-800/40 mt-1">
+                                    資料負載 (Payload):
+                                    <div id="innerPayload" class="bg-slate-900 p-2 rounded mt-1 text-amber-300 break-all font-semibold">
+                                        e8a7f9b2d41c880e2a3f... (已密碼化數據)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+                    <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> 公網路由器僅讀取外層標頭進行路由傳送</span>
+                    <span class="text-cyan-400">RFC 4303 IPsec ESP</span>
+                </div>
+            </div>
+
+            <!-- Right: Hacker Interception Sandbox -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-user-secret text-red-400"></i>
+                            中間人/駭客側聽沙盒 (Public ISP Sniffing)
+                        </h3>
+                        <span class="text-xs bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded">網際網路截獲模擬</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">
+                        當封包經過網際網路骨幹網絡（如電信業者機房）時，若有駭客進行流量監聽（Wireshark 側聽），比較啟用 Intranet VPN 與停用 VPN 時被截獲的資訊差異：
+                    </p>
+
+                    <!-- Intercepted Visual Display -->
+                    <div class="space-y-3">
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                            <div class="text-xs text-slate-400 mb-1">截獲的網路層 IP 資訊 (Network Layer):</div>
+                            <div id="sniffIpDisplay" class="code-font text-xs p-2 rounded bg-slate-900 text-emerald-400 border border-slate-800">
+                                203.0.113.10 &rarr; 198.51.100.5 (僅能看到 VPN 網關的公網 IP)
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                            <div class="text-xs text-slate-400 mb-1">截獲的企業私有 IP 網段資訊 (Internal IPs):</div>
+                            <div id="sniffInternalDisplay" class="code-font text-xs p-2 rounded bg-slate-900 text-slate-500 border border-slate-800">
+                                [隱蔽] 無法得知內部 10.1.0.88 與 10.0.0.5 的存在
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                            <div class="text-xs text-slate-400 mb-1">截獲的資料內容 (Application Data):</div>
+                            <div id="sniffDataDisplay" class="code-font text-xs p-2 rounded bg-slate-900 text-emerald-400 border border-slate-800 break-all">
+                                🔐 0x8F90A3B4C5D6E7F890123456789ABCDEF0123456789ABCDEF (高度加密亂碼)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="hackerVerdict" class="mt-4 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+                    <span><strong>安全結論：</strong> 駭客完全無法讀取企業機密內容，亦無法窺探企業內部的私有 IP 拓撲。</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deep Dive Educational Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-cyan-500/50 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4 text-lg">
+                    <i class="fa-solid fa-route"></i>
+                </div>
+                <h3 class="text-white font-bold mb-2 text-base">1. 跨據點私有 IP 路由</h3>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                    公網路由器無法直接路由私人 IP（如 10.x.x.x 或 192.168.x.x）。Intranet VPN 透過網關的路由表，將所有目標為遠端分公司私網的封包導向 VPN 隧道，實現透明無感連線。
+                </p>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-cyan-500/50 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-4 text-lg">
+                    <i class="fa-solid fa-shield-cat"></i>
+                </div>
+                <h3 class="text-white font-bold mb-2 text-base">2. 網關對網關 (Site-to-Site)</h3>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                    不同於個人電腦安裝 Client 端軟體，Intranet VPN 通常由各廠區的硬體防火牆或 VPN 網關自動處理加密與解密，終端電腦無須安裝任何額外軟體即可互相通訊。
+                </p>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-cyan-500/50 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4 text-lg">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="text-white font-bold mb-2 text-base">3. IPsec 隧道模式與金鑰交換</h3>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                    採用 IKE (Internet Key Exchange) 協議協商兩端網關的金鑰，並使用 AES-256 加密。隧道模式 (Tunnel Mode) 對包含原始 IP 標頭的整體封包進行保護，安全性最高。
+                </p>
+            </div>
+        </section>
+
+        <!-- Interactive Quiz -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-cyan-400"></i>
+                內聯網 VPN 知識小測驗
+            </h2>
+            <div class="space-y-4">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="text-sm text-slate-200 font-medium mb-3">
+                        Q1. 在 Intranet VPN (Site-to-Site IPsec 隧道模式) 傳輸中，公際網路 (Internet) 上的中間路由器主要查看封包的哪一部分來進行路由？
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <button onclick="checkQuiz(1, 'A', this)" class="quiz-btn-1 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            A. 內層原始封包的私有 IP Header (10.1.0.88)
+                        </button>
+                        <button onclick="checkQuiz(1, 'B', this)" class="quiz-btn-1 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            B. 外層新增的 VPN 網關公網 IP Header (203.0.113.10)
+                        </button>
+                        <button onclick="checkQuiz(1, 'C', this)" class="quiz-btn-1 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            C. 加密後的 Payload 應用層資料
+                        </button>
+                        <button onclick="checkQuiz(1, 'D', this)" class="quiz-btn-1 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            D. 終端電腦的 MAC 位址
+                        </button>
+                    </div>
+                    <div id="quizResult1" class="hidden text-xs mt-2 font-medium"></div>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="text-sm text-slate-200 font-medium mb-3">
+                        Q2. 與個人翻牆常用的 Remote-Access VPN 相比，Intranet (Site-to-Site) VPN 的主要優勢為何？
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <button onclick="checkQuiz(2, 'A', this)" class="quiz-btn-2 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            A. 每個員工的電腦都不需要安裝特定 VPN 客戶端軟體
+                        </button>
+                        <button onclick="checkQuiz(2, 'B', this)" class="quiz-btn-2 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            B. 能自動加快網際網路總頻寬
+                        </button>
+                        <button onclick="checkQuiz(2, 'C', this)" class="quiz-btn-2 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            C. 可以完全不需要加密金鑰
+                        </button>
+                        <button onclick="checkQuiz(2, 'D', this)" class="quiz-btn-2 text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            D. 只能連接兩台電腦，無法連接整個子網
+                        </button>
+                    </div>
+                    <div id="quizResult2" class="hidden text-xs mt-2 font-medium"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6">
+        <p>內聯網虛擬私有網絡 (Intranet VPN) 互動原理教學網頁 &copy; 2026</p>
+        <p class="mt-1">基於 HTML5 Canvas & IPsec Site-to-Site 網關隧道架構展示</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // State variables
+        let vpnEnabled = true;
+        let isSimulating = false;
+        let animProgress = 0;
+        let currentStep = 0;
+        let animFrameId = null;
+
+        // Canvas element & setup
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Nodes definition (Updated Singapore Node)
+        const nodes = {
+            singaporePc: { x: 90, y: 110, label: "新加坡 PC", sub: "10.1.0.88", type: "pc" },
+            singaporeGw: { x: 260, y: 110, label: "新加坡 VPN 網關", sub: "203.0.113.10", type: "gw" },
+            
+            tokyoPc: { x: 90, y: 310, label: "東京 Laptop", sub: "10.2.0.45", type: "pc" },
+            tokyoGw: { x: 260, y: 310, label: "東京 VPN 網關", sub: "198.51.100.99", type: "gw" },
+            
+            internet: { x: 480, y: 210, label: "公用網際網路", sub: "Public Internet / ISP", type: "cloud" },
+            hacker: { x: 480, y: 80, label: "網絡側聽者/駭客", sub: "Interception Node", type: "hacker" },
+            
+            hqGw: { x: 700, y: 210, label: "總部 VPN 網關", sub: "198.51.100.5", type: "gw" },
+            hqErp: { x: 870, y: 140, label: "總部 ERP 伺服器", sub: "10.0.0.5", type: "server" },
+            hqDb: { x: 870, y: 280, label: "機密資料庫", sub: "10.0.0.88", type: "server" }
+        };
+
+        // Resize Canvas dynamically
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            drawNetwork();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Responsive X/Y Scaler
+        function getScaledPos(node) {
+            const baseW = 960;
+            const baseH = 420;
+            const scaleX = canvas.width / baseW;
+            const scaleY = canvas.height / baseH;
+            return {
+                x: node.x * scaleX,
+                y: node.y * scaleY
+            };
+        }
+
+        // Draw Network Topology
+        function drawNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw Connections (Lines)
+            // Local Intranet LAN lines
+            drawLine(nodes.singaporePc, nodes.singaporeGw, "#38bdf8", 2, [4, 4]);
+            drawLine(nodes.tokyoPc, nodes.tokyoGw, "#38bdf8", 2, [4, 4]);
+            drawLine(nodes.hqGw, nodes.hqErp, "#38bdf8", 2, [4, 4]);
+            drawLine(nodes.hqGw, nodes.hqDb, "#38bdf8", 2, [4, 4]);
+
+            // Internet Tunnels
+            if (vpnEnabled) {
+                // VPN Active: Thick Encrypted Tunnel
+                drawTunnel(nodes.singaporeGw, nodes.internet, nodes.hqGw, "#10b981");
+                drawTunnel(nodes.tokyoGw, nodes.internet, nodes.hqGw, "#10b981");
+            } else {
+                // Unencrypted Direct Internet Connections
+                drawLine(nodes.singaporeGw, nodes.internet, "#ef4444", 2);
+                drawLine(nodes.tokyoGw, nodes.internet, "#ef4444", 2);
+                drawLine(nodes.internet, nodes.hqGw, "#ef4444", 2);
+            }
+
+            // Hacker Tap Line
+            drawLine(nodes.internet, nodes.hacker, "#f87171", 1.5, [2, 2]);
+
+            // 2. Draw Nodes
+            for (let key in nodes) {
+                drawNodeItem(nodes[key]);
+            }
+
+            // 3. Draw Active Packet if simulating
+            if (isSimulating) {
+                drawAnimatedPacket();
+            }
+        }
+
+        function drawLine(n1, n2, color, width, dash = []) {
+            const p1 = getScaledPos(n1);
+            const p2 = getScaledPos(n2);
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash(dash);
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawTunnel(n1, nMid, n2, color) {
+            const p1 = getScaledPos(n1);
+            const pMid = getScaledPos(nMid);
+            const p2 = getScaledPos(n2);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(pMid.x, pMid.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = "rgba(16, 185, 129, 0.25)";
+            ctx.lineWidth = 16;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.stroke();
+
+            // Inner core
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(pMid.x, pMid.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawNodeItem(node) {
+            const pos = getScaledPos(node);
+            ctx.save();
+
+            // Node Circle / Icon Box
+            let iconCode = "\uf108"; // PC
+            let color = "#38bdf8";
+
+            if (node.type === "gw") {
+                iconCode = "\uf2f5"; // Gateway/Shield
+                color = "#34d399";
+            } else if (node.type === "cloud") {
+                iconCode = "\uf0c2"; // Cloud
+                color = "#a78bfa";
+            } else if (node.type === "hacker") {
+                iconCode = "\uf21b"; // User secret
+                color = "#f87171";
+            } else if (node.type === "server") {
+                iconCode = "\uf233"; // Server
+                color = "#fbbf24";
+            }
+
+            // Draw Background Node Circle
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+            ctx.fillStyle = "#0f172a";
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Icon
+            ctx.font = "900 16px 'Font Awesome 6 Free'";
+            ctx.fillStyle = color;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(iconCode, pos.x, pos.y);
+
+            // Labels
+            ctx.font = "bold 11px 'Noto Sans TC', sans-serif";
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillText(node.label, pos.x, pos.y + 34);
+
+            ctx.font = "10px 'Fira Code', monospace";
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillText(node.sub, pos.x, pos.y + 48);
+
+            ctx.restore();
+        }
+
+        // Animated Packet Transmission logic
+        function drawAnimatedPacket() {
+            const sourceKey = document.getElementById('sourceSelect').value === 'singapore' ? 'singaporePc' : 'tokyoPc';
+            const gwKey = document.getElementById('sourceSelect').value === 'singapore' ? 'singaporeGw' : 'tokyoGw';
+            const destKey = document.getElementById('destSelect').value === 'erp' ? 'hqErp' : 'hqDb';
+
+            let pStart, pEnd;
+
+            // Determine Path Segment based on progress
+            if (animProgress < 0.25) {
+                // Step 1: PC -> Local Gateway
+                pStart = getScaledPos(nodes[sourceKey]);
+                pEnd = getScaledPos(nodes[gwKey]);
+                updateStepUI(1, "發送中：私網內部封包傳送至本地 VPN 網關 (明文 / 內網 IP)");
+            } else if (animProgress < 0.75) {
+                // Step 2: Local Gateway -> Internet -> HQ Gateway
+                pStart = getScaledPos(nodes[gwKey]);
+                pEnd = getScaledPos(nodes.hqGw);
+                if (vpnEnabled) {
+                    updateStepUI(2, "加密隧道傳輸中：VPN 網關完成 IPsec 封裝，以 Outer IP 跨越公網");
+                } else {
+                    updateStepUI(2, "危險傳輸中：未啟用 VPN，原始私有封包直接暴露於網際網路！");
+                }
+            } else {
+                // Step 3: HQ Gateway -> Target Server
+                pStart = getScaledPos(nodes.hqGw);
+                pEnd = getScaledPos(nodes[destKey]);
+                updateStepUI(3, "解密到達：總部 VPN 網關解密封包並將原始私有數據送達伺服器");
+            }
+
+            // Calculate current coordinates
+            let segmentProgress = 0;
+            if (animProgress < 0.25) segmentProgress = animProgress / 0.25;
+            else if (animProgress < 0.75) segmentProgress = (animProgress - 0.25) / 0.5;
+            else segmentProgress = (animProgress - 0.75) / 0.25;
+
+            const curX = pStart.x + (pEnd.x - pStart.x) * segmentProgress;
+            const curY = pStart.y + (pEnd.y - pStart.y) * segmentProgress;
+
+            // Draw Packet Icon
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(curX, curY, 12, 0, Math.PI * 2);
+            
+            if (animProgress >= 0.25 && animProgress < 0.75 && vpnEnabled) {
+                // Encrypted Packet
+                ctx.fillStyle = "#10b981";
+                ctx.shadowColor = "#10b981";
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.font = "900 10px 'Font Awesome 6 Free'";
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("\uf023", curX, curY);
+            } else {
+                // Normal or Unencrypted Packet
+                ctx.fillStyle = vpnEnabled ? "#38bdf8" : "#f87171";
+                ctx.shadowColor = vpnEnabled ? "#38bdf8" : "#f87171";
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.font = "900 10px 'Font Awesome 6 Free'";
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("\uf0e0", curX, curY);
+            }
+            ctx.restore();
+        }
+
+        function startSimulation() {
+            if (isSimulating) return;
+            isSimulating = true;
+            animProgress = 0;
+
+            const startTime = performance.now();
+            const duration = 4000;
+
+            function step(timestamp) {
+                const elapsed = timestamp - startTime;
+                animProgress = Math.min(elapsed / duration, 1);
+
+                drawNetwork();
+                updateEncapsulationView();
+
+                if (animProgress < 1) {
+                    animFrameId = requestAnimationFrame(step);
+                } else {
+                    isSimulating = false;
+                    updateStepUI(4, "傳輸成功完成！資料已安全送達目標內部伺服器。");
+                }
+            }
+
+            animFrameId = requestAnimationFrame(step);
+        }
+
+        function resetSimulation() {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            isSimulating = false;
+            animProgress = 0;
+            updateStepUI(0, "選擇已更換，點擊「發送內部數據封包」重新測試。");
+            drawNetwork();
+            updateEncapsulationView();
+        }
+
+        function toggleVPN() {
+            vpnEnabled = !vpnEnabled;
+            const btn = document.getElementById('toggleVpnBtn');
+            if (vpnEnabled) {
+                btn.className = "px-3 py-1 rounded font-semibold transition-all bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30";
+                btn.innerHTML = `<i class="fa-solid fa-lock mr-1"></i> 已建立隧道 (ON)`;
+            } else {
+                btn.className = "px-3 py-1 rounded font-semibold transition-all bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30";
+                btn.innerHTML = `<i class="fa-solid fa-unlock mr-1"></i> 未加密直連 (OFF)`;
+            }
+            resetSimulation();
+        }
+
+        // Update UI Step Banner
+        function updateStepUI(stepNum, message) {
+            currentStep = stepNum;
+            const toastText = document.getElementById('toastText');
+            const stepBadge = document.getElementById('stepBadge');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastText.textContent = message;
+            stepBadge.textContent = `STEP ${stepNum}/4`;
+
+            if (stepNum === 4) {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+            } else if (!vpnEnabled && stepNum === 2) {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-red-400 text-base";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-info text-cyan-400 text-base";
+            }
+        }
+
+        // Dynamic Update of Encapsulation Inspector & Sniffer Sandbox
+        function updateEncapsulationView() {
+            const isSingapore = document.getElementById('sourceSelect').value === 'singapore';
+            const isErp = document.getElementById('destSelect').value === 'erp';
+            const rawPayload = document.getElementById('payloadData').value || "機密數據";
+
+            // Source & Dest IPs
+            const srcIp = isSingapore ? "10.1.0.88" : "10.2.0.45";
+            const srcGwIp = isSingapore ? "203.0.113.10 (新加坡 VPN 網關)" : "198.51.100.99 (東京 VPN 網關)";
+            const dstIp = isErp ? "10.0.0.5" : "10.0.0.88";
+            const dstGwIp = "198.51.100.5 (香港總部網關)";
+
+            // Update Inner Header Elements
+            document.getElementById('innerSrcIp').textContent = srcIp;
+            document.getElementById('innerDstIp').textContent = dstIp;
+
+            // Outer Header Elements
+            document.getElementById('outerSrcIp').textContent = srcGwIp;
+            document.getElementById('outerDstIp').textContent = dstGwIp;
+
+            // UI Boxes
+            const outerHeaderBox = document.getElementById('outerHeaderBox');
+            const espHeaderBox = document.getElementById('espHeaderBox');
+            const innerPacketBox = document.getElementById('innerPacketBox');
+            const innerPayload = document.getElementById('innerPayload');
+            const innerEncStatus = document.getElementById('innerEncStatus');
+
+            // Sniffer UI elements
+            const sniffIpDisplay = document.getElementById('sniffIpDisplay');
+            const sniffInternalDisplay = document.getElementById('sniffInternalDisplay');
+            const sniffDataDisplay = document.getElementById('sniffDataDisplay');
+            const hackerVerdict = document.getElementById('hackerVerdict');
+
+            if (vpnEnabled) {
+                // VPN Active Encapsulation Visuals
+                outerHeaderBox.style.opacity = "1";
+                espHeaderBox.style.opacity = "1";
+                innerEncStatus.textContent = "AES-256 已加密";
+                innerEncStatus.className = "text-[10px] bg-emerald-900/60 px-1.5 py-0.5 rounded text-emerald-300";
+                
+                innerPayload.textContent = "🔒 0x" + Array.from(rawPayload).map(c => c.charCodeAt(0).toString(16)).join('').toUpperCase().substring(0, 32) + "... (暗文)";
+                innerPayload.className = "bg-slate-900 p-2 rounded mt-1 text-emerald-400 break-all font-mono";
+
+                // Hacker sees only outer VPN IPs and encrypted noise
+                sniffIpDisplay.textContent = `${srcGwIp.split(' ')[0]} → ${dstGwIp.split(' ')[0]} (僅公網網關 IP)`;
+                sniffIpDisplay.className = "code-font text-xs p-2 rounded bg-slate-900 text-emerald-400 border border-slate-800";
+
+                sniffInternalDisplay.textContent = "[隱蔽] 無法讀取內部真實 IP (隱藏 10.x.x.x)";
+                sniffInternalDisplay.className = "code-font text-xs p-2 rounded bg-slate-900 text-emerald-400/80 border border-slate-800";
+
+                sniffDataDisplay.textContent = "🔐 " + Array.from(rawPayload).map(c => (c.charCodeAt(0) * 7).toString(16)).join('').toUpperCase() + "89AF";
+                sniffDataDisplay.className = "code-font text-xs p-2 rounded bg-slate-900 text-emerald-400 break-all border border-slate-800";
+
+                hackerVerdict.className = "mt-4 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2";
+                hackerVerdict.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-base"></i><span><strong>安全狀態：</strong> Intranet VPN 保護中，公網竊聽者無法解析任何內部 IP 或企業資產數據。</span>`;
+            } else {
+                // VPN Off Visuals
+                outerHeaderBox.style.opacity = "0.3";
+                espHeaderBox.style.opacity = "0.3";
+                innerEncStatus.textContent = "未加密 (明文裸傳)";
+                innerEncStatus.className = "text-[10px] bg-red-900/60 px-1.5 py-0.5 rounded text-red-300";
+
+                innerPayload.textContent = "⚠️ " + rawPayload + " (明文未保護)";
+                innerPayload.className = "bg-slate-900 p-2 rounded mt-1 text-red-400 break-all font-mono";
+
+                // Hacker sees EVERYTHING
+                sniffIpDisplay.textContent = `${srcIp} → ${dstIp} (裸露的內網私有 IP!)`;
+                sniffIpDisplay.className = "code-font text-xs p-2 rounded bg-slate-900 text-red-400 border border-red-800/60";
+
+                sniffInternalDisplay.textContent = `🚨 被截獲內部拓撲: 源 ${srcIp} / 目的 ${dstIp}`;
+                sniffInternalDisplay.className = "code-font text-xs p-2 rounded bg-slate-900 text-red-400 border border-red-800/60";
+
+                sniffDataDisplay.textContent = `🔓 明文截獲: "${rawPayload}"`;
+                sniffDataDisplay.className = "code-font text-xs p-2 rounded bg-slate-900 text-red-400 font-bold border border-red-800/60";
+
+                hackerVerdict.className = "mt-4 p-3 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-300 flex items-center gap-2";
+                hackerVerdict.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400 text-base"></i><span><strong>嚴重資安風險：</strong> 未開啓 VPN！公網骨幹節點可直接側聽並偷窺企業機密資料。</span>`;
+            }
+        }
+
+        // Interactive Quiz Logic
+        function checkQuiz(questionNum, option, btnElement) {
+            const resultDiv = document.getElementById(`quizResult${questionNum}`);
+            const buttons = document.querySelectorAll(`.quiz-btn-${questionNum}`);
+
+            buttons.forEach(b => {
+                b.classList.remove('border-emerald-500', 'border-red-500', 'bg-emerald-950/30', 'bg-red-950/30');
+            });
+
+            resultDiv.classList.remove('hidden', 'text-emerald-400', 'text-red-400');
+
+            if (questionNum === 1) {
+                if (option === 'B') {
+                    btnElement.classList.add('border-emerald-500', 'bg-emerald-950/30');
+                    resultDiv.classList.add('text-emerald-400');
+                    resultDiv.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 正確！公網路由器只能看到外層 (Outer) 的 VPN 網關公網 IP 進行封包轉發。';
+                } else {
+                    btnElement.classList.add('border-red-500', 'bg-red-950/30');
+                    resultDiv.classList.add('text-red-400');
+                    resultDiv.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> 不正確。私有 IP (10.x.x.x) 與 Payload 均被加密封裝在內層，公網路由器無法也不會直接讀取。';
+                }
+            } else if (questionNum === 2) {
+                if (option === 'A') {
+                    btnElement.classList.add('border-emerald-500', 'bg-emerald-950/30');
+                    resultDiv.classList.add('text-emerald-400');
+                    resultDiv.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 正確！Site-to-Site Intranet VPN 由兩端的硬體網關/防火牆自動處理加密，終端用戶完全無感且無需安裝 Client 軟體。';
+                } else {
+                    btnElement.classList.add('border-red-500', 'bg-red-950/30');
+                    resultDiv.classList.add('text-red-400');
+                    resultDiv.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> 不正確。VPN 會因為額外的標頭與加密計算帶來微小的 Overhead，並不會直接「加快頻寬」。';
+                }
+            }
+        }
+
+        // Initialize Canvas & Page State
+        window.onload = () => {
+            resizeCanvas();
+            updateEncapsulationView();
+        };
+    </script>
+</body>
+</html>
