@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Wi-Fi 安全特攻隊：WEP 到 WPA3 的防禦進化史！</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0b132b;
+            color: #e0e1dd;
+        }
+        .title-font {
+            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+        }
+        /* Custom Glowing effects */
+        .glow-wep { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+        .glow-wpa { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+        .glow-wpa2 { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+        .glow-wpa3 { box-shadow: 0 0 20px rgba(6, 182, 212, 0.4); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1c2541; }
+        ::-webkit-scrollbar-thumb { background: #3a506b; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-12">
+
+    <!-- Header Section -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur px-4 py-3">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-cyan-500 to-blue-600 p-2.5 rounded-2xl shadow-lg text-white">
+                    <i class="fa-solid fa-shield-cat text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-white title-font tracking-wide flex items-center gap-2">
+                        Wi-Fi 安全特攻隊！
+                    </h1>
+                    <p class="text-xs text-slate-400">用生活化比喻搞懂 WEP、WPA、WPA2、WPA3 差別</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-xl text-slate-300">
+                <span>目前選擇協定：</span>
+                <span id="currentHeaderBadge" class="text-red-400 font-mono">WEP (極危險)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 w-full mt-6 space-y-8 flex-grow">
+
+        <!-- Interactive Playground / Visual Simulator -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 shadow-2xl backdrop-blur relative overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4 pb-3 border-b border-slate-800">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad text-cyan-400"></i>
+                        【Wi-Fi 空中傳送與駭客攔截小劇場】
+                    </h2>
+                    <p class="text-xs text-slate-400">切換不同安全等級，按「傳送 Wi-Fi 訊號」觀察駭客能不能偷看你的訊息！</p>
+                </div>
+
+                <!-- Protocol Switch Buttons -->
+                <div class="flex flex-wrap gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">
+                    <button onclick="switchProto('wep')" id="btn-wep" class="px-3 py-1.5 rounded-xl transition-all bg-red-500 text-white shadow-lg">
+                        1代: WEP
+                    </button>
+                    <button onclick="switchProto('wpa')" id="btn-wpa" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
+                        2代: WPA
+                    </button>
+                    <button onclick="switchProto('wpa2')" id="btn-wpa2" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
+                        3代: WPA2
+                    </button>
+                    <button onclick="switchProto('wpa3')" id="btn-wpa3" class="px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white">
+                        4代: WPA3
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls & Simulation Screen Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Controls Panel -->
+                <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders text-cyan-400"></i> 模擬設定：
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">你想傳給基地台的秘密訊息：</label>
+                            <input type="text" id="secretInput" value="我的 IG 密碼是 8888" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] text-slate-400 block mb-1">Wi-Fi 密碼（試試看輸入弱密碼）：</label>
+                            <input type="text" id="passInput" value="12345678" oninput="checkPassStrength()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                            <span id="passWarn" class="text-[10px] text-amber-400 mt-1 block hidden">⚠️ 這是超弱密碼！即使是 WPA2 也可能被字典攻擊破譯喔！</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button onclick="sendPacket()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> 傳送 Wi-Fi 數據包
+                        </button>
+                        <button onclick="toggleHacker()" id="hackerToggleBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-ninja text-red-400"></i> 駭客狀態：正在偷聽中
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive Visual Canvas (2 Cols) -->
+                <div class="lg:col-span-2 bg-slate-950 rounded-2xl border border-slate-800 relative h-[320px] overflow-hidden flex flex-col justify-between p-3">
+                    <canvas id="simCanvas" class="w-full h-full absolute top-0 left-0"></canvas>
+
+                    <!-- Status Overlay Badge -->
+                    <div class="relative z-10 flex justify-between items-center text-xs">
+                        <span id="metaphorBadge" class="bg-red-500/20 text-red-300 border border-red-500/40 px-3 py-1 rounded-full font-bold backdrop-blur">
+                            比喻：透光的「紙封信」
+                        </span>
+                        <span id="securityScore" class="bg-slate-900/90 text-slate-300 px-3 py-1 rounded-full border border-slate-800 font-mono">
+                            安全性：★☆☆☆☆ (極度危險)
+                        </span>
+                    </div>
+
+                    <!-- Bottom Event Log -->
+                    <div class="relative z-10 bg-slate-900/90 backdrop-blur p-2.5 rounded-xl border border-slate-800 text-xs flex items-center gap-2">
+                        <i id="logIcon" class="fa-solid fa-triangle-exclamation text-red-400 text-base"></i>
+                        <span id="logText" class="text-slate-200 truncate">按下「傳送 Wi-Fi 數據包」觀察資料如何透過無線電波傳輸！</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4 Protocal Cards: Designed like Superhero Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            
+            <!-- WEP Card -->
+            <div class="bg-slate-900/90 border-2 border-red-500/40 hover:border-red-500 rounded-3xl p-5 transition-all duration-300 flex flex-col justify-between relative group hover:-translate-y-1 shadow-xl">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black bg-red-500/20 text-red-400 border border-red-500/40 px-2.5 py-0.5 rounded-full">1997 年問世</span>
+                        <i class="fa-solid fa-skull text-red-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-white">第 1 代：WEP</h3>
+                        <p class="text-xs text-red-400 font-bold">「紙封信 + 鉛筆鎖」</p>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        最早期的 Wi-Fi 加密。就像把祕密寫在透明明信片上，每次都蓋相同的簡陋印章。
+                    </p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                        <div><b>致命弱點：</b> 金鑰太短又固定不變。</div>
+                        <div><b>破解難度：</b> <span class="text-red-400 font-bold">5 秒搞定 (超簡單)</span></div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 text-center font-bold">
+                    現狀：早已淘汰，絕對不能用！
+                </div>
+            </div>
+
+            <!-- WPA Card -->
+            <div class="bg-slate-900/90 border-2 border-amber-500/40 hover:border-amber-500 rounded-3xl p-5 transition-all duration-300 flex flex-col justify-between relative group hover:-translate-y-1 shadow-xl">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-0.5 rounded-full">2003 年問世</span>
+                        <i class="fa-solid fa-shield-halved text-amber-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-white">第 2 代：WPA</h3>
+                        <p class="text-xs text-amber-400 font-bold">「塑膠密碼鎖 (TKIP)」</p>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        為了救急發明的過渡補丁。雖然每次寄信會換不同密碼，但外殼材質還是舊的。
+                    </p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                        <div><b>改善點：</b> 動態更換金鑰。</div>
+                        <div><b>破解難度：</b> <span class="text-amber-400 font-bold">幾分鐘~幾小時</span></div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 text-center font-bold">
+                    現狀：過時不安全，不建議使用
+                </div>
+            </div>
+
+            <!-- WPA2 Card -->
+            <div class="bg-slate-900/90 border-2 border-emerald-500/40 hover:border-emerald-500 rounded-3xl p-5 transition-all duration-300 flex flex-col justify-between relative group hover:-translate-y-1 shadow-xl">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">2004 年問世</span>
+                        <i class="fa-solid fa-shield-check text-emerald-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-white">第 3 代：WPA2</h3>
+                        <p class="text-xs text-emerald-400 font-bold">「銀行級鋼鐵金庫 (AES)」</p>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        現今最普及的標準！換上了軍規等級的 **AES 鋼鐵金庫**，只要密碼夠長就極度安全！
+                    </p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                        <div><b>優勢：</b> 強大 AES 加密。</div>
+                        <div><b>唯一死穴：</b> 密碼太簡單會被猜爆。</div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-emerald-400 text-center font-bold">
+                    現狀：目前最常見主流標準
+                </div>
+            </div>
+
+            <!-- WPA3 Card -->
+            <div class="bg-slate-900/90 border-2 border-cyan-500/40 hover:border-cyan-500 rounded-3xl p-5 transition-all duration-300 flex flex-col justify-between relative group hover:-translate-y-1 shadow-xl">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 px-2.5 py-0.5 rounded-full">2018 年問世</span>
+                        <i class="fa-solid fa-user-shield text-cyan-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-white">第 4 代：WPA3</h3>
+                        <p class="text-xs text-cyan-400 font-bold">「黑科技防撬金庫 (SAE)」</p>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        最新世代防護！就算你設定簡單密碼，駭客猜錯幾次就會被鎖死，還有**前向保密**防護！
+                    </p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                        <div><b>特異功能：</b> 免疫暴力猜密碼。</div>
+                        <div><b>防禦力：</b> <span class="text-cyan-400 font-bold">★★★★★ (最高級)</span></div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-cyan-400 text-center font-bold">
+                    現狀：最新 Wi-Fi 路由器標準
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Summary Matrix Table -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 backdrop-blur">
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-table-list text-cyan-400"></i>
+                一分鐘快速對照表
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 font-bold bg-slate-950">
+                            <th class="p-3">世代</th>
+                            <th class="p-3">生活化比喻</th>
+                            <th class="p-3">核心加密武器</th>
+                            <th class="p-3">駭客能不能解開？</th>
+                            <th class="p-3">建議</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-3 font-bold text-red-400">WEP</td>
+                            <td class="p-3">透光的紙封信 ✉️</td>
+                            <td class="p-3 font-mono">RC4 (舊型串流)</td>
+                            <td class="p-3 text-red-400 font-bold">秒破 (收集封包即解開)</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800">立刻淘汰</span></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-3 font-bold text-amber-400">WPA</td>
+                            <td class="p-3">塑膠密碼鎖 🔓</td>
+                            <td class="p-3 font-mono">TKIP (動態金鑰)</td>
+                            <td class="p-3 text-amber-400">可以 (時間較長)</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">不建議</span></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-3 font-bold text-emerald-400">WPA2</td>
+                            <td class="p-3">鋼鐵金庫 🛡️</td>
+                            <td class="p-3 font-mono font-bold text-emerald-400">AES (軍規級)</td>
+                            <td class="p-3 text-slate-300">密碼夠複雜就<b>解不開</b></td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">推薦使用</span></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-3 font-bold text-cyan-400">WPA3</td>
+                            <td class="p-3">黑科技防撬金庫 🛸</td>
+                            <td class="p-3 font-mono text-cyan-400">AES + SAE (防猜)</td>
+                            <td class="p-3 text-cyan-400 font-bold">完全解不開！</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">最佳選擇</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Fun Student Quiz -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 backdrop-blur">
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-cyan-400"></i>
+                小測驗：看看你有沒有成為 Wi-Fi 小專家！
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <!-- Q1 -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <p class="font-bold text-slate-200">
+                        Q1. 如果你在家設定 Wi-Fi 路由器，看到設定檔有「WEP」跟「WPA2」，你應該選哪一個？
+                    </p>
+                    <div class="space-y-1.5">
+                        <button onclick="checkQuiz(1, 'a', this)" class="q1-btn w-full text-left p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all">
+                            A. 選 WEP，因為它是第一代最有歷史
+                        </button>
+                        <button onclick="checkQuiz(1, 'b', this)" class="q1-btn w-full text-left p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all">
+                            B. 選 WPA2，因為採用了強大的 AES 鋼鐵金庫加密
+                        </button>
+                    </div>
+                    <div id="q1Ans" class="hidden text-xs font-bold pt-1"></div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <p class="font-bold text-slate-200">
+                        Q2. WPA3 最酷的新功能是什麼，為什麼能防止駭客一直猜密碼？
+                    </p>
+                    <div class="space-y-1.5">
+                        <button onclick="checkQuiz(2, 'a', this)" class="q2-btn w-full text-left p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all">
+                            A. 採用 SAE 機制，離線猜密碼失效，猜錯幾次就被防撬鎖死
+                        </button>
+                        <button onclick="checkQuiz(2, 'b', this)" class="q2-btn w-full text-left p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all">
+                            B. 限制上網時間，超過 10 分鐘自動斷網
+                        </button>
+                    </div>
+                    <div id="q2Ans" class="hidden text-xs font-bold pt-1"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6">
+        <p>Wi-Fi 無線安全特攻隊 &copy; 2026</p>
+        <p class="mt-1">Interactive Wi-Fi Security Explainer</p>
+    </footer>
+
+    <!-- JavaScript Visual Logic -->
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let activeProto = 'wep';
+        let packets = [];
+        let isHackerActive = true;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function switchProto(proto) {
+            activeProto = proto;
+
+            ['wep', 'wpa', 'wpa2', 'wpa3'].forEach(p => {
+                const btn = document.getElementById(`btn-${p}`);
+                if (p === proto) {
+                    btn.className = "px-3 py-1.5 rounded-xl transition-all shadow-lg text-white font-bold " +
+                        (p === 'wep' ? 'bg-red-500' : p === 'wpa' ? 'bg-amber-500' : p === 'wpa2' ? 'bg-emerald-500' : 'bg-cyan-500');
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-xl transition-all text-slate-400 hover:text-white border-transparent";
+                }
+            });
+
+            const headerBadge = document.getElementById('currentHeaderBadge');
+            const metaphorBadge = document.getElementById('metaphorBadge');
+            const securityScore = document.getElementById('securityScore');
+
+            if (proto === 'wep') {
+                headerBadge.textContent = "WEP (極危險)";
+                headerBadge.className = "text-red-400 font-mono";
+                metaphorBadge.textContent = "比喻：透光的「紙封信」✉️";
+                metaphorBadge.className = "bg-red-500/20 text-red-300 border border-red-500/40 px-3 py-1 rounded-full font-bold backdrop-blur";
+                securityScore.textContent = "安全性：★☆☆☆☆ (幾秒被破解)";
+            } else if (proto === 'wpa') {
+                headerBadge.textContent = "WPA (過時)";
+                headerBadge.className = "text-amber-400 font-mono";
+                metaphorBadge.textContent = "比喻：「塑膠密碼鎖」🔓";
+                metaphorBadge.className = "bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full font-bold backdrop-blur";
+                securityScore.textContent = "安全性：★★☆☆☆ (較不安全)";
+            } else if (proto === 'wpa2') {
+                headerBadge.textContent = "WPA2 (主流安全)";
+                headerBadge.className = "text-emerald-400 font-mono";
+                metaphorBadge.textContent = "比喻：「銀行鋼鐵金庫」🛡️";
+                metaphorBadge.className = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full font-bold backdrop-blur";
+                securityScore.textContent = "安全性：★★★★☆ (良好)";
+            } else if (proto === 'wpa3') {
+                headerBadge.textContent = "WPA3 (最高級)";
+                headerBadge.className = "text-cyan-400 font-mono";
+                metaphorBadge.textContent = "比喻：「黑科技防撬金庫」🛸";
+                metaphorBadge.className = "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-3 py-1 rounded-full font-bold backdrop-blur";
+                securityScore.textContent = "安全性：★★★★★ (頂級防護)";
+            }
+        }
+
+        function checkPassStrength() {
+            const pass = document.getElementById('passInput').value;
+            const warn = document.getElementById('passWarn');
+            if (pass === '12345678' || pass === 'password' || pass.length < 8) {
+                warn.classList.remove('hidden');
+            } else {
+                warn.classList.add('hidden');
+            }
+        }
+
+        function toggleHacker() {
+            isHackerActive = !isHackerActive;
+            const btn = document.getElementById('hackerToggleBtn');
+            if (isHackerActive) {
+                btn.innerHTML = `<i class="fa-solid fa-user-ninja text-red-400"></i> 駭客狀態：正在偷聽中`;
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-user-check text-slate-500"></i> 駭客狀態：已被趕走`;
+            }
+        }
+
+        function sendPacket() {
+            const secret = document.getElementById('secretInput').value || "秘密內容";
+            const pass = document.getElementById('passInput').value;
+
+            packets.push({
+                x: canvas.width * 0.15,
+                y: canvas.height * 0.45,
+                targetX: canvas.width * 0.85,
+                targetY: canvas.height * 0.45,
+                speed: 0.02,
+                progress: 0,
+                proto: activeProto,
+                secret: secret,
+                pass: pass
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            const clientX = W * 0.15;
+            const clientY = H * 0.45;
+            const routerX = W * 0.85;
+            const routerY = H * 0.45;
+            const hackerX = W * 0.5;
+            const hackerY = H * 0.8;
+
+            // Draw Signal Waves
+            ctx.beginPath();
+            ctx.moveTo(clientX, clientY);
+            ctx.lineTo(routerX, routerY);
+            ctx.strokeStyle = "rgba(51, 65, 85, 0.4)";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Nodes
+            // 1. Laptop / Phone
+            ctx.fillStyle = "#0f172a";
+            ctx.strokeStyle = "#0284c7";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(clientX, clientY, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.font = "900 13px 'Font Awesome 6 Free'";
+            ctx.fillStyle = "#38bdf8";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("\uf10b", clientX, clientY); // Phone Icon
+            ctx.font = "10px sans-serif";
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillText("你的手機", clientX, clientY + 32);
+
+            // 2. AP Router
+            ctx.fillStyle = "#0f172a";
+            ctx.strokeStyle = "#10b981";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(routerX, routerY, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.font = "900 13px 'Font Awesome 6 Free'";
+            ctx.fillStyle = "#34d399";
+            ctx.fillText("\uf1eb", routerX, routerY); // Wi-Fi Icon
+            ctx.font = "10px sans-serif";
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillText("Wi-Fi 基地台", routerX, routerY + 32);
+
+            // 3. Hacker
+            if (isHackerActive) {
+                ctx.fillStyle = "#0f172a";
+                ctx.strokeStyle = "#ef4444";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(hackerX, hackerY, 22, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.font = "900 13px 'Font Awesome 6 Free'";
+                ctx.fillStyle = "#f87171";
+                ctx.fillText("\uf21b", hackerX, hackerY);
+                ctx.font = "10px sans-serif";
+                ctx.fillStyle = "#f87171";
+                ctx.fillText("偷聽的駭客", hackerX, hackerY + 32);
+
+                // Line to hacker
+                ctx.beginPath();
+                ctx.moveTo(W * 0.5, H * 0.45);
+                ctx.lineTo(hackerX, hackerY);
+                ctx.strokeStyle = "rgba(239, 68, 68, 0.3)";
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Animate Packets
+            const logText = document.getElementById('logText');
+            const logIcon = document.getElementById('logIcon');
+
+            for (let i = packets.length - 1; i >= 0; i--) {
+                let p = packets[i];
+                p.progress += p.speed;
+
+                p.x = clientX + (routerX - clientX) * p.progress;
+                p.y = clientY;
+
+                // Color & Icon based on Proto
+                let pColor = "#ef4444";
+                if (p.proto === 'wpa') pColor = "#f59e0b";
+                if (p.proto === 'wpa2') pColor = "#10b981";
+                if (p.proto === 'wpa3') pColor = "#06b6d4";
+
+                ctx.fillStyle = pColor;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Intercept Check midway
+                if (p.progress >= 0.45 && p.progress <= 0.55 && isHackerActive) {
+                    if (p.proto === 'wep') {
+                        logIcon.className = "fa-solid fa-skull text-red-500 animate-bounce";
+                        logText.innerHTML = `💥 <b class="text-red-400">【WEP 被截獲】</b> 駭客直接看穿內容：「<b>${p.secret}</b>」！紙封信完全沒保護！`;
+                    } else if (p.proto === 'wpa') {
+                        logIcon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+                        logText.innerHTML = `⚠️ <b class="text-amber-400">【WPA 警告】</b> 雖然密碼會換，但駭客花點時間還是破解了塑膠鎖！`;
+                    } else if (p.proto === 'wpa2') {
+                        if (p.pass === '12345678' || p.pass === 'password') {
+                            logIcon.className = "fa-solid fa-unlock text-amber-400";
+                            logText.innerHTML = `⚠️ <b class="text-amber-400">【WPA2 弱密碼陷阱】</b> 鋼鐵金庫很強，但因為你密碼設「${p.pass}」太簡單，被駭客字典猜中了！`;
+                        } else {
+                            logIcon.className = "fa-solid fa-shield-check text-emerald-400";
+                            logText.innerHTML = `🛡️ <b class="text-emerald-400">【WPA2 成功防禦】</b> 鋼鐵金庫搭配複雜密碼，駭客根本鑿不開！訊息安全抵達。`;
+                        }
+                    } else if (p.proto === 'wpa3') {
+                        logIcon.className = "fa-solid fa-bolt text-cyan-400";
+                        logText.innerHTML = `🛸 <b class="text-cyan-400">【WPA3 黑科技完全防禦】</b> 就算密碼很簡單，SAE 防撬技術直接把駭客電飛！絕對安全。`;
+                    }
+                }
+
+                if (p.progress >= 0.95) {
+                    packets.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Quiz Logic
+        function checkQuiz(qNum, answer, btn) {
+            const ansDiv = document.getElementById(`q${qNum}Ans`);
+            const buttons = document.querySelectorAll(`.q${qNum}-btn`);
+
+            buttons.forEach(b => b.classList.remove('border-emerald-500', 'border-red-500', 'bg-emerald-950/40', 'bg-red-950/40'));
+            ansDiv.classList.remove('hidden', 'text-emerald-400', 'text-red-400');
+
+            if (qNum === 1) {
+                if (answer === 'b') {
+                    btn.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                    ansDiv.classList.add('text-emerald-400');
+                    ansDiv.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 答對了！WPA2 擁有強大的 AES 鋼鐵金庫加密，比脆弱的 WEP 安全數百萬倍！';
+                } else {
+                    btn.classList.add('border-red-500', 'bg-red-950/40');
+                    ansDiv.classList.add('text-red-400');
+                    ansDiv.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> 答錯囉！WEP 是 1997 年舊技術，像透光紙封信一樣 5 秒就會被破解！';
+                }
+            } else if (qNum === 2) {
+                if (answer === 'a') {
+                    btn.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                    ansDiv.classList.add('text-emerald-400');
+                    ansDiv.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 太棒了！WPA3 的 SAE 專門克制暴力猜密碼，猜錯幾次就鎖死！';
+                } else {
+                    btn.classList.add('border-red-500', 'bg-red-950/40');
+                    ansDiv.classList.add('text-red-400');
+                    ansDiv.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> 不對喔，WPA3 的核心升級是 SAE 防猜密碼與前向保密黑科技！';
+                }
+            }
+        }
+
+        window.onload = () => {
+            resizeCanvas();
+            switchProto('wep');
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>

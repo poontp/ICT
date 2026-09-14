@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔑 Wi-Fi 密碼與加密金鑰：固定 vs 動態金鑰大解密</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0b132b;
+            color: #e0e1dd;
+        }
+        .mono { font-family: monospace; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1c2541; }
+        ::-webkit-scrollbar-thumb { background: #3a506b; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-12">
+
+    <!-- Header Section -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur px-4 py-3">
+        <div class="max-w-5xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-cyan-500 to-indigo-600 p-2.5 rounded-2xl shadow-lg text-white">
+                    <i class="fa-solid fa-key text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-white tracking-wide">
+                        Wi-Fi 密碼與金鑰解析
+                    </h1>
+                    <p class="text-xs text-slate-400">搞懂 WEP 的「固定金鑰」與 WPA 的「動態更換金鑰」</p>
+                </div>
+            </div>
+            <div id="modeBadge" class="text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-xl">
+                模式：WEP (固定金鑰)
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 w-full mt-6 space-y-8 flex-grow">
+
+        <!-- Core Concept Card: Password vs Key -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 backdrop-blur shadow-xl">
+            <h2 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-circle-question text-cyan-400 text-lg"></i>
+                先弄懂觀念：你輸入的「Wi-Fi 密碼」跟「加密金鑰」是一樣的東西嗎？
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-lock text-sm"></i> Wi-Fi 密碼 (Passphrase / PSK)
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        你在手機或電腦輸入的字串（例如 <span class="bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded font-mono">MyHomePass123</span>）。它就像<b>「通行證/通關密語」</b>，用來證明你是合法使用者。
+                    </p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <div class="text-indigo-400 font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-sm"></i> 加密金鑰 (Encryption Key)
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        無線電波在空中傳輸時，實際用來<b>亂碼打碎封包的數學鑰匙</b>（例如 <span class="bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded font-mono">0x4F9A2B...</span>）。
+                    </p>
+                </div>
+            </div>
+            <div class="mt-4 bg-cyan-950/40 border border-cyan-800/50 p-3 rounded-2xl text-xs text-cyan-200 flex items-center gap-2">
+                <i class="fa-solid fa-lightbulb text-cyan-400 text-base flex-shrink-0"></i>
+                <span><b>核心差異關鍵：</b> 在 <b>WEP</b> 中，密碼直接變成「永遠不變」的加密金鑰；而在 <b>WPA</b> 中，密碼只用來驗證身份，每次傳送數據都會<b>自動衍生全新且用完即丟</b>的動態金鑰！</span>
+            </div>
+        </section>
+
+        <!-- Interactive Simulator Playground -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur space-y-6">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-flask text-cyan-400"></i>
+                        【加密金鑰演進：互動實驗室】
+                    </h2>
+                    <p class="text-xs text-slate-400">設定你的 Wi-Fi 密碼，並連按「發送封包」觀察金鑰如何變化！</p>
+                </div>
+
+                <!-- Mode Switcher -->
+                <div class="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">
+                    <button onclick="setMode('wep')" id="btnWep" class="px-4 py-2 rounded-xl transition-all bg-red-500 text-white shadow-lg">
+                        1. WEP (固定金鑰)
+                    </button>
+                    <button onclick="setMode('wpa')" id="btnWpa" class="px-4 py-2 rounded-xl transition-all text-slate-400 hover:text-white">
+                        2. WPA (動態更換金鑰)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls and Dynamic Display -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left Input Controls -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-slate-300 block">輸入你的 Wi-Fi 密碼：</label>
+                        <input type="text" id="wifiPassword" value="MySecretPassword" oninput="updatePassword()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono focus:outline-none focus:border-cyan-500">
+                        <p class="text-[11px] text-slate-500">此密碼會作為產出加密金鑰的基礎原始種子。</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button onclick="sendPacket()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> 發送數據封包 (Packet)
+                        </button>
+                        <button onclick="resetSim()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-2 rounded-xl text-xs transition-all">
+                            <i class="fa-solid fa-rotate-right"></i> 重置模擬器
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Center & Right: Live Key Visualizer -->
+                <div class="lg:col-span-2 bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    
+                    <!-- Dynamic Info Header -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 block text-[10px]">當前傳輸封包編號：</span>
+                            <span id="packetNumDisplay" class="text-base font-black text-white font-mono">第 #0 個封包</span>
+                        </div>
+                        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 block text-[10px]">駭客截獲分析數據：</span>
+                            <span id="hackerStatus" class="text-xs font-bold text-emerald-400">未偵測到威脅</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Representation Box -->
+                    <div id="visualBox" class="bg-slate-900 border border-red-500/40 p-4 rounded-xl space-y-3 transition-all">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-300" id="visualTitle">WEP 固定金鑰機制：</span>
+                            <span id="keyStatusBadge" class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-mono">STATIC KEY</span>
+                        </div>
+
+                        <!-- Key Derivation Flow -->
+                        <div class="flex items-center justify-between text-xs font-mono bg-slate-950 p-3 rounded-xl border border-slate-800 overflow-x-auto">
+                            <div class="text-center flex-shrink-0">
+                                <span class="text-[10px] text-slate-500 block">Wi-Fi 密碼</span>
+                                <span id="flowPass" class="text-amber-300 font-bold">MySecretPassword</span>
+                            </div>
+                            <i class="fa-solid fa-arrow-right text-slate-600 mx-2"></i>
+                            <div class="text-center flex-shrink-0">
+                                <span class="text-[10px] text-slate-500 block" id="derivationLabel">直接轉換固定金鑰</span>
+                                <span id="flowKey" class="text-red-400 font-bold">0xKEY_WEP_FIXED</span>
+                            </div>
+                            <i class="fa-solid fa-arrow-right text-slate-600 mx-2"></i>
+                            <div class="text-center flex-shrink-0">
+                                <span class="text-[10px] text-slate-500 block">封包加密結果</span>
+                                <span id="flowCipher" class="text-slate-400">尚未發送</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress / Vulnerability Bar -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-slate-400" id="progressLabel">駭客收集同一把金鑰進度：</span>
+                                <span id="progressPercent" class="font-bold font-mono text-slate-300">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                                <div id="progressBar" class="bg-red-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Console Log -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 h-28 overflow-y-auto space-y-1 font-mono text-[11px]" id="consoleLog">
+                        <div class="text-slate-500">[系統準備完成] 按下「發送數據封包」開始測試...</div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Deep Dive Comparison Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- WEP Card -->
+            <div class="bg-slate-900/90 border-2 border-red-500/30 rounded-3xl p-6 space-y-4 backdrop-blur">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded">第 1 代 Wi-Fi 安全協定</span>
+                        <h3 class="text-lg font-black text-white mt-1">WEP (固定不變金鑰)</h3>
+                    </div>
+                    <i class="fa-solid fa-lock-open text-red-400 text-2xl"></i>
+                </div>
+                
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    在 WEP 時代，Wi-Fi 密碼直接被轉換成一組固定的金鑰。無論你傳送了 1 個封包還是 100 萬個封包，<b>加密鑰匙完全是一模一樣的</b>！
+                </p>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+                    <div class="text-red-400 font-bold">致命破綻：</div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        就像一位郵差每次寄信都蓋<b>一模一樣的簡陋印章</b>。駭客只要在空中側錄足夠數量（約數萬個）被同一把鑰匙加密的數據包，就能利用數學推導直接反推出主金鑰！
+                    </p>
+                </div>
+            </div>
+
+            <!-- WPA Card -->
+            <div class="bg-slate-900/90 border-2 border-emerald-500/30 rounded-3xl p-6 space-y-4 backdrop-blur">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">第 2/3/4 代 Wi-Fi 安全協定</span>
+                        <h3 class="text-lg font-black text-white mt-1">WPA / WPA2 / WPA3 (動態金鑰)</h3>
+                    </div>
+                    <i class="fa-solid fa-key-skeleton text-emerald-400 text-2xl"></i>
+                </div>
+                
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    到了 WPA，引入了 **TKIP / AES** 技術。你輸入的 Wi-Fi 密碼只作為「母鑰匙（PMK）」，手機與基地台連線後，會針對<b>每個資料封包自動生成全新、一次性的「子金鑰」</b>！
+                </p>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+                    <div class="text-emerald-400 font-bold">防禦優勢：</div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        就像每次寄信都使用<b>自動銷毀、每次印花圖案都不一樣的拋棄式金庫鎖</b>。就算駭客花費巨大代價破解了第 #1 個封包的鑰匙，第 #2 個封包已經換了新鑰匙，白費工夫！
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Summary Table -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 backdrop-blur">
+            <h2 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-table text-cyan-400"></i>
+                Wi-Fi 密碼與金鑰關係一覽表
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 bg-slate-950">
+                            <th class="p-3">項目</th>
+                            <th class="p-3">WEP (固定金鑰)</th>
+                            <th class="p-3">WPA / WPA2 / WPA3 (動態金鑰)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800 text-slate-300">
+                        <tr>
+                            <td class="p-3 font-bold text-slate-200">Wi-Fi 密碼的作用</td>
+                            <td class="p-3">直接轉換成唯一的加密鑰匙</td>
+                            <td class="p-3 text-emerald-400 font-bold">身分驗證，並用來產出「母金鑰 (PMK)」</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-slate-200">每個封包的加密金鑰</td>
+                            <td class="p-3 text-red-400 font-bold">固定不變（全家共用一把鎖）</td>
+                            <td class="p-3 text-cyan-400 font-bold">動態更換（一包一密，用完即丟）</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-slate-200">駭客攔截封包的後果</td>
+                            <td class="p-3">累積封包數即可破譯主密碼</td>
+                            <td class="p-3">拿到再多封包也無法反推主密碼</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 font-bold text-slate-200">生活比喻</td>
+                            <td class="p-3">傳統鐵門鑰匙（大家拿同款式）</td>
+                            <td class="p-3">銀行動態密碼鎖 (OTP) 每秒都在變</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6">
+        <p>Wi-Fi 密碼與加密金鑰教學互動網頁 &copy; 2026</p>
+    </footer>
+
+    <!-- Interactive JavaScript Logic -->
+    <script>
+        let currentMode = 'wep'; // 'wep' or 'wpa'
+        let packetCount = 0;
+        let hackerProgress = 0;
+
+        function setMode(mode) {
+            currentMode = mode;
+            resetSim();
+
+            const btnWep = document.getElementById('btnWep');
+            const btnWpa = document.getElementById('btnWpa');
+            const modeBadge = document.getElementById('modeBadge');
+            const visualBox = document.getElementById('visualBox');
+            const visualTitle = document.getElementById('visualTitle');
+            const keyStatusBadge = document.getElementById('keyStatusBadge');
+            const derivationLabel = document.getElementById('derivationLabel');
+            const progressLabel = document.getElementById('progressLabel');
+            const progressBar = document.getElementById('progressBar');
+
+            if (mode === 'wep') {
+                btnWep.className = "px-4 py-2 rounded-xl transition-all bg-red-500 text-white shadow-lg font-bold";
+                btnWpa.className = "px-4 py-2 rounded-xl transition-all text-slate-400 hover:text-white font-bold";
+                modeBadge.className = "text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-xl";
+                modeBadge.textContent = "模式：WEP (固定金鑰)";
+                
+                visualBox.className = "bg-slate-900 border border-red-500/40 p-4 rounded-xl space-y-3 transition-all";
+                visualTitle.textContent = "WEP 固定金鑰機制：";
+                keyStatusBadge.className = "bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-mono";
+                keyStatusBadge.textContent = "STATIC KEY";
+                derivationLabel.textContent = "直接轉換固定金鑰";
+                progressLabel.textContent = "駭客收集同一把金鑰進度：";
+                progressBar.className = "bg-red-500 h-2.5 rounded-full transition-all duration-300";
+            } else {
+                btnWpa.className = "px-4 py-2 rounded-xl transition-all bg-emerald-500 text-white shadow-lg font-bold";
+                btnWep.className = "px-4 py-2 rounded-xl transition-all text-slate-400 hover:text-white font-bold";
+                modeBadge.className = "text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl";
+                modeBadge.textContent = "模式：WPA (動態更換金鑰)";
+
+                visualBox.className = "bg-slate-900 border border-emerald-500/40 p-4 rounded-xl space-y-3 transition-all";
+                visualTitle.textContent = "WPA/WPA2/WPA3 動態金鑰機制：";
+                keyStatusBadge.className = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-mono";
+                keyStatusBadge.textContent = "DYNAMIC DKEY";
+                derivationLabel.textContent = "母金鑰衍生每包獨立金鑰";
+                progressLabel.textContent = "駭客金鑰破解難度 (每次更換歸零)：";
+                progressBar.className = "bg-emerald-500 h-2.5 rounded-full transition-all duration-300";
+            }
+
+            log(`[切換模式] 已切換為 ${mode.toUpperCase()} 機制。`);
+            updatePassword();
+        }
+
+        function updatePassword() {
+            const pass = document.getElementById('wifiPassword').value || "Pass123";
+            document.getElementById('flowPass').textContent = pass;
+            if (packetCount === 0) {
+                if (currentMode === 'wep') {
+                    document.getElementById('flowKey').textContent = `0x${simpleHash(pass).slice(0, 8)}_STATIC`;
+                } else {
+                    document.getElementById('flowKey').textContent = `0x${simpleHash(pass).slice(0, 8)}_PMK`;
+                }
+            }
+        }
+
+        function sendPacket() {
+            packetCount++;
+            const pass = document.getElementById('wifiPassword').value || "Pass123";
+            document.getElementById('packetNumDisplay').textContent = `第 #${packetCount} 個封包`;
+
+            let currentPacketKey = "";
+            let cipherText = "";
+
+            if (currentMode === 'wep') {
+                // Fixed key: ALWAYS the same derived from password
+                currentPacketKey = `0x${simpleHash(pass).slice(0, 8)}_STATIC`;
+                cipherText = `[CIPHER-${simpleHash(pass + "packet").slice(0, 6)}]`;
+
+                // Hacker progress accumulates
+                hackerProgress = Math.min(100, hackerProgress + 25);
+                
+                document.getElementById('flowKey').textContent = currentPacketKey;
+                document.getElementById('flowCipher').textContent = cipherText;
+
+                document.getElementById('progressBar').style.width = `${hackerProgress}%`;
+                document.getElementById('progressPercent').textContent = `${hackerProgress}%`;
+
+                if (hackerProgress >= 100) {
+                    document.getElementById('hackerStatus').className = "text-xs font-bold text-red-500 animate-pulse";
+                    document.getElementById('hackerStatus').textContent = "⚠️ 警告：金鑰已遭駭客完整破譯！";
+                    log(`<span class="text-red-400">💥 [WEP 漏洞爆發] 駭客側錄到了 4 個相同金鑰數據包，已逆向計算出你的 Wi-Fi 密碼是 「${pass}」！</span>`);
+                } else {
+                    log(`<span class="text-amber-300">✉️ 發送封包 #${packetCount} | 使用固定金鑰: ${currentPacketKey} (駭客分析進度: ${hackerProgress}%)</span>`);
+                }
+
+            } else {
+                // WPA Mode: Dynamic key generated for EVERY packet!
+                const dynamicSeed = pass + "_" + packetCount + "_" + Math.random();
+                currentPacketKey = `0x${simpleHash(dynamicSeed).slice(0, 8)}_TEMP`;
+                cipherText = `[CIPHER-${simpleHash(dynamicSeed).slice(0, 6)}]`;
+
+                // Hacker progress stays near 0% because key resets every packet
+                hackerProgress = 0;
+
+                document.getElementById('flowKey').textContent = currentPacketKey;
+                document.getElementById('flowCipher').textContent = cipherText;
+
+                document.getElementById('progressBar').style.width = `5%`;
+                document.getElementById('progressPercent').textContent = `0% (已自動更換)`;
+                
+                document.getElementById('hackerStatus').className = "text-xs font-bold text-emerald-400";
+                document.getElementById('hackerStatus').textContent = "安全：動態更換金鑰保護中";
+
+                log(`<span class="text-emerald-300">🛡️ 發送封包 #${packetCount} | 自動衍生全新動態子金鑰: ${currentPacketKey} (駭客無法累積進度)</span>`);
+            }
+        }
+
+        function resetSim() {
+            packetCount = 0;
+            hackerProgress = 0;
+            document.getElementById('packetNumDisplay').textContent = "第 #0 個封包";
+            document.getElementById('hackerStatus').className = "text-xs font-bold text-emerald-400";
+            document.getElementById('hackerStatus').textContent = "未偵測到威脅";
+            document.getElementById('progressBar').style.width = "0%";
+            document.getElementById('progressPercent').textContent = "0%";
+            document.getElementById('flowCipher').textContent = "尚未發送";
+            document.getElementById('consoleLog').innerHTML = `<div class="text-slate-500">[模擬器已重置] 按下「發送數據封包」開始測試...</div>`;
+            updatePassword();
+        }
+
+        function log(msg) {
+            const consoleLog = document.getElementById('consoleLog');
+            const div = document.createElement('div');
+            div.innerHTML = `> ${msg}`;
+            consoleLog.appendChild(div);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        // Simple helper hash function to simulate string hashing
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = (hash << 5) - hash + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
+        }
+
+        window.onload = () => {
+            updatePassword();
+        };
+    </script>
+</body>
+</html>
