@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>防火牆運作原理與網路安全互動解析</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Noto+Sans+TC:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #080d1a;
+            color: #e2e8f0;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-12">
+
+    <!-- Header Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-cyan-500/20 p-2.5 rounded-xl border border-cyan-500/40 text-cyan-400">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                        網路安全第一線：防火牆 (Firewall) 互動解析
+                        <span class="text-xs bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full font-normal">Security Visualizer</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">視覺化探索封包過濾、狀態檢查與應用層檢測 (NGFW) 運作原理</p>
+                </div>
+            </div>
+            <!-- Dynamic Status Badge -->
+            <div class="flex items-center gap-3 text-xs">
+                <div class="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>防火牆狀態：<span class="text-emerald-400 font-semibold">運作中 (ACTIVE)</span></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 flex-grow w-full mt-6 space-y-8">
+
+        <!-- Visual Interactive Simulator Section -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-cyan-400"></i>
+                        防火牆過濾機制動態模擬器 (Traffic Simulator)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">選擇防火牆運作模式並傳送不同種類的網路封包，觀察防火牆如何進行比對與攔截。</p>
+                </div>
+
+                <!-- Mode Switcher Buttons -->
+                <div class="flex flex-wrap items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs">
+                    <button onclick="switchMode('packet')" id="btn-mode-packet" class="px-3 py-1.5 rounded-lg font-semibold transition-all bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
+                        1. 傳統封包過濾 (L3/L4)
+                    </button>
+                    <button onclick="switchMode('stateful')" id="btn-mode-stateful" class="px-3 py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-white">
+                        2. 狀態檢查 (Stateful)
+                    </button>
+                    <button onclick="switchMode('ngfw')" id="btn-mode-ngfw" class="px-3 py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-white">
+                        3. 應用層/次世代 (L7/NGFW)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Simulation Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Canvas Simulator (2 Cols) -->
+                <div class="lg:col-span-2 relative h-[380px] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner flex flex-col justify-between">
+                    <canvas id="firewallCanvas" class="w-full h-full block absolute top-0 left-0"></canvas>
+
+                    <!-- Top Control Action Bar -->
+                    <div class="relative z-10 p-4 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-b from-slate-950/90 to-transparent">
+                        <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane text-cyan-400"></i> 發送測試封包：
+                        </span>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <button onclick="sendPacket('http')" class="bg-emerald-600/80 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-globe"></i> HTTP (80)
+                            </button>
+                            <button onclick="sendPacket('https')" class="bg-blue-600/80 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-lock"></i> HTTPS (443)
+                            </button>
+                            <button onclick="sendPacket('ssh')" class="bg-purple-600/80 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-terminal"></i> SSH (22)
+                            </button>
+                            <button onclick="sendPacket('malware')" class="bg-red-600/80 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-bug"></i> 隱藏惡意 Payload
+                            </button>
+                            <button onclick="sendPacket('unsolicited')" class="bg-amber-600/80 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-bolt"></i> 未經請求的主動連線
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Status Log Display -->
+                    <div class="relative z-10 p-3 bg-slate-900/90 backdrop-blur border-t border-slate-800 text-xs flex justify-between items-center">
+                        <div class="flex items-center gap-2 truncate">
+                            <i id="logIcon" class="fa-solid fa-circle-info text-cyan-400"></i>
+                            <span id="logText" class="text-slate-300 truncate">點擊上方按鈕發送不同類型的網路流量進行實驗...</span>
+                        </div>
+                        <button onclick="clearCanvas()" class="text-slate-400 hover:text-white text-xs underline shrink-0">清除畫面</button>
+                    </div>
+                </div>
+
+                <!-- Explanation Panel (1 Col) -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 text-sm font-bold text-white mb-3 border-b border-slate-800 pb-2">
+                            <i id="modeIcon" class="fa-solid fa-filter text-cyan-400"></i>
+                            <span id="modeTitle">傳統封包過濾 (Packet Filtering)</span>
+                        </div>
+                        <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                            <p id="modeDesc">
+                                根據封包的標頭資訊 (Header) 進行檢查，包含<b>來源 IP、目的 IP、來源連接埠、目的連接埠與通訊協定 (TCP/UDP)</b>。
+                            </p>
+                            <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-1.5 font-mono text-[11px]">
+                                <div class="text-slate-400">運作層級：<span id="modeLayer" class="text-cyan-400">OSI Layer 3 (網路層) & Layer 4 (傳輸層)</span></div>
+                                <div class="text-slate-400">過濾依據：<span id="modeBasis" class="text-amber-400">靜態 ACL 規則 (IP / Port 匹配)</span></div>
+                                <div class="text-slate-400">主要局限：<span id="modeLimit" class="text-red-400">無法辨識內容 Payload，也無法紀錄連線狀態</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="modeTip" class="mt-4 p-3 rounded-lg bg-cyan-950/30 border border-cyan-800/50 text-[11px] text-cyan-200">
+                        💡 <b>生活比喻：</b> 就像大樓門衛只檢查你的「通行證號碼」與「目的地房間號」，不管你拿的是誰的證件，也不檢查你包包裡裝了什麼。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Rule Manager Section -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-emerald-400"></i>
+                        互動式安全規則庫設定 (ACL Rules Policy)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">您可以切換以下規則的開啟/關閉，並即時在上方模擬器體驗過濾效果。</p>
+                </div>
+                <button onclick="resetDefaultRules()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition-all">
+                    重設預設規則
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 bg-slate-950 text-slate-400 font-mono">
+                            <th class="p-3">優先順序</th>
+                            <th class="p-3">服務名稱</th>
+                            <th class="p-3">通訊協定 (Protocol)</th>
+                            <th class="p-3">目的連接埠 (Port)</th>
+                            <th class="p-3">動作 (Action)</th>
+                            <th class="p-3">規則開關</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800 text-slate-300">
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="p-3 font-mono text-slate-500">Rule #1</td>
+                            <td class="p-3 font-semibold text-white">HTTP 網頁瀏覽</td>
+                            <td class="p-3 font-mono">TCP</td>
+                            <td class="p-3 font-mono text-cyan-400">80</td>
+                            <td class="p-3"><span id="action-80" class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">ALLOW (允許)</span></td>
+                            <td class="p-3">
+                                <input type="checkbox" id="rule-80" checked onchange="toggleRule(80)" class="w-4 h-4 accent-cyan-500 cursor-pointer">
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="p-3 font-mono text-slate-500">Rule #2</td>
+                            <td class="p-3 font-semibold text-white">HTTPS 加密網頁</td>
+                            <td class="p-3 font-mono">TCP</td>
+                            <td class="p-3 font-mono text-cyan-400">443</td>
+                            <td class="p-3"><span id="action-443" class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">ALLOW (允許)</span></td>
+                            <td class="p-3">
+                                <input type="checkbox" id="rule-443" checked onchange="toggleRule(443)" class="w-4 h-4 accent-cyan-500 cursor-pointer">
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="p-3 font-mono text-slate-500">Rule #3</td>
+                            <td class="p-3 font-semibold text-white">SSH 遠端連線</td>
+                            <td class="p-3 font-mono">TCP</td>
+                            <td class="p-3 font-mono text-purple-400">22</td>
+                            <td class="p-3"><span id="action-22" class="px-2 py-0.5 rounded text-[10px] bg-red-950 text-red-400 border border-red-800">DENY (拒絕)</span></td>
+                            <td class="p-3">
+                                <input type="checkbox" id="rule-22" onchange="toggleRule(22)" class="w-4 h-4 accent-cyan-500 cursor-pointer">
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="p-3 font-mono text-slate-500">Rule #4 (NGFW)</td>
+                            <td class="p-3 font-semibold text-white">Deep Packet Inspection (DPI) 惡意特徵碼掃描</td>
+                            <td class="p-3 font-mono">ANY</td>
+                            <td class="p-3 font-mono text-amber-400">ANY</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-purple-950 text-purple-300 border border-purple-800">BLOCK MALWARE</span></td>
+                            <td class="p-3">
+                                <span class="text-[11px] text-slate-500">預設啟用</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Firewall Types Comparison Matrix -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-table text-cyan-400"></i>
+                三大防火牆技術演進與深度對比 (Firewall Generations)
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 bg-slate-950 text-slate-400 font-mono">
+                            <th class="p-4">防火牆類型</th>
+                            <th class="p-4 text-cyan-400">1. 封包過濾 (Packet Filter)</th>
+                            <th class="p-4 text-emerald-400">2. 狀態檢查 (Stateful Inspection)</th>
+                            <th class="p-4 text-purple-400">3. 次世代防火牆 (NGFW / DPI)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-4 font-semibold text-white">OSI 運作分層</td>
+                            <td class="p-4 font-mono">Layer 3 (網路層) / Layer 4 (傳輸層)</td>
+                            <td class="p-4 font-mono">Layer 3 / Layer 4 + 狀態表 (State Table)</td>
+                            <td class="p-4 font-mono">Layer 3 ~ Layer 7 (應用層全涵蓋)</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-4 font-semibold text-white">檢查依據 (Inspection Scope)</td>
+                            <td class="p-4">僅看 IP、Port、TCP 標記 (SYN/ACK)。</td>
+                            <td class="p-4">檢查標頭並維護連線狀態表 (SYN, ESTABLISHED)。</td>
+                            <td class="p-4">深度封包檢測 (DPI)、應用程式識別、內容 Payload、惡意軟體簽章。</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-4 font-semibold text-white">防禦外部偽造/反向攻擊</td>
+                            <td class="p-4 text-red-400">較弱 (無法分辨封包是否為合法的回傳流量)</td>
+                            <td class="p-4 text-emerald-400">強 (拒絕任何未經內部發起的外部主動封包)</td>
+                            <td class="p-4 text-purple-400">極強 (結合入侵防禦 IPS、防毒與網址過濾)</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-4 font-semibold text-white">效能與處理開銷 (Performance)</td>
+                            <td class="p-4 text-emerald-400">極快 (硬體級過濾，延遲低)</td>
+                            <td class="p-4 text-emerald-300">快速 (僅需對狀態表進行查找比對)</td>
+                            <td class="p-4 text-amber-400">較耗效能 (需要解包檢測 payload 內容)</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="p-4 font-semibold text-white">典型代表/應用情境</td>
+                            <td class="p-4">路由器 Access Control List (ACL), iptables 基本規則</td>
+                            <td class="p-4">傳統企業邊界防火牆、作業系統內建防火牆</td>
+                            <td class="p-4">Palo Alto, Fortinet, Check Point 等現代企業 NGFW</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Knowledge Check Quiz -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap text-cyan-400"></i>
+                防火牆觀念隨堂測驗
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="text-sm text-slate-200 font-medium mb-3">
+                        Q1. 如果駭客將惡意攻擊程式碼隱藏在允許通行的 <b>Port 80 (HTTP)</b> 的網頁封包內容中，哪一種防火牆能夠辨識並攔截？
+                    </p>
+                    <div class="grid grid-cols-1 gap-2 text-xs">
+                        <button onclick="checkQuiz(1, 'packet', this)" class="q1-btn text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            A. 傳統封包過濾防火牆 (Packet Filtering)
+                        </button>
+                        <button onclick="checkQuiz(1, 'stateful', this)" class="q1-btn text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            B. 狀態檢查防火牆 (Stateful Inspection)
+                        </button>
+                        <button onclick="checkQuiz(1, 'ngfw', this)" class="q1-btn text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            C. 次世代應用層防火牆 (NGFW / DPI)
+                        </button>
+                    </div>
+                    <div id="quizResult1" class="hidden text-xs mt-3 font-medium"></div>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="text-sm text-slate-200 font-medium mb-3">
+                        Q2. 「狀態檢查防火牆 (Stateful Firewall)」之所以能阻擋外部駭客的主動探測，主要原因是什麼？
+                    </p>
+                    <div class="grid grid-cols-1 gap-2 text-xs">
+                        <button onclick="checkQuiz(2, 'a', this)" class="q2-btn text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            A. 它會記錄內部電腦發起的連線狀態表，並封鎖未經邀請的外部主動連線
+                        </button>
+                        <button onclick="checkQuiz(2, 'b', this)" class="q2-btn text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            B. 它封鎖了所有的外部 IP 位址
+                        </button>
+                        <button onclick="checkQuiz(2, 'c', this)" class="q2-btn text-left p-2.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 transition-all">
+                            C. 它會加密網路上所有的傳輸數據
+                        </button>
+                    </div>
+                    <div id="quizResult2" class="hidden text-xs mt-3 font-medium"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6">
+        <p>防火牆運作原理互動教學網頁 &copy; 2026</p>
+        <p class="mt-1">Interactive Firewall & Network Security Visualizer</p>
+    </footer>
+
+    <!-- JavaScript Simulator & Logic -->
+    <script>
+        const canvas = document.getElementById('firewallCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentMode = 'packet'; // 'packet', 'stateful', 'ngfw'
+        let packets = [];
+        let particles = [];
+        let rules = {
+            80: true,
+            443: true,
+            22: false
+        };
+
+        let establishedSessions = new Set(); // Stores simulated active state sessions
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Switch Modes
+        function switchMode(mode) {
+            currentMode = mode;
+            ['packet', 'stateful', 'ngfw'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if (m === mode) {
+                    btn.className = "px-3 py-1.5 rounded-lg font-semibold transition-all bg-cyan-500/20 text-cyan-400 border border-cyan-500/40";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-white";
+                }
+            });
+
+            const modeTitle = document.getElementById('modeTitle');
+            const modeIcon = document.getElementById('modeIcon');
+            const modeDesc = document.getElementById('modeDesc');
+            const modeLayer = document.getElementById('modeLayer');
+            const modeBasis = document.getElementById('modeBasis');
+            const modeLimit = document.getElementById('modeLimit');
+            const modeTip = document.getElementById('modeTip');
+
+            if (mode === 'packet') {
+                modeIcon.className = "fa-solid fa-filter text-cyan-400";
+                modeTitle.textContent = "傳統封包過濾 (Packet Filtering)";
+                modeDesc.innerHTML = `根據封包標頭資訊 (Header) 進行單一檢查，包含<b>來源/目的 IP、目的 Port 與 TCP/UDP 協定</b>。完全不檢視內容數據。`;
+                modeLayer.textContent = "OSI Layer 3 (網路層) & Layer 4 (傳輸層)";
+                modeBasis.textContent = "ACL 靜態黑白名單比對";
+                modeLimit.textContent = "無法辨識 Payload 惡意碼，不關心連線狀態";
+                modeTip.innerHTML = `💡 <b>生活比喻：</b> 門衛只看你傳單上的「房號與門牌」，號碼對就放行，不管裡面寫什麼！`;
+            } else if (mode === 'stateful') {
+                modeIcon.className = "fa-solid fa-clock-rotate-left text-emerald-400";
+                modeTitle.textContent = "狀態檢查防火牆 (Stateful Inspection)";
+                modeDesc.innerHTML = `建立並維護一組<b>連線狀態表 (State Table)</b>。追蹤 TCP 三向交握 (SYN, SYN-ACK, ACK)。自動允許內部發起連線的回應封包，攔截外部未經請求的探測。`;
+                modeLayer.textContent = "OSI Layer 3/4 + 連線狀態追蹤機制";
+                modeBasis.textContent = "狀態表匹配 (ESTABLISHED / NEW / INVALID)";
+                modeLimit.textContent = "仍無法檢查應用層內容 (Payload) 中的隱藏病毒";
+                modeTip.innerHTML = `💡 <b>生活比喻：</b> 門衛會筆記「是你剛剛主動點外送嗎？」，外送員送到時才會放行；如果是陌生人主動敲門則會擋下。`;
+            } else if (mode === 'ngfw') {
+                modeIcon.className = "fa-solid fa-eye text-purple-400";
+                modeTitle.textContent = "次世代防火牆 (NGFW / Deep Packet Inspection)";
+                modeDesc.innerHTML = `進行<b>深度封包檢測 (DPI)</b>。不僅檢查 IP/Port 與連線狀態，還解開數據包檢視真實應用內容與 Payload，比對特徵碼阻擋惡意軟體與漏洞攻擊。`;
+                modeLayer.textContent = "OSI Layer 3 至 Layer 7 (涵蓋應用層)";
+                modeBasis.textContent = "DPI 深度內容掃描 + 應用程式辨識 + IPS 特徵庫";
+                modeLimit.textContent = "需消耗較高的 CPU / 記憶體運算效能";
+                modeTip.innerHTML = `💡 <b>生活比喻：</b> 海關安檢 X 光機，就算你有合法護照，包包裡被照出有違禁品 (Malware) 也一律扣押！`;
+            }
+        }
+
+        function toggleRule(port) {
+            rules[port] = document.getElementById(`rule-${port}`).checked;
+            const actionSpan = document.getElementById(`action-${port}`);
+
+            if (rules[port]) {
+                actionSpan.className = "px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800";
+                actionSpan.textContent = "ALLOW (允許)";
+            } else {
+                actionSpan.className = "px-2 py-0.5 rounded text-[10px] bg-red-950 text-red-400 border border-red-800";
+                actionSpan.textContent = "DENY (拒絕)";
+            }
+        }
+
+        function resetDefaultRules() {
+            document.getElementById('rule-80').checked = true;
+            document.getElementById('rule-443').checked = true;
+            document.getElementById('rule-22').checked = false;
+            toggleRule(80);
+            toggleRule(443);
+            toggleRule(22);
+        }
+
+        // Packet Generation
+        function sendPacket(type) {
+            const W = canvas.width;
+            const H = canvas.height;
+
+            let packet = {
+                x: 60,
+                y: H * 0.5 + (Math.random() * 40 - 20),
+                speed: 2.2,
+                type: type,
+                port: 80,
+                payloadHasMalware: false,
+                isUnsolicited: false,
+                status: 'moving' // 'moving', 'allowed', 'blocked'
+            };
+
+            if (type === 'http') {
+                packet.port = 80;
+                packet.label = "HTTP (Port 80)";
+            } else if (type === 'https') {
+                packet.port = 443;
+                packet.label = "HTTPS (Port 443)";
+            } else if (type === 'ssh') {
+                packet.port = 22;
+                packet.label = "SSH (Port 22)";
+            } else if (type === 'malware') {
+                packet.port = 80; // Sneaks through port 80
+                packet.label = "HTTP (Port 80 + 惡意碼)";
+                packet.payloadHasMalware = true;
+            } else if (type === 'unsolicited') {
+                packet.port = 80;
+                packet.label = "外部主動 SYN 探測";
+                packet.isUnsolicited = true;
+            }
+
+            packets.push(packet);
+        }
+
+        function clearCanvas() {
+            packets = [];
+            particles = [];
+            document.getElementById('logText').textContent = "畫面已清除。";
+        }
+
+        // Animation Loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const W = canvas.width;
+            const H = canvas.height;
+            const firewallX = W * 0.5;
+
+            // Render Network Topology Background
+            // 1. Internet Zone (Left)
+            ctx.fillStyle = "rgba(15, 23, 42, 0.6)";
+            ctx.fillRect(0, 0, firewallX, H);
+            ctx.font = "bold 11px sans-serif";
+            ctx.fillStyle = "#64748b";
+            ctx.fillText("外部網路 (Internet / Untrusted)", 20, 25);
+
+            // 2. Internal Protected Server Zone (Right)
+            ctx.fillStyle = "rgba(16, 185, 129, 0.03)";
+            ctx.fillRect(firewallX, 0, W - firewallX, H);
+            ctx.fillStyle = "#059669";
+            ctx.fillText("受保護內部區域 (Internal LAN / Server)", firewallX + 20, 25);
+
+            // Server Node Icon (Right)
+            const serverX = W * 0.85;
+            const serverY = H * 0.5;
+            ctx.fillStyle = "#022c22";
+            ctx.strokeStyle = "#10b981";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(serverX, serverY, 28, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = "900 18px 'Font Awesome 6 Free'";
+            ctx.fillStyle = "#34d399";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("\uf233", serverX, serverY);
+
+            ctx.font = "11px sans-serif";
+            ctx.fillStyle = "#a7f3d0";
+            ctx.fillText("伺服器", serverX, serverY + 42);
+
+            // 3. Firewall Boundary Line (Center)
+            ctx.beginPath();
+            ctx.moveTo(firewallX, 0);
+            ctx.lineTo(firewallX, H);
+            ctx.strokeStyle = "#06b6d4";
+            ctx.lineWidth = 3;
+            ctx.setLineDash([8, 6]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Firewall Shield Node in middle
+            ctx.fillStyle = "#083344";
+            ctx.strokeStyle = "#22d3ee";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(firewallX, H * 0.5, 26, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = "900 18px 'Font Awesome 6 Free'";
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillText("\uf3ed", firewallX, H * 0.5);
+
+            ctx.font = "bold 11px sans-serif";
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillText("防火牆", firewallX, H * 0.5 + 40);
+
+            // Process Packets
+            for (let i = packets.length - 1; i >= 0; i--) {
+                let p = packets[i];
+
+                if (p.status === 'moving') {
+                    p.x += p.speed;
+
+                    // When Packet reaches Firewall Barrier
+                    if (p.x >= firewallX - 10) {
+                        evaluatePacket(p);
+                    }
+                } else if (p.status === 'allowed') {
+                    p.x += p.speed;
+                    // Reached target
+                    if (p.x >= serverX - 25) {
+                        packets.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                // Draw Packet
+                drawPacket(p);
+            }
+
+            // Draw Burst Particles (Blocked Packets effect)
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let part = particles[i];
+                part.x += part.vx;
+                part.y += part.vy;
+                part.alpha -= 0.025;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, part.alpha);
+                ctx.fillStyle = part.color;
+                ctx.beginPath();
+                ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (part.alpha <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Firewall Evaluation Engine
+        function evaluatePacket(p) {
+            const logText = document.getElementById('logText');
+            const logIcon = document.getElementById('logIcon');
+
+            let isAllowed = false;
+            let reason = "";
+
+            if (currentMode === 'packet') {
+                // 1. Packet Filtering: Check Port ACL rule only
+                if (rules[p.port]) {
+                    if (p.payloadHasMalware) {
+                        isAllowed = true; // Flaw in packet filter! Passes malware because port 80 is ALLOWED
+                        reason = "⚠️【傳統封包過濾特點】Port 80 為放行狀態。傳統防火牆『無法檢測 Payload 內容』，因此夾帶惡意碼的封包成功通過了！";
+                    } else if (p.isUnsolicited) {
+                        isAllowed = true; // Flaw: doesn't track connection state
+                        reason = "⚠️【傳統封包過濾特點】Port 80 為放行狀態。因為『不記錄連線狀態』，未經請求的外部探測也被放行了！";
+                    } else {
+                        isAllowed = true;
+                        reason = `✅【允許通行】Port ${p.port} 符合 ACL 規則，封包放行。`;
+                    }
+                } else {
+                    isAllowed = false;
+                    reason = `❌【攔截】Port ${p.port} 於規則庫中被設定為 DENY 拒絕。`;
+                }
+            } else if (currentMode === 'stateful') {
+                // 2. Stateful Inspection
+                if (p.isUnsolicited) {
+                    isAllowed = false;
+                    reason = "🛡️【狀態檢查攔截】狀態表中找不到相對應的內部發起連線 (No Matching Session)！已阻擋外部主動探測。";
+                } else if (!rules[p.port]) {
+                    isAllowed = false;
+                    reason = `❌【攔截】Port ${p.port} 未開放。`;
+                } else if (p.payloadHasMalware) {
+                    isAllowed = true; // Still fails DPI
+                    reason = "⚠️【狀態檢查局限】連線為合法建立，但狀態防火牆『不會解包檢測應用內容』，惡意 Payload 依然穿透！";
+                } else {
+                    isAllowed = true;
+                    reason = `✅【放行】符合狀態表 (ESTABLISHED) 且 Port ${p.port} 允許。`;
+                }
+            } else if (currentMode === 'ngfw') {
+                // 3. NGFW / DPI Mode
+                if (p.payloadHasMalware) {
+                    isAllowed = false;
+                    reason = "🛡️【NGFW 深度檢測攔截】DPI 引擎在 Port 80 Payload 中比對出『惡意特徵碼 (Malware Signature)』！立即隔離攔截！";
+                } else if (p.isUnsolicited) {
+                    isAllowed = false;
+                    reason = "🛡️【NGFW 攔截】狀態表檢查不合規，外部主動探測已攔截。";
+                } else if (!rules[p.port]) {
+                    isAllowed = false;
+                    reason = `❌【攔截】Port ${p.port} 被原則設定拒絕。`;
+                } else {
+                    isAllowed = true;
+                    reason = `✅【安全放行】經 DPI 深度掃描與狀態比對，未發現惡意行為，允許通行。`;
+                }
+            }
+
+            if (isAllowed) {
+                p.status = 'allowed';
+                logIcon.className = "fa-solid fa-circle-check text-emerald-400";
+                logText.className = "text-emerald-300 font-medium truncate";
+            } else {
+                p.status = 'blocked';
+                spawnParticles(p.x, p.y);
+                // Remove packet from array
+                const idx = packets.indexOf(p);
+                if (idx > -1) packets.splice(idx, 1);
+
+                logIcon.className = "fa-solid fa-triangle-exclamation text-red-400";
+                logText.className = "text-red-300 font-medium truncate";
+            }
+
+            logText.textContent = reason;
+        }
+
+        // Draw individual packet
+        function drawPacket(p) {
+            ctx.save();
+
+            let color = "#38bdf8";
+            if (p.payloadHasMalware) color = "#f43f5e";
+            if (p.isUnsolicited) color = "#f59e0b";
+            if (p.type === 'ssh') color = "#c084fc";
+
+            // Circle shape
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Label text above packet
+            ctx.font = "10px sans-serif";
+            ctx.fillStyle = "#e2e8f0";
+            ctx.textAlign = "center";
+            ctx.fillText(p.label, p.x, p.y - 12);
+
+            ctx.restore();
+        }
+
+        // Particle Burst Effect on Block
+        function spawnParticles(x, y) {
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    size: Math.random() * 3 + 2,
+                    color: Math.random() > 0.5 ? '#ef4444' : '#f97316',
+                    alpha: 1.0
+                });
+            }
+        }
+
+        // Quiz Logic
+        function checkQuiz(qNum, answer, btn) {
+            const resDiv = document.getElementById(`quizResult${qNum}`);
+            const buttons = document.querySelectorAll(`.q${qNum}-btn`);
+
+            buttons.forEach(b => b.classList.remove('border-emerald-500', 'border-red-500', 'bg-emerald-950/30', 'bg-red-950/30'));
+            resDiv.classList.remove('hidden', 'text-emerald-400', 'text-red-400');
+
+            if (qNum === 1) {
+                if (answer === 'ngfw') {
+                    btn.classList.add('border-emerald-500', 'bg-emerald-950/30');
+                    resDiv.classList.add('text-emerald-400');
+                    resDiv.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 正確！次世代防火牆 (NGFW) 擁有 DPI (深度封包檢測) 技術，能解開 Payload 並比對特徵碼，阻擋隱藏在合法 Port 中的攻擊。';
+                } else {
+                    btn.classList.add('border-red-500', 'bg-red-950/30');
+                    resDiv.classList.add('text-red-400');
+                    resDiv.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> 不正確。傳統與狀態過濾防火牆只看 Port 與連線標頭，不會檢查網頁內容 (Payload)，會直接放行！';
+                }
+            } else if (qNum === 2) {
+                if (answer === 'a') {
+                    btn.classList.add('border-emerald-500', 'bg-emerald-950/30');
+                    resDiv.classList.add('text-emerald-400');
+                    resDiv.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 正確！狀態防火牆的核心是維護 State Table，只有內部主動發起的連線或其對應的回應封包才會被放行。';
+                } else {
+                    btn.classList.add('border-red-500', 'bg-red-950/30');
+                    resDiv.classList.add('text-red-400');
+                    resDiv.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i> 不正確。選項 A 才精確描述了連線狀態表 (State Table) 的防禦原理。';
+                }
+            }
+        }
+
+        // Init
+        window.onload = () => {
+            resizeCanvas();
+            switchMode('packet');
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
