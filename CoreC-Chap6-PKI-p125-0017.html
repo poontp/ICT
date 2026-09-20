@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKI 公鑰基礎設施：訊息加密與數位簽署互動教學網頁</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'Inter', 'sans-serif'],
+                        mono: ['"Fira Code"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .crypto-font { font-family: 'Fira Code', monospace; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid #e2e8f0;
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #2563eb;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-bottom: 3px solid #2563eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans bg-slate-50 text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-700">
+
+    <!-- Header Navigation -->
+    <header class="bg-white/90 border-b border-slate-200 sticky top-0 z-50 backdrop-blur-md shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2.5 rounded-2xl shadow-md shadow-blue-500/20">
+                    <i class="fa-solid fa-key text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight text-slate-900 flex items-center gap-2">
+                        PKI 公鑰基礎設施 <span class="text-xs bg-blue-100 text-blue-700 font-bold px-2.5 py-0.5 rounded-full border border-blue-200">互動教學室</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">非對稱加密與數位簽署完整解析</p>
+                </div>
+            </div>
+
+            <!-- Global Navigation Tabs -->
+            <nav class="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 gap-1">
+                <a href="#concept-section" class="px-3.5 py-2 rounded-lg hover:text-blue-600 hover:bg-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-open text-blue-500"></i> 基礎概念
+                </a>
+                <a href="#encryption-sim" class="px-3.5 py-2 rounded-lg hover:text-blue-600 hover:bg-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock text-emerald-500"></i> 訊息加密實驗
+                </a>
+                <a href="#signature-sim" class="px-3.5 py-2 rounded-lg hover:text-blue-600 hover:bg-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-signature text-indigo-500"></i> 數位簽署實驗
+                </a>
+                <a href="#ca-section" class="px-3.5 py-2 rounded-lg hover:text-blue-600 hover:bg-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-certificate text-amber-500"></i> CA 信任鏈
+                </a>
+                <a href="#quiz-section" class="px-3.5 py-2 rounded-lg hover:text-blue-600 hover:bg-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap text-purple-500"></i> 隨堂測驗
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 flex-grow">
+
+        <!-- SECTION 1: CORE CONCEPTS -->
+        <section id="concept-section" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-blue-600 pl-4 py-1">
+                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">1. PKI 核心概念：公鑰與私鑰的魔法</h2>
+                <p class="text-sm text-slate-600">非對稱加密（Asymmetric Encryption）打破了傳統「用同一把鑰匙開鎖」的限制，透過數學原理創造出一組**成對的金鑰**。</p>
+            </div>
+
+            <!-- Pair Metaphor Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Public Key Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition group-hover:scale-110"></div>
+                    <div class="flex items-center gap-3 mb-4 relative">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-lock-open"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Public Key</span>
+                            <h3 class="text-lg font-bold text-slate-900">公鑰 (Public Key) —— 公開的鎖頭</h3>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                        公鑰可以**公開發佈給全世界任何一個人**。它的作用就像一個「投信口開放的公共郵筒」或「打開的掛鎖」。
+                    </p>
+                    <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3.5 text-xs text-blue-900 space-y-1">
+                        <div class="font-bold flex items-center gap-1.5 text-blue-700">
+                            <i class="fa-solid fa-lightbulb"></i> 生活比喻：
+                        </div>
+                        <p>任何人都拿得到你的公鑰，並用它把東西「鎖上（加密）」，但鎖上之後連寄件者自己都打不開！</p>
+                    </div>
+                </div>
+
+                <!-- Private Key Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-4 -mt-4 transition group-hover:scale-110"></div>
+                    <div class="flex items-center gap-3 mb-4 relative">
+                        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Private Key</span>
+                            <h3 class="text-lg font-bold text-slate-900">私鑰 (Private Key) —— 獨有的鑰匙</h3>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                        私鑰必須由**持有者絕對保密**，絕對不能洩漏給任何人。它是唯一能解開對應公鑰鎖住資訊的解藥。
+                    </p>
+                    <div class="bg-amber-50/70 border border-amber-100 rounded-xl p-3.5 text-xs text-amber-900 space-y-1">
+                        <div class="font-bold flex items-center gap-1.5 text-amber-700">
+                            <i class="fa-solid fa-shield-halved"></i> 生活比喻：
+                        </div>
+                        <p>這把實體鑰匙只有你隨身攜帶。只有你能打開那個郵筒取信，或是用這把鑰匙蓋上不可偽造的印章。</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Two Main Applications Comparison -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <h3 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-split-up-and-left text-blue-600"></i>
+                    PKI 的兩大核心應用領域對比
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition">
+                        <div class="flex items-center gap-2 text-emerald-600 font-bold text-sm mb-2">
+                            <i class="fa-solid fa-user-lock"></i> 1. 訊息加密 (Message Encryption)
+                        </div>
+                        <ul class="text-xs text-slate-600 space-y-2 list-disc list-inside">
+                            <li><strong>主要目的：</strong> **保密性 (Confidentiality)** —— 確保只有指定接收者看得到內容。</li>
+                            <li><strong>關鍵機制：</strong> 使用 **接收者的公鑰** 加密，再由 **接收者的私鑰** 解密。</li>
+                            <li><strong>效果：</strong> 就算竊聽者（駭客）在傳輸途中攔截到訊息，也無法解密讀取。</li>
+                        </ul>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition">
+                        <div class="flex items-center gap-2 text-indigo-600 font-bold text-sm mb-2">
+                            <i class="fa-solid fa-signature"></i> 2. 數位簽署 (Digital Signature)
+                        </div>
+                        <ul class="text-xs text-slate-600 space-y-2 list-disc list-inside">
+                            <li><strong>主要目的：</strong> **身份驗證 (Authentication) 與 完整性 (Integrity)**。</li>
+                            <li><strong>關鍵機制：</strong> 使用 **發送者的私鑰** 簽署，再由 **發送者的公鑰** 驗證。</li>
+                            <li><strong>效果：</strong> 證明訊息確實來自發送者（不可否認），且內容完全沒有被篡改。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: INTERACTIVE ENCRYPTION SIMULATOR -->
+        <section id="encryption-sim" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-emerald-500 pl-4 py-1 flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">2. 互動實驗室 (一)：PKI 訊息加密與解密</h2>
+                    <p class="text-sm text-slate-600">測試 Alice 如何安全傳送機密訊息給 Bob，並觀察中途攔截的駭客 Eve 是否能破解。</p>
+                </div>
+                <span class="text-xs font-semibold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-200">即時模擬</span>
+            </div>
+
+            <!-- Key Pair Status Board -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">角色與金鑰配置狀態 (Key Inventory)</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <!-- Alice -->
+                    <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-base shadow">A</div>
+                        <div>
+                            <div class="font-bold text-blue-900">Alice (寄件者)</div>
+                            <div class="text-slate-500 text-[11px]">準備發送密件</div>
+                        </div>
+                    </div>
+                    <!-- Bob -->
+                    <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold text-base shadow">B</div>
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-emerald-900">Bob (收件者)</div>
+                            <div class="text-[10px] text-emerald-700 flex items-center gap-1 font-mono">
+                                <i class="fa-solid fa-unlock"></i> 公鑰: <span id="bobPubKeyDisplay" class="font-bold">BOB_PUB_KEY_99</span>
+                            </div>
+                            <div class="text-[10px] text-emerald-700 flex items-center gap-1 font-mono">
+                                <i class="fa-solid fa-key"></i> 私鑰: <span class="font-bold text-red-600">BOB_PRIV_SECRET</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Eve (Hacker) -->
+                    <div class="p-3 bg-red-50/60 rounded-xl border border-red-100 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center font-bold text-base shadow">E</div>
+                        <div>
+                            <div class="font-bold text-red-900">Eve (竊聽者/駭客)</div>
+                            <div class="text-[10px] text-red-700 font-mono">擁有: Bob 的公鑰 / 自製假私鑰</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Encryption Workflow Simulator Panel -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Step 1: Input Plaintext -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full">步驟 1</span>
+                            <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-user"></i> Alice 端</span>
+                        </div>
+                        <h3 class="font-bold text-slate-900 text-sm mb-2">輸入明文訊息 (Plaintext)</h3>
+                        <textarea id="encInputText" rows="3" class="w-full text-xs p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none font-sans" placeholder="請輸入欲加密的秘密訊息...">這是一筆價值 1,000,000 元的商業機密合約！</textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-600 block">選擇用於加密的金鑰：</label>
+                        <select id="encKeySelect" class="w-full text-xs p-2.5 rounded-xl border border-slate-300 font-mono bg-slate-50 focus:outline-none">
+                            <option value="bob_pub">🔑 Bob 的公鑰 (BOB_PUB_KEY_99) - 正確作法</option>
+                            <option value="alice_priv">🗝️ Alice 的私鑰 (ALICE_PRIV) - 錯誤概念</option>
+                        </select>
+
+                        <button onclick="runEncryptionSim()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md shadow-blue-500/20 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-lock"></i> 執行 PKI 加密傳輸
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Transmission & Ciphertext (Eavesdropping View) -->
+                <div class="bg-slate-900 text-slate-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4 relative overflow-hidden">
+                    <div class="absolute -right-8 -bottom-8 opacity-10 text-slate-100 text-9xl">
+                        <i class="fa-solid fa-user-ninja"></i>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full">步驟 2 (網路網絡)</span>
+                            <span class="text-xs text-red-400 font-medium flex items-center gap-1"><i class="fa-solid fa-eye"></i> Eve 監控中</span>
+                        </div>
+                        <h3 class="font-bold text-white text-sm mb-1">空中傳輸的密文 (Ciphertext)</h3>
+                        <p class="text-[11px] text-slate-400 mb-3">訊息在公用網路上傳輸時的樣子：</p>
+
+                        <div id="ciphertextDisplay" class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 crypto-font text-xs text-emerald-400 break-all min-h-[80px] flex items-center justify-center text-center italic">
+                            請點擊「執行 PKI 加密傳輸」...
+                        </div>
+                    </div>
+
+                    <!-- Hacker Attempt Box -->
+                    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-3 space-y-2">
+                        <div class="text-xs font-bold text-red-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bug"></i> 竊聽者 Eve 試圖讀取：
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-normal" id="hackerAttemptResult">
+                            Eve 截獲了密文，嘗試用她偷拿到的 <span class="text-amber-300 font-mono">Bob 公鑰</span> 進行解密...
+                        </p>
+                        <div id="hackerStatusBadge" class="text-[10px] font-bold bg-red-950 text-red-300 border border-red-800 px-2 py-1 rounded flex items-center gap-1">
+                            <i class="fa-solid fa-circle-xmark"></i> 破解失敗：公鑰只能加密，無法解開自己鎖上的密文！
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Decryption at Bob's End -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full">步驟 3</span>
+                            <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-user-check"></i> Bob 端</span>
+                        </div>
+                        <h3 class="font-bold text-slate-900 text-sm mb-2">Bob 執行私鑰解密</h3>
+
+                        <div class="space-y-2 mb-3">
+                            <label class="text-[11px] font-bold text-slate-600 block">Bob 選擇解密金鑰：</label>
+                            <div class="p-2 bg-slate-100 rounded-lg text-xs font-mono font-bold text-emerald-800 flex items-center justify-between border border-slate-200">
+                                <span><i class="fa-solid fa-key"></i> Bob 的私鑰</span>
+                                <span class="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded">唯獨此鑰可解</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <span class="text-xs text-slate-500 font-medium">解密還原後的明文：</span>
+                            <div id="decryptedOutput" class="bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs min-h-[70px] flex items-center justify-center font-bold text-slate-700 text-center">
+                                等待解密中...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="encSuccessNotice" class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2 hidden">
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+                        <span><strong>保密成功！</strong> 只有持有 Bob 私鑰的人才能讀取這份訊息。</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 3: INTERACTIVE DIGITAL SIGNATURE SIMULATOR -->
+        <section id="signature-sim" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-indigo-600 pl-4 py-1 flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">3. 互動實驗室 (二)：數位簽署與防篡改驗證</h2>
+                    <p class="text-sm text-slate-600">體驗 Alice 如何用私鑰對文件「蓋章」，以及 Bob 如何驗證真實性，並嘗試發動**篡改攻擊**！</p>
+                </div>
+                <span class="text-xs font-semibold bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full border border-indigo-200">防偽防篡改驗證</span>
+            </div>
+
+            <!-- Digital Signature Interactive Board -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                
+                <!-- Interactive Workflow Step Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+                    
+                    <!-- Signer Alice -->
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <span class="font-bold text-xs text-indigo-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-pen-nib text-indigo-600"></i> 發署者：Alice
+                            </span>
+                            <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">使用 Alice 私鑰</span>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 block mb-1">原始文件內容：</label>
+                            <textarea id="sigDocContent" rows="3" oninput="generateSignature()" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 font-sans focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="輸入文件內容...">同意轉帳金額：HKD $50,000 給 Bob。</textarea>
+                        </div>
+
+                        <!-- Hash & Signature Visuals -->
+                        <div class="space-y-2 text-xs">
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                <span class="text-[10px] text-slate-400 block font-bold">1. 摘要哈希值 (SHA-256 Hash)：</span>
+                                <span id="docHashDisplay" class="crypto-font text-[11px] text-slate-700 font-bold break-all">--</span>
+                            </div>
+                            <div class="bg-indigo-50 p-2.5 rounded-lg border border-indigo-200">
+                                <span class="text-[10px] text-indigo-600 block font-bold">2. 私鑰加密產出的「數位簽章」：</span>
+                                <span id="digitalSigDisplay" class="crypto-font text-[11px] text-indigo-900 font-bold break-all">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tamper Test Laboratory (In The Middle) -->
+                    <div class="bg-amber-50/80 rounded-xl p-4 border border-amber-200/80 space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between border-b border-amber-200/80 pb-2 mb-2">
+                                <span class="font-bold text-xs text-amber-900 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-mask text-amber-700"></i> 傳輸途中的駭客實驗室
+                                </span>
+                                <span class="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold">攻擊測試</span>
+                            </div>
+
+                            <p class="text-xs text-amber-900/80 leading-relaxed mb-3">
+                                模擬黑客在傳輸途中改動文件內容（例如修改金額），觀察 Bob 能否抓包：
+                            </p>
+
+                            <div class="space-y-2">
+                                <button onclick="tamperDocument()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-xs transition shadow flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-user-pen"></i> 惡意篡改文件金額 (加上一個 0)
+                                </button>
+                                <button onclick="restoreDocument()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-1.5 rounded-lg text-xs transition">
+                                    <i class="fa-solid fa-rotate-left"></i> 還原為 Alice 原始文件
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="tamperStatusBox" class="p-2.5 rounded-lg text-[11px] font-medium bg-white/80 border border-amber-200 text-amber-900">
+                            💡 目前狀態：文件為原始版本（未被篡改）。
+                        </div>
+                    </div>
+
+                    <!-- Verifier Bob -->
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <span class="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-check text-emerald-600"></i> 驗證者：Bob
+                            </span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">使用 Alice 公鑰</span>
+                        </div>
+
+                        <!-- Verification Mechanics -->
+                        <div class="space-y-2 text-xs">
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                <span class="text-[10px] text-slate-400 block font-bold">A. 收到文件現算 Hash (Hash A)：</span>
+                                <span id="bobCalculatedHash" class="crypto-font text-[11px] text-slate-700 font-bold break-all">--</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                <span class="text-[10px] text-slate-400 block font-bold">B. 公鑰解密簽章得出的 Hash (Hash B)：</span>
+                                <span id="bobDecryptedHash" class="crypto-font text-[11px] text-slate-700 font-bold break-all">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Final Verification Result Box -->
+                        <div id="sigResultCard" class="p-3 rounded-xl border text-center space-y-1 transition-all">
+                            <div id="sigResultIcon" class="text-2xl">--</div>
+                            <div id="sigResultTitle" class="font-bold text-xs">等待驗證...</div>
+                            <div id="sigResultDesc" class="text-[11px]">--</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 4: CERTIFICATE AUTHORITY (CA) & TRUST CHAIN -->
+        <section id="ca-section" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-amber-500 pl-4 py-1">
+                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">4. 憑證授權中心 (CA) 與信任鏈 (Trust Chain)</h2>
+                <p class="text-sm text-slate-600">如果駭客假冒 Bob 給你一組公鑰怎麼辦？這就需要數位憑證機構 (CA) 出面擔保！</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- CA Role 1 -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm">什麼是數位憑證 (Digital Certificate)？</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        數位憑證就像是網路世界中的**「數位護照」**。它把你的「真實身份 (例如 domain.com)」與你的「公鑰」綁定在一起，並由權威機構蓋章。
+                    </p>
+                </div>
+
+                <!-- CA Role 2 -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm">憑證機構 (CA) 的角色</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        CA (Certificate Authority) 是公正第三方組織 (如 DigiCert、Let's Encrypt)。CA 會查驗申請者的身份，確認無誤後用 **CA 的私鑰** 為該憑證簽署。
+                    </p>
+                </div>
+
+                <!-- CA Role 3 -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm">瀏覽器如何信任網站？(HTTPS)</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        你的作業系統與瀏覽器內建了受信任的**根憑證 (Root CA)**。當你造訪網站時，瀏覽器會用根憑證的公鑰一路驗證憑證鏈，確保無人中間冒充。
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 5: INTERACTIVE QUIZ -->
+        <section id="quiz-section" class="scroll-mt-20 space-y-6">
+            <div class="border-l-4 border-purple-600 pl-4 py-1 flex justify-between items-end">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight">5. 隨堂觀念測驗</h2>
+                    <p class="text-sm text-slate-600">測試看看你是否已經完全掌握 PKI 觀念！</p>
+                </div>
+                <span class="text-xs font-semibold bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200">觀念小考</span>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                
+                <!-- Q1 -->
+                <div class="space-y-3 pb-4 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span class="w-6 h-6 bg-purple-100 text-purple-700 rounded-full text-xs flex items-center justify-center font-bold">1</span>
+                        如果你想傳送一封只有 Bob 能看懂的保密郵件，你應該使用哪一把鑰匙進行加密？
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <button onclick="checkQuiz(1, 'A', false)" class="q1-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">A. 自己的私鑰 (Alice Private Key)</button>
+                        <button onclick="checkQuiz(1, 'B', true)" class="q1-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">B. Bob 的公鑰 (Bob Public Key)</button>
+                        <button onclick="checkQuiz(1, 'C', false)" class="q1-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">C. Bob 的私鑰 (Bob Private Key)</button>
+                        <button onclick="checkQuiz(1, 'D', false)" class="q1-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">D. CA 機構的公鑰</button>
+                    </div>
+                    <div id="quizFeedback1" class="text-xs p-2.5 rounded-lg hidden"></div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="space-y-3">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span class="w-6 h-6 bg-purple-100 text-purple-700 rounded-full text-xs flex items-center justify-center font-bold">2</span>
+                        數位簽署 (Digital Signature) 主要使用發署者的哪一把金鑰來產生？
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <button onclick="checkQuiz(2, 'A', true)" class="q2-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">A. 發署者的私鑰 (Signer Private Key)</button>
+                        <button onclick="checkQuiz(2, 'B', false)" class="q2-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">B. 發署者的公鑰 (Signer Public Key)</button>
+                        <button onclick="checkQuiz(2, 'C', false)" class="q2-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">C. 接收者的公鑰 (Receiver Public Key)</button>
+                        <button onclick="checkQuiz(2, 'D', false)" class="q2-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition">D. 接收者的私鑰 (Receiver Private Key)</button>
+                    </div>
+                    <div id="quizFeedback2" class="text-xs p-2.5 rounded-lg hidden"></div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <p>PKI (Public Key Infrastructure) 互動學習體驗網頁 &copy; 2026</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        
+        // Simple Pseudo Hash function simulating SHA-256 for demo
+        function pseudoHash(str) {
+            let hash = 0;
+            if (str.length === 0) return "00000000";
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0;
+            }
+            const hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
+            return "SHA256_" + hex + "_" + str.length + "B";
+        }
+
+        // --- SECTION 2: ENCRYPTION SIMULATOR LOGIC ---
+        function runEncryptionSim() {
+            const plaintext = document.getElementById('encInputText').value.trim() || "未輸入內容";
+            const keyChoice = document.getElementById('encKeySelect').value;
+            
+            const cipherDisplay = document.getElementById('ciphertextDisplay');
+            const hackerResult = document.getElementById('hackerAttemptResult');
+            const decOutput = document.getElementById('decryptedOutput');
+            const successNotice = document.getElementById('encSuccessNotice');
+
+            if (keyChoice === 'bob_pub') {
+                // Correct encryption logic
+                const mockCipher = "ENC[" + btoa(unescape(encodeURIComponent(plaintext))).slice(0, 24) + "...==" + "]";
+                cipherDisplay.textContent = mockCipher;
+                cipherDisplay.className = "bg-slate-950 p-3.5 rounded-xl border border-slate-800 crypto-font text-xs text-emerald-400 break-all min-h-[80px] flex items-center justify-center text-center font-bold";
+
+                hackerResult.innerHTML = `Eve 攔截到了密文：<span class="font-mono text-emerald-400">${mockCipher}</span>。<br>她嘗試用手中的 <span class="text-amber-300 font-mono">Bob 公鑰</span> 進行解密，但數學上無法逆推！`;
+
+                // Bob Decrypts
+                decOutput.textContent = plaintext;
+                decOutput.className = "bg-emerald-50 border border-emerald-300 p-3 rounded-xl text-xs min-h-[70px] flex items-center justify-center font-bold text-emerald-900 text-center";
+                successNotice.classList.remove('hidden');
+
+            } else {
+                // Wrong usage logic
+                cipherDisplay.textContent = "⚠️ 加密失敗或觀念錯誤！";
+                cipherDisplay.className = "bg-red-950 p-3.5 rounded-xl border border-red-800 crypto-font text-xs text-red-300 break-all min-h-[80px] flex items-center justify-center text-center font-bold";
+
+                hackerResult.innerHTML = `<span class="text-red-300 font-bold">錯誤提醒：</span> 如果用 Alice 的私鑰加密，這其實變成了「數位簽署」，全世界擁有 Alice 公鑰的人（包括 Eve）都能直接解開讀取！`;
+
+                decOutput.textContent = "解密失敗";
+                decOutput.className = "bg-slate-100 border border-slate-200 p-3 rounded-xl text-xs min-h-[70px] flex items-center justify-center font-bold text-slate-400 text-center";
+                successNotice.classList.add('hidden');
+            }
+        }
+
+        // --- SECTION 3: DIGITAL SIGNATURE LOGIC ---
+        let currentAliceDoc = "";
+        let originalHash = "";
+        let currentSignature = "";
+
+        function generateSignature() {
+            currentAliceDoc = document.getElementById('sigDocContent').value;
+            originalHash = pseudoHash(currentAliceDoc);
+            currentSignature = "SIG_ALICE[" + originalHash + "]";
+
+            document.getElementById('docHashDisplay').textContent = originalHash;
+            document.getElementById('digitalSigDisplay').textContent = currentSignature;
+
+            verifySignature(currentAliceDoc, currentSignature);
+        }
+
+        function verifySignature(docToVerify, signatureToUse) {
+            const calculatedHash = pseudoHash(docToVerify);
+            // Bob decrypts signature using Alice's Public Key -> gets original hash
+            const decryptedHashFromSig = signatureToUse.replace("SIG_ALICE[", "").replace("]", "");
+
+            document.getElementById('bobCalculatedHash').textContent = calculatedHash;
+            document.getElementById('bobDecryptedHash').textContent = decryptedHashFromSig;
+
+            const resCard = document.getElementById('sigResultCard');
+            const resIcon = document.getElementById('sigResultIcon');
+            const resTitle = document.getElementById('sigResultTitle');
+            const resDesc = document.getElementById('sigResultDesc');
+
+            if (calculatedHash === decryptedHashFromSig) {
+                resCard.className = "p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-center space-y-1";
+                resIcon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i>`;
+                resTitle.textContent = "數位簽章驗證成功！";
+                resDesc.textContent = "證實：1. 確實來自 Alice (不可否認)  2. 內容 100% 未被篡改。";
+            } else {
+                resCard.className = "p-3 rounded-xl border border-red-300 bg-red-50 text-red-900 text-center space-y-1 animate-bounce";
+                resIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-600"></i>`;
+                resTitle.textContent = "⚠️ 警告：簽章驗證失敗！";
+                resDesc.textContent = "哈希值不一致！檔案在傳輸途中已被惡意篡改或偽造！";
+            }
+        }
+
+        function tamperDocument() {
+            const textarea = document.getElementById('sigDocContent');
+            textarea.value = "同意轉帳金額：HKD $500,000 給 Bob (已修改)。";
+            
+            const tamperStatusBox = document.getElementById('tamperStatusBox');
+            tamperStatusBox.className = "p-2.5 rounded-lg text-[11px] font-bold bg-red-100 border border-red-300 text-red-900";
+            tamperStatusBox.innerHTML = `⚠️ 警告：駭客已篡改文件內容！但駭客**沒有 Alice 的私鑰**，無法生成對應的新簽章。`;
+
+            // Verify the tampered document against original signature
+            verifySignature(textarea.value, currentSignature);
+        }
+
+        function restoreDocument() {
+            const textarea = document.getElementById('sigDocContent');
+            textarea.value = "同意轉帳金額：HKD $50,000 給 Bob。";
+
+            const tamperStatusBox = document.getElementById('tamperStatusBox');
+            tamperStatusBox.className = "p-2.5 rounded-lg text-[11px] font-medium bg-white/80 border border-amber-200 text-amber-900";
+            tamperStatusBox.innerHTML = `💡 目前狀態：已還原為原始文件。`;
+
+            generateSignature();
+        }
+
+        // --- SECTION 5: QUIZ LOGIC ---
+        function checkQuiz(qNum, option, isCorrect) {
+            const feedbackBox = document.getElementById(`quizFeedback${qNum}`);
+            const buttons = document.querySelectorAll(`.q${qNum}-btn`);
+
+            buttons.forEach(btn => {
+                btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-red-500', 'bg-red-50');
+            });
+
+            feedbackBox.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-red-100', 'text-red-900');
+
+            if (isCorrect) {
+                feedbackBox.classList.add('bg-emerald-100', 'text-emerald-900', 'border', 'border-emerald-200');
+                feedbackBox.innerHTML = `<strong><i class="fa-solid fa-circle-check"></i> 回答正確！</strong> 恭喜你完全掌握觀念！`;
+            } else {
+                feedbackBox.classList.add('bg-red-100', 'text-red-900', 'border', 'border-red-200');
+                feedbackBox.innerHTML = `<strong><i class="fa-solid fa-circle-xmark"></i> 答錯囉！</strong> 請再思考一下公鑰與私鑰的角色分配。`;
+            }
+        }
+
+        // Initial setup on load
+        window.onload = function() {
+            runEncryptionSim();
+            generateSignature();
+        };
+    </script>
+</body>
+</html>
