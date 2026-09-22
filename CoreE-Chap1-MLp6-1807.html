@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機器學習：監督式 vs 非監督式學習互動教學</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=family" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+        }
+        canvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-100 selection:text-indigo-800">
+
+    <!-- Navigation Header -->
+    <header class="bg-white/90 border-b border-slate-200 sticky top-0 z-50 backdrop-blur-md shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-indigo-600 via-blue-600 to-emerald-500 text-white p-2.5 rounded-xl shadow-md">
+                    <i class="fa-solid fa-brain text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-slate-800 tracking-wide flex items-center gap-2">
+                        機器學習的核心雙翼
+                    </h1>
+                    <p class="text-xs text-slate-500">監督式學習 (Supervised) vs 非監督式學習 (Unsupervised) 互動探險</p>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <a href="#concepts" class="px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs transition-all">核心觀念</a>
+                <a href="#supervised" class="px-3 py-1.5 rounded-lg hover:bg-white hover:text-indigo-600 transition-all">監督式模擬器</a>
+                <a href="#unsupervised" class="px-3 py-1.5 rounded-lg hover:bg-white hover:text-emerald-600 transition-all">非監督式模擬器</a>
+                <a href="#comparison" class="px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs transition-all">完整對照表</a>
+                <a href="#quiz" class="px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs transition-all">情境測驗</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12 flex-grow w-full">
+
+        <!-- SECTION 1: Core Concepts Overview -->
+        <section id="concepts" class="space-y-6">
+            <div class="text-center max-w-3xl mx-auto space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                    Machine Learning Foundations
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">一分鐘秒懂：資料有沒有「標準答案」？</h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    機器學習就像教小朋友認識世界。關鍵差別在於：我們有沒有給機器準備帶有「正確答案（標籤 Labeled Data）」的教科書？
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Supervised Card -->
+                <div class="bg-white rounded-2xl p-6 border-2 border-indigo-100 shadow-sm hover:shadow-md transition-all space-y-4 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-chalkboard-user"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black text-slate-800">監督式學習 (Supervised)</h3>
+                                <span class="text-xs font-bold text-indigo-600">有老師指導 / 有標籤資料 (Labeled Data)</span>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-200">Goal: 預測未知</span>
+                    </div>
+
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        提供演算法包含「特徵 (Features)」與「正確標籤 (Labels)」的歷史訓練集。機器學習特徵與結果之間的映射關係，用來預測全新輸入資料的正確答案。
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/60">
+                            <div class="font-bold text-xs text-indigo-900 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-shapes text-indigo-600"></i> 分類 (Classification)
+                            </div>
+                            <p class="text-[11px] text-slate-500">預測「離散類別」。例如：郵件是否為垃圾郵件？水果是蘋果還是香蕉？</p>
+                        </div>
+                        <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/60">
+                            <div class="font-bold text-xs text-indigo-900 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-chart-line text-indigo-600"></i> 回歸 (Regression)
+                            </div>
+                            <p class="text-[11px] text-slate-500">預測「連續數值」。例如：根據房屋坪數與地段預測未來房價、氣溫預測。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unsupervised Card -->
+                <div class="bg-white rounded-2xl p-6 border-2 border-emerald-100 shadow-sm hover:shadow-md transition-all space-y-4 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full pointer-events-none transition-all group-hover:scale-110"></div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-compass-drafting"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black text-slate-800">非監督式學習 (Unsupervised)</h3>
+                                <span class="text-xs font-bold text-emerald-600">自主探索規律 / 無標籤資料 (Unlabeled Data)</span>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200">Goal: 發現結構</span>
+                    </div>
+
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        只給予演算法原始資料，完全沒有提供正確答案標籤。機器必須自行觀察資料點之間的幾何距離、相似度或統計分佈，找出隱藏的集群或規律。
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/60">
+                            <div class="font-bold text-xs text-emerald-900 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-diagram-project text-emerald-600"></i> 分群 (Clustering)
+                            </div>
+                            <p class="text-[11px] text-slate-500">將相似的資料自動聚集成組。例如：電商客戶消費行為分群、新聞主題聚類。</p>
+                        </div>
+                        <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/60">
+                            <div class="font-bold text-xs text-emerald-900 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-compress text-emerald-600"></i> 降維 (Dimensionality Reduction)
+                            </div>
+                            <p class="text-[11px] text-slate-500">簡化高維資料特徵同時保留關鍵資訊。例如：PCA 資料視覺化、影像壓縮。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Supervised Learning Simulator (KNN Classifier) -->
+        <section id="supervised" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+            <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-apple-whole text-indigo-600"></i>
+                        實驗室 1：監督式學習模擬器（KNN 水果分類器）
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">系統已包含「已標籤」的歷史水果訓練數據（重量與紅彩度）。調整滑桿，觀察 KNN 如何利用臨近標籤進行預測！</p>
+                </div>
+                <span class="self-start sm:self-auto text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200">
+                    Algorithm: K-Nearest Neighbors (K=3)
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Controls & Predictions (5 Cols) -->
+                <div class="lg:col-span-5 space-y-5 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-indigo-600"></i> 輸入全新測試樣本 (Test Sample)
+                    </h3>
+
+                    <!-- Slider 1: Weight -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-slate-700">重量 (Weight):</span>
+                            <span id="weightValDisplay" class="text-indigo-600 font-mono">180 g</span>
+                        </div>
+                        <input type="range" id="inputWeight" min="50" max="300" value="180" oninput="updateSupervisedKNN()" 
+                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                            <span>50g (輕)</span>
+                            <span>300g (重)</span>
+                        </div>
+                    </div>
+
+                    <!-- Slider 2: Redness -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-slate-700">紅彩度 (Redness Score):</span>
+                            <span id="rednessValDisplay" class="text-indigo-600 font-mono">80%</span>
+                        </div>
+                        <input type="range" id="inputRedness" min="10" max="100" value="80" oninput="updateSupervisedKNN()" 
+                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                            <span>10% (偏黃/綠)</span>
+                            <span>100% (鮮紅)</span>
+                        </div>
+                    </div>
+
+                    <!-- Prediction Result Box -->
+                    <div class="bg-white p-4 rounded-xl border-2 border-indigo-200 space-y-3 shadow-xs">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">模型的預測結果 (Prediction)</span>
+                        
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div id="predFruitIcon" class="text-3xl text-rose-500">
+                                    <i class="fa-solid fa-apple-whole"></i>
+                                </div>
+                                <div>
+                                    <div id="predFruitLabel" class="text-lg font-black text-slate-800">蘋果 (Apple)</div>
+                                    <div id="predConfidence" class="text-xs text-indigo-600 font-bold">信心度: 100% (3/3 近鄰投票)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Distance Calculation Detail -->
+                        <div id="knnNeighborsDetail" class="text-[11px] font-mono text-slate-500 bg-slate-50 p-2 rounded border border-slate-200 space-y-1">
+                            <div class="font-bold text-slate-700">最近 3 個訓練樣本 (K=3):</div>
+                            <div id="neighborList">計算中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Scatter Plot Canvas (7 Cols) -->
+                <div class="lg:col-span-7 space-y-2">
+                    <div class="flex justify-between items-center text-xs text-slate-500 px-1">
+                        <span class="font-bold text-slate-700"><i class="fa-solid fa-chart-scatter text-indigo-600 mr-1"></i> 特徵空間 (Feature Space Scatter Plot)</span>
+                        <div class="flex gap-3 text-[11px] font-bold">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> 蘋果</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> 檸檬</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> 葡萄</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping"></span> 測試點</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-xl p-3 shadow-inner relative overflow-hidden">
+                        <canvas id="knnPlotCanvas" width="600" height="340" class="w-full h-auto block rounded"></canvas>
+                    </div>
+                    <p class="text-[11px] text-slate-400 text-center">虛線連接至距離最近的 3 個已知標籤數據點 (K=3 Nearest Neighbors)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Unsupervised Learning Simulator (K-Means Clustering) -->
+        <section id="unsupervised" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+            <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-nodes text-emerald-600"></i>
+                        實驗室 2：非監督式學習模擬器（K-Means 自動分群）
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">畫布上的數據點完全「沒有答案與標籤」。點擊畫布增加點，觀察 K-Means 如何僅憑幾何距離自動群聚！</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-600">設定 K 值 (群組數):</span>
+                    <select id="kSelect" onchange="resetKMeans()" class="text-xs font-bold bg-slate-100 border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500">
+                        <option value="2">K = 2</option>
+                        <option value="3" selected>K = 3</option>
+                        <option value="4">K = 4</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Interactive Canvas (8 Cols) -->
+                <div class="lg:col-span-8 space-y-3">
+                    <div class="flex flex-wrap justify-between items-center text-xs gap-2">
+                        <span class="text-slate-500 font-medium">💡 提示：點擊畫布任一處可自由新增資料點，或點擊隨機生成數據。</span>
+                        <span id="kmeansIterCount" class="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            迭代次數 (Iterations): 0
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-xl p-2 shadow-inner relative">
+                        <canvas id="kmeansCanvas" width="700" height="380" class="w-full h-auto block rounded cursor-crosshair"></canvas>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        <button onclick="stepKMeans()" class="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-play"></i> 單步迭代 (Step K-Means)
+                        </button>
+                        <button onclick="autoRunKMeans()" class="flex-1 sm:flex-none px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-forward-fast"></i> 自動收斂 (Auto Run)
+                        </button>
+                        <button onclick="generateRandomKMeansPoints()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-shuffle"></i> 隨機點群
+                        </button>
+                        <button onclick="clearKMeansPoints()" class="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-xl text-xs font-bold transition-all border border-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-trash-can"></i> 清空畫布
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Explanation & Step-by-Step Status (4 Cols) -->
+                <div class="lg:col-span-4 space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800 border-b border-slate-200 pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-gears text-emerald-600"></i> K-Means 算法執行機制
+                        </h3>
+
+                        <ol class="text-xs space-y-2.5 text-slate-600 list-decimal list-inside leading-relaxed">
+                            <li class="pl-1">
+                                <strong class="text-slate-800">初始化中心點：</strong> 隨機放置 K 個中心點 (★ 符號)。
+                            </li>
+                            <li class="pl-1">
+                                <strong class="text-slate-800">分配群組 (Assignment)：</strong> 計算每個資料點到 K 個中心點的距離，歸類至最近的中心。
+                            </li>
+                            <li class="pl-1">
+                                <strong class="text-slate-800">更新中心 (Update)：</strong> 將中心點移動至該群組所有資料點的平均座標 (Centroid)。
+                            </li>
+                            <li class="pl-1">
+                                <strong class="text-slate-800">重複收斂：</strong> 重複步驟 2 與 3，直到中心點位置不再改變！
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-xs space-y-1.5">
+                        <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb text-emerald-600"></i> 關鍵區別思考：
+                        </div>
+                        <p class="text-[11px] text-emerald-800 leading-relaxed">
+                            演算法事前<strong>完全不知道</strong>這些點代表什麼（無預設標籤）。它純粹依靠「距離幾何相似性」將相似資料歸為同一群！
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Side-by-Side Feature Comparison Matrix -->
+        <section id="comparison" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+            <div class="text-center max-w-2xl mx-auto space-y-1">
+                <h2 class="text-xl font-bold text-slate-800">兩大學習模式全方位對照表</h2>
+                <p class="text-xs text-slate-500">深入比較數據輸入、評估指標、常用演算法與實際應用情境</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                            <th class="p-3.5 w-1/5">比較維度</th>
+                            <th class="p-3.5 w-2/5 text-indigo-700 bg-indigo-50/50 border-x border-slate-200">
+                                <i class="fa-solid fa-chalkboard-user mr-1"></i> 監督式學習 (Supervised Learning)
+                            </th>
+                            <th class="p-3.5 w-2/5 text-emerald-700 bg-emerald-50/50">
+                                <i class="fa-solid fa-compass-drafting mr-1"></i> 非監督式學習 (Unsupervised Learning)
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 text-slate-600">
+                        <tr>
+                            <td class="p-3.5 font-bold text-slate-800 bg-slate-50">輸入數據 (Input Data)</td>
+                            <td class="p-3.5 font-medium border-x border-slate-200">
+                                帶有標籤的資料 (Labeled Data)<br>
+                                <span class="text-[11px] text-slate-400">例如：(照片 + 「這是貓」標籤)</span>
+                            </td>
+                            <td class="p-3.5 font-medium">
+                                無標籤的原始資料 (Unlabeled Data)<br>
+                                <span class="text-[11px] text-slate-400">例如：(只有 10,000 張未標註的照片)</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-3.5 font-bold text-slate-800 bg-slate-50">核心目標 (Primary Goal)</td>
+                            <td class="p-3.5 border-x border-slate-200">
+                                建立映射函數，以準確<strong>預測</strong>未來的全新未知輸入。
+                            </td>
+                            <td class="p-3.5">
+                                探索資料內部的隱藏模式、分群結構或簡化維度。
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-3.5 font-bold text-slate-800 bg-slate-50">成效評估方法</td>
+                            <td class="p-3.5 border-x border-slate-200">
+                                擁有客觀標準答案。使用<strong>準確率 (Accuracy)、MSE、F1-Score</strong>。
+                            </td>
+                            <td class="p-3.5">
+                                無標準答案。使用內部相似度如<strong>輪廓係數 (Silhouette Score)、Inertia</strong>。
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-3.5 font-bold text-slate-800 bg-slate-50">經典演算法 (Algorithms)</td>
+                            <td class="p-3.5 border-x border-slate-200 font-mono text-[11px]">
+                                • 線性/邏輯回歸 (Linear/Logistic)<br>
+                                • 決策樹 & 隨機森林 (Decision Trees/RF)<br>
+                                • 支持向量機 (SVM)<br>
+                                • K-近鄰演算法 (KNN)
+                            </td>
+                            <td class="p-3.5 font-mono text-[11px]">
+                                • K-均值分群 (K-Means Clustering)<br>
+                                • 階層式分群 (Hierarchical)<br>
+                                • 主成分分析 (PCA 降維)<br>
+                                • DBSCAN 密度分群
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-3.5 font-bold text-slate-800 bg-slate-50">實際應用場景 (Applications)</td>
+                            <td class="p-3.5 border-x border-slate-200">
+                                • 垃圾郵件自動過濾<br>
+                                • 信用卡交易欺詐偵測<br>
+                                • 醫療影像腫瘤辨識<br>
+                                • 房價與股票趨勢預測
+                            </td>
+                            <td class="p-3.5">
+                                • 電商客戶精準分群 (Customer Segmentation)<br>
+                                • 串流平台推薦系統關聯規則<br>
+                                • 網絡異常流量監測 (Anomaly Detection)<br>
+                                • 高維基因數據降維視覺化
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 5: Interactive Scenario Quiz -->
+        <section id="quiz" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-indigo-600"></i>
+                        觀念實戰：真實情境大考驗
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">請根據業界實際需求，判斷該題目屬於「監督式學習」還是「非監督式學習」？</p>
+                </div>
+                <span id="quizScoreBadge" class="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-700 rounded-full border border-slate-200">
+                    答對率: 0 / 4
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                <!-- Q1 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">Scenario 1</span>
+                        <p class="font-bold text-slate-800 text-sm">
+                            電商公司希望分析 50 萬名會員的購買紀錄與瀏覽習慣，將客戶「自動分成 4 個族群」以發送客製化優惠券。
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="answerQuiz(1, 'supervised', this)" class="q1-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                監督式學習
+                            </button>
+                            <button onclick="answerQuiz(1, 'unsupervised', this)" class="q1-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                非監督式學習
+                            </button>
+                        </div>
+                        <div id="q1Feedback" class="hidden p-2.5 rounded-lg text-xs leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">Scenario 2</span>
+                        <p class="font-bold text-slate-800 text-sm">
+                            氣象局收集過去 30 年的氣溫、濕度、氣壓與「是否有降雨 (Yes/No)」歷史紀錄，用來預測明日降雨機率。
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="answerQuiz(2, 'supervised', this)" class="q2-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                監督式學習
+                            </button>
+                            <button onclick="answerQuiz(2, 'unsupervised', this)" class="q2-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                非監督式學習
+                            </button>
+                        </div>
+                        <div id="q2Feedback" class="hidden p-2.5 rounded-lg text-xs leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">Scenario 3</span>
+                        <p class="font-bold text-slate-800 text-sm">
+                            銀行安控系統在未預先定義任何新詐騙手法的情況下，即時從巨量交易中找出「偏離常規行為」的異常交易卡號。
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="answerQuiz(3, 'supervised', this)" class="q3-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                監督式學習
+                            </button>
+                            <button onclick="answerQuiz(3, 'unsupervised', this)" class="q3-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                非監督式學習
+                            </button>
+                        </div>
+                        <div id="q3Feedback" class="hidden p-2.5 rounded-lg text-xs leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">Scenario 4</span>
+                        <p class="font-bold text-slate-800 text-sm">
+                            醫院收集 1,000 張乳房 X 光片，每張照片都有專業醫師標記「良性」或「惡性」，用以訓練模型輔助診斷。
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="answerQuiz(4, 'supervised', this)" class="q4-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                監督式學習
+                            </button>
+                            <button onclick="answerQuiz(4, 'unsupervised', this)" class="q4-btn py-2 px-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-bold text-slate-700 transition-all">
+                                非監督式學習
+                            </button>
+                        </div>
+                        <div id="q4Feedback" class="hidden p-2.5 rounded-lg text-xs leading-relaxed"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+        <p>機器學習互動教學平台 &copy; 2026 | 設計用於解說 Supervised vs Unsupervised Learning</p>
+    </footer>
+
+    <!-- JavaScript Engines -->
+    <script>
+        // =========================================================================
+        // SECTION 2: SUPERVISED LEARNING (KNN CLASSIFIER) LOGIC
+        // =========================================================================
+        const knnCanvas = document.getElementById('knnPlotCanvas');
+        const knnCtx = knnCanvas.getContext('2d');
+
+        // Labeled Training Dataset: Fruit samples
+        // Normalized Range: Weight (50g - 300g), Redness (10% - 100%)
+        const trainingDataset = [
+            // Apple (Redness high, weight medium-high)
+            { label: '蘋果', type: 'apple', weight: 180, redness: 85, color: '#f43f5e' },
+            { label: '蘋果', type: 'apple', weight: 220, redness: 90, color: '#f43f5e' },
+            { label: '蘋果', type: 'apple', weight: 200, redness: 75, color: '#f43f5e' },
+            { label: '蘋果', type: 'apple', weight: 250, redness: 95, color: '#f43f5e' },
+            { label: '蘋果', type: 'apple', weight: 160, redness: 80, color: '#f43f5e' },
+            
+            // Lemon (Redness low, weight light-medium)
+            { label: '檸檬', type: 'lemon', weight: 90, redness: 20, color: '#fbbf24' },
+            { label: '檸檬', type: 'lemon', weight: 110, redness: 25, color: '#fbbf24' },
+            { label: '檸檬', type: 'lemon', weight: 130, redness: 15, color: '#fbbf24' },
+            { label: '檸檬', type: 'lemon', weight: 80, redness: 30, color: '#fbbf24' },
+            { label: '檸檬', type: 'lemon', weight: 120, redness: 18, color: '#fbbf24' },
+
+            // Grape (Redness medium-high, weight very light)
+            { label: '葡萄', type: 'grape', weight: 60, redness: 70, color: '#a855f7' },
+            { label: '葡萄', type: 'grape', weight: 75, redness: 85, color: '#a855f7' },
+            { label: '葡萄', type: 'grape', weight: 70, redness: 60, color: '#a855f7' },
+            { label: '葡萄', type: 'grape', weight: 85, redness: 78, color: '#a855f7' }
+        ];
+
+        function updateSupervisedKNN() {
+            const weight = parseFloat(document.getElementById('inputWeight').value);
+            const redness = parseFloat(document.getElementById('inputRedness').value);
+
+            document.getElementById('weightValDisplay').textContent = `${weight} g`;
+            document.getElementById('rednessValDisplay').textContent = `${redness} %`;
+
+            // Normalize distance calculation
+            // Weight scale: 50 to 300 (range 250)
+            // Redness scale: 10 to 100 (range 90)
+            const distances = trainingDataset.map(sample => {
+                const dWeight = (sample.weight - weight) / 250;
+                const dRedness = (sample.redness - redness) / 90;
+                const dist = Math.sqrt(dWeight * dWeight + dRedness * dRedness);
+                return { ...sample, dist };
+            });
+
+            // Sort by distance and pick K=3
+            distances.sort((a, b) => a.dist - b.dist);
+            const nearestK = distances.slice(0, 3);
+
+            // Vote
+            const votes = {};
+            nearestK.forEach(item => {
+                votes[item.label] = (votes[item.label] || 0) + 1;
+            });
+
+            let predictedLabel = '';
+            let maxVotes = 0;
+            for (let fruit in votes) {
+                if (votes[fruit] > maxVotes) {
+                    maxVotes = votes[fruit];
+                    predictedLabel = fruit;
+                }
+            }
+
+            // Update UI prediction box
+            const predIcon = document.getElementById('predFruitIcon');
+            const predLabel = document.getElementById('predFruitLabel');
+            const predConf = document.getElementById('predConfidence');
+            const neighborList = document.getElementById('neighborList');
+
+            if (predictedLabel === '蘋果') {
+                predIcon.className = 'text-3xl text-rose-500';
+                predIcon.innerHTML = '<i class="fa-solid fa-apple-whole"></i>';
+            } else if (predictedLabel === '檸檬') {
+                predIcon.className = 'text-3xl text-amber-400';
+                predIcon.innerHTML = '<i class="fa-solid fa-lemon"></i>';
+            } else {
+                predIcon.className = 'text-3xl text-purple-500';
+                predIcon.innerHTML = '<i class="fa-solid fa-wine-glass-empty"></i>';
+            }
+
+            predLabel.textContent = `${predictedLabel}`;
+            const confPct = Math.round((maxVotes / 3) * 100);
+            predConf.textContent = `信心度: ${confPct}% (${maxVotes}/3 近鄰投票)`;
+
+            neighborList.innerHTML = nearestK.map((n, idx) => 
+                `<div>#${idx+1} ${n.label} - 距離: ${n.dist.toFixed(3)}</div>`
+            ).join('');
+
+            // Draw Scatter Plot
+            renderKNNPlot(weight, redness, nearestK);
+        }
+
+        function renderKNNPlot(testW, testR, nearestK) {
+            const w = knnCanvas.width;
+            const h = knnCanvas.height;
+            const padding = 45;
+
+            knnCtx.clearRect(0, 0, w, h);
+
+            // Axes mappings
+            const mapX = (weight) => padding + ((weight - 50) / 250) * (w - 2 * padding);
+            const mapY = (redness) => h - padding - ((redness - 10) / 90) * (h - 2 * padding);
+
+            // Grid Lines & Labels
+            knnCtx.strokeStyle = '#334155';
+            knnCtx.lineWidth = 1;
+            knnCtx.fillStyle = '#94a3b8';
+            knnCtx.font = '10px JetBrains Mono';
+
+            // X Grid
+            for (let gW = 50; gW <= 300; gW += 50) {
+                const gx = mapX(gW);
+                knnCtx.beginPath();
+                knnCtx.moveTo(gx, padding);
+                knnCtx.lineTo(gx, h - padding);
+                knnCtx.stroke();
+                knnCtx.fillText(`${gW}g`, gx - 10, h - padding + 15);
+            }
+
+            // Y Grid
+            for (let gR = 10; gR <= 100; gR += 20) {
+                const gy = mapY(gR);
+                knnCtx.beginPath();
+                knnCtx.moveTo(padding, gy);
+                knnCtx.lineTo(w - padding, gy);
+                knnCtx.stroke();
+                knnCtx.fillText(`${gR}%`, padding - 30, gy + 3);
+            }
+
+            // Axis Titles
+            knnCtx.fillStyle = '#cbd5e1';
+            knnCtx.font = 'bold 11px Noto Sans TC';
+            knnCtx.fillText('重量 (g) →', w / 2 - 30, h - 10);
+            
+            knnCtx.save();
+            knnCtx.translate(15, h / 2 + 30);
+            knnCtx.rotate(-Math.PI / 2);
+            knnCtx.fillText('紅彩度 (%) →', 0, 0);
+            knnCtx.restore();
+
+            const testX = mapX(testW);
+            const testY = mapY(testR);
+
+            // Draw Connection lines to K-nearest neighbors
+            nearestK.forEach(kPoint => {
+                const kx = mapX(kPoint.weight);
+                const ky = mapY(kPoint.redness);
+
+                knnCtx.beginPath();
+                knnCtx.setLineDash([4, 4]);
+                knnCtx.strokeStyle = '#6366f1';
+                knnCtx.lineWidth = 1.5;
+                knnCtx.moveTo(testX, testY);
+                knnCtx.lineTo(kx, ky);
+                knnCtx.stroke();
+                knnCtx.setLineDash([]);
+            });
+
+            // Draw Training Points
+            trainingDataset.forEach(point => {
+                const px = mapX(point.weight);
+                const py = mapY(point.redness);
+
+                knnCtx.beginPath();
+                knnCtx.arc(px, py, 7, 0, Math.PI * 2);
+                knnCtx.fillStyle = point.color;
+                knnCtx.fill();
+                knnCtx.strokeStyle = '#ffffff';
+                knnCtx.lineWidth = 1.5;
+                knnCtx.stroke();
+            });
+
+            // Draw Target Test Point
+            knnCtx.beginPath();
+            knnCtx.arc(testX, testY, 10, 0, Math.PI * 2);
+            knnCtx.fillStyle = '#6366f1';
+            knnCtx.fill();
+            knnCtx.strokeStyle = '#ffffff';
+            knnCtx.lineWidth = 2.5;
+            knnCtx.stroke();
+
+            // Label "Target ?"
+            knnCtx.fillStyle = '#ffffff';
+            knnCtx.font = 'bold 11px JetBrains Mono';
+            knnCtx.fillText('?', testX - 3, testY + 4);
+        }
+
+        // =========================================================================
+        // SECTION 3: UNSUPERVISED LEARNING (K-MEANS CLUSTERING) LOGIC
+        // =========================================================================
+        const kmCanvas = document.getElementById('kmeansCanvas');
+        const kmCtx = kmCanvas.getContext('2d');
+
+        let kmPoints = [];
+        let centroids = [];
+        let kValue = 3;
+        let kmIterations = 0;
+        const clusterColors = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e'];
+
+        // Add point on canvas click
+        kmCanvas.addEventListener('pointerdown', (e) => {
+            const rect = kmCanvas.getBoundingClientRect();
+            const scaleX = kmCanvas.width / rect.width;
+            const scaleY = kmCanvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            kmPoints.push({ x, y, cluster: -1 });
+            renderKMeans();
+        });
+
+        function generateRandomKMeansPoints() {
+            kmPoints = [];
+            kmIterations = 0;
+            document.getElementById('kmeansIterCount').textContent = `迭代次數 (Iterations): 0`;
+
+            const numPoints = 60;
+            // Generate 3 natural clusters of random points
+            const centers = [
+                { x: 180, y: 120 },
+                { x: 500, y: 150 },
+                { x: 320, y: 300 }
+            ];
+
+            for (let i = 0; i < numPoints; i++) {
+                const c = centers[i % centers.length];
+                const x = c.x + (Math.random() - 0.5) * 160;
+                const y = c.y + (Math.random() - 0.5) * 140;
+                kmPoints.push({ 
+                    x: Math.max(20, Math.min(kmCanvas.width - 20, x)), 
+                    y: Math.max(20, Math.min(kmCanvas.height - 20, y)), 
+                    cluster: -1 
+                });
+            }
+
+            initCentroids();
+            renderKMeans();
+        }
+
+        function clearKMeansPoints() {
+            kmPoints = [];
+            centroids = [];
+            kmIterations = 0;
+            document.getElementById('kmeansIterCount').textContent = `迭代次數 (Iterations): 0`;
+            renderKMeans();
+        }
+
+        function resetKMeans() {
+            kValue = parseInt(document.getElementById('kSelect').value);
+            kmIterations = 0;
+            document.getElementById('kmeansIterCount').textContent = `迭代次數 (Iterations): 0`;
+            initCentroids();
+            renderKMeans();
+        }
+
+        function initCentroids() {
+            kValue = parseInt(document.getElementById('kSelect').value);
+            centroids = [];
+            if (kmPoints.length === 0) return;
+
+            // Pick K random points as initial centroids
+            const shuffled = [...kmPoints].sort(() => 0.5 - Math.random());
+            for (let i = 0; i < Math.min(kValue, shuffled.length); i++) {
+                centroids.push({
+                    x: shuffled[i].x,
+                    y: shuffled[i].y,
+                    color: clusterColors[i % clusterColors.length]
+                });
+            }
+        }
+
+        function stepKMeans() {
+            if (kmPoints.length === 0) return;
+            if (centroids.length === 0) initCentroids();
+
+            // Step 1: Assign points to nearest centroid
+            let changed = false;
+            kmPoints.forEach(pt => {
+                let minD = Infinity;
+                let bestCluster = -1;
+                centroids.forEach((c, idx) => {
+                    const dist = Math.hypot(pt.x - c.x, pt.y - c.y);
+                    if (dist < minD) {
+                        minD = dist;
+                        bestCluster = idx;
+                    }
+                });
+
+                if (pt.cluster !== bestCluster) {
+                    pt.cluster = bestCluster;
+                    changed = true;
+                }
+            });
+
+            // Step 2: Recompute centroid positions
+            centroids.forEach((c, idx) => {
+                const assignedPoints = kmPoints.filter(p => p.cluster === idx);
+                if (assignedPoints.length > 0) {
+                    const avgX = assignedPoints.reduce((sum, p) => sum + p.x, 0) / assignedPoints.length;
+                    const avgY = assignedPoints.reduce((sum, p) => sum + p.y, 0) / assignedPoints.length;
+                    c.x = avgX;
+                    c.y = avgY;
+                }
+            });
+
+            kmIterations++;
+            document.getElementById('kmeansIterCount').textContent = `迭代次數 (Iterations): ${kmIterations}`;
+            renderKMeans();
+        }
+
+        function autoRunKMeans() {
+            if (kmPoints.length === 0) return;
+            let maxSteps = 15;
+            let stepCount = 0;
+            
+            const timer = setInterval(() => {
+                stepKMeans();
+                stepCount++;
+                if (stepCount >= maxSteps) clearInterval(timer);
+            }, 200);
+        }
+
+        function renderKMeans() {
+            const w = kmCanvas.width;
+            const h = kmCanvas.height;
+
+            kmCtx.clearRect(0, 0, w, h);
+
+            // Grid background lines
+            kmCtx.strokeStyle = '#1e293b';
+            kmCtx.lineWidth = 1;
+            for (let x = 0; x < w; x += 40) {
+                kmCtx.beginPath(); kmCtx.moveTo(x, 0); kmCtx.lineTo(x, h); kmCtx.stroke();
+            }
+            for (let y = 0; y < h; y += 40) {
+                kmCtx.beginPath(); kmCtx.moveTo(0, y); kmCtx.lineTo(w, y); kmCtx.stroke();
+            }
+
+            // Draw Data Points
+            kmPoints.forEach(pt => {
+                kmCtx.beginPath();
+                kmCtx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                if (pt.cluster !== -1 && centroids[pt.cluster]) {
+                    kmCtx.fillStyle = centroids[pt.cluster].color;
+                } else {
+                    kmCtx.fillStyle = '#94a3b8'; // Unassigned grey
+                }
+                kmCtx.fill();
+                kmCtx.strokeStyle = '#ffffff';
+                kmCtx.lineWidth = 1;
+                kmCtx.stroke();
+            });
+
+            // Draw Centroids (Stars/Crosses)
+            centroids.forEach((c, idx) => {
+                kmCtx.save();
+                kmCtx.translate(c.x, c.y);
+
+                // Centroid outer halo
+                kmCtx.beginPath();
+                kmCtx.arc(0, 0, 14, 0, Math.PI * 2);
+                kmCtx.fillStyle = c.color;
+                kmCtx.globalAlpha = 0.3;
+                kmCtx.fill();
+                kmCtx.globalAlpha = 1.0;
+
+                // Centroid Star shape
+                kmCtx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    kmCtx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * 12, -Math.sin((18 + i * 72) * Math.PI / 180) * 12);
+                    kmCtx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * 5, -Math.sin((54 + i * 72) * Math.PI / 180) * 5);
+                }
+                kmCtx.closePath();
+                kmCtx.fillStyle = c.color;
+                kmCtx.fill();
+                kmCtx.strokeStyle = '#ffffff';
+                kmCtx.lineWidth = 2;
+                kmCtx.stroke();
+
+                kmCtx.restore();
+            });
+        }
+
+        // =========================================================================
+        // SECTION 5: QUIZ LOGIC
+        // =========================================================================
+        const quizAnswers = {
+            1: { correct: 'unsupervised', explanation: '✓ 正確！將客戶「自動分成族群」屬於典型的非監督式學習（K-Means 分群），因為數據事前沒有預設的族群標籤。' },
+            2: { correct: 'supervised', explanation: '✓ 正確！資料庫包含歷史的「降雨 Yes/No 正確標籤」，模型的目標是預測未來的類別，屬於監督式學習。' },
+            3: { correct: 'unsupervised', explanation: '✓ 正確！在沒有定義新詐騙特徵標籤的情況下，尋找離群的「異常 pattern」屬於非監督式學習（異常檢測）。' },
+            4: { correct: 'supervised', explanation: '✓ 正確！照片皆由醫師預先標記了「良性/惡性標籤」，模型是從標籤學習分類映射，屬於監督式學習。' }
+        };
+
+        const userScore = { 1: false, 2: false, 3: false, 4: false };
+
+        function answerQuiz(qNum, userChoice, btn) {
+            const config = quizAnswers[qNum];
+            const feedbackEl = document.getElementById(`q${qNum}Feedback`);
+            const buttons = document.querySelectorAll(`.q${qNum}-btn`);
+
+            buttons.forEach(b => {
+                b.classList.remove('bg-emerald-100', 'bg-rose-100', 'border-emerald-500', 'border-rose-500', 'text-emerald-800', 'text-rose-800');
+            });
+
+            feedbackEl.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-rose-100', 'text-rose-900');
+
+            if (userChoice === config.correct) {
+                btn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-800');
+                feedbackEl.classList.add('bg-emerald-100', 'text-emerald-900', 'border', 'border-emerald-300');
+                feedbackEl.textContent = config.explanation;
+                userScore[qNum] = true;
+            } else {
+                btn.classList.add('bg-rose-100', 'border-rose-500', 'text-rose-800');
+                feedbackEl.classList.add('bg-rose-100', 'text-rose-900', 'border', 'border-rose-300');
+                feedbackEl.textContent = `✕ 答錯囉！提示：思考看看這項任務的資料集是否包含「預先標記好的正確答案」？`;
+                userScore[qNum] = false;
+            }
+
+            feedbackEl.classList.remove('hidden');
+
+            // Update score counter
+            const correctCount = Object.values(userScore).filter(Boolean).length;
+            document.getElementById('quizScoreBadge').textContent = `答對率: ${correctCount} / 4`;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            updateSupervisedKNN();
+            generateRandomKMeansPoints();
+        });
+    </script>
+</body>
+</html>
